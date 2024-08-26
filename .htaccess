@@ -1,0 +1,24 @@
+RewriteEngine On
+
+# Redirect all HTTP requests to HTTPS
+SSLOptions +StrictRequire
+SSLRequireSSL
+SSLRequire %{HTTP_HOST} eq "app.emo-sklad.bg"
+ErrorDocument 403 https://app.emo-sklad.bg
+
+
+# Redirect the root to the /public directory
+RewriteCond %{REQUEST_URI} !^/server
+RewriteRule ^$ /public/ [L]
+
+# Serve files from the /public directory
+RewriteCond %{REQUEST_URI} !^/server
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /public/$1 [L]
+
+# Redirect all requests to index.html for a SPA app
+RewriteCond %{REQUEST_URI} !^/server
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /public/index.html [L]

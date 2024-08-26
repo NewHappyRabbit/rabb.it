@@ -1,0 +1,40 @@
+.bgDangerHover:hover {
+	background-color: #dc3545 !important;
+}
+
+.bgDangerHover {
+	transition: 0.2s;
+}
+
+.uploadImgContainer {
+	position: relative;
+	width: 25%;
+}
+
+.uploadImgContainer button {
+	position: absolute;
+	top: 2%;
+	right: 2%;
+}
+
+#barcodeVideo {
+	text-align: center;
+}
+
+#barcodeVideo video {
+	width: 40%;
+}
+
+#barcodeVideo .drawingBuffer {
+	display: none;
+}
+
+.table tbody .img-thumbnail {
+	max-width: 300px;
+}
+
+@media screen and (max-width: 768px) {
+	#barcodeVideo video {
+		width: 100%;
+	}
+}

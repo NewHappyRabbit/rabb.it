@@ -1,0 +1,9 @@
+{
+	// Enable ssl certificate on Live Server Extension
+	"liveServer.settings.https": {
+		"enable": true, //set it true to enable the feature.
+		"cert": "C:\\Users\\USER\\Desktop\\rabb.it\\server\\ssl-certificates\\dev-cert.pem", // full path of the certificate
+		"key": "C:\\Users\\USER\\Desktop\\rabb.it\\server\\ssl-certificates\\dev-key.pem", // full path of the private key
+		"passphrase": ""
+	}
+}

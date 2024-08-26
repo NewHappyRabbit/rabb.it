@@ -1,0 +1,12 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/emosklad/app.emo-sklad.bg"
+PassengerBaseURI "/server"
+PassengerNodejs "/home/emosklad/nodevenv/app.emo-sklad.bg/20/bin/node"
+PassengerAppType node
+PassengerStartupFile entry.cjs
+PassengerAppLogFile "/home/emosklad/node_log.log"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
+<IfModule Litespeed>
+</IfModule>
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END
