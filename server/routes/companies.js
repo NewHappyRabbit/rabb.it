@@ -6,7 +6,7 @@ import { Sale } from "../models/sale.js";
 
 
 function validateCompany(data) {
-    const { name, bank, mol, phone, vat, address, tax } = data;
+    const { name, bank, mol, vat, address, tax } = data;
     if (!name || !bank || !mol || !vat || !address || (vat && vat.length !== 9))
         return { status: 400, error: 'Липсват задължителни полета' };
 

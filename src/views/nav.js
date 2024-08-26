@@ -1,7 +1,7 @@
-import { html } from 'lit-html';
+import { html, render } from 'lit-html';
 import { logout, loggedInUser } from '@/views/login';
 import { toggleDarkMode } from '@/api.js';
-import { printerClass, printerModal } from '@/printer';
+import { printerClass, printerModal, availablePrinters } from '@/printer';
 import axios from 'axios';
 
 const printerModalDiv = document.getElementById('selectPrinterModalDiv');

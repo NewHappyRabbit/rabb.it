@@ -61,7 +61,7 @@ export async function WooCheckProductAttributesINIT() {
             }
 
             if (!found) {
-                WooCommerce.post("products/attributes", attribute).then((response) => {
+                WooCommerce.post("products/attributes", attribute).then(() => {
                     // Success
                     console.log(`Attribute "${attribute.name}" successfully created in WooCommerce!`)
 
@@ -106,7 +106,7 @@ export async function WooGetAllProductURLS() {
 
     /* NOTE this is a custom filter, must be added to snippets or functions.php file:
     add_filter( 'woocommerce_rest_prepare_product_object', 'my_woocommerce_rest_prepare_product_object', 10, 3 );
-    function my_woocommerce_rest_prepare_product_object( $response, $object, $request ) { 
+    function my_woocommerce_rest_prepare_product_object( $response, $object, $request ) {
 
         $data = $response->get_data();
         $newdata = [];
@@ -164,7 +164,7 @@ export async function WooUpdateQuantityProducts(products) {
         update: filtered.map(p => ({ id: p.wooId, stock_quantity: p.quantity })),
     }
 
-    WooCommerce.post('products/batch', data).then((response) => {
+    WooCommerce.post('products/batch', data).then(() => {
         // Success
         console.log('Products quantity successfully updated in WooCommerce!')
     }).catch((error) => {
@@ -267,15 +267,15 @@ export async function WooEditProduct(oldProductData, newProductData) {
     //TODO I think if no image is passed it will delete the images in the product, test to see. If not, check if the img is different
     if (process.env.ENV !== 'dev' && newProductData.image) {
         //TODO Test if images are uploading on live site
-        data.images = [{ src: `${appURL}${product.image}` }];
+        data.images = [{ src: `${appURL}${newProductData.image}` }];
 
         if (newProductData.additionalImages) {
-            for (const image of product.additionalImages)
+            for (const image of newProductData.additionalImages)
                 data.images.push({ src: `${appURL}${image}` });
         }
     }
 
-    WooCommerce.put(`products/${oldProductData.wooId}`, data).then((response) => {
+    WooCommerce.put(`products/${oldProductData.wooId}`, data).then(() => {
         // Success
         console.log('Product successfully edited in WooCommerce!')
     }).catch((error) => {
@@ -289,7 +289,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
 export async function WooDeleteProduct(wooId) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    WooCommerce.delete(`products/${wooId}`).then((response) => {
+    WooCommerce.delete(`products/${wooId}`).then(() => {
         // Success
         console.log('Product successfully deleted in WooCommerce!')
     }).catch((error) => {

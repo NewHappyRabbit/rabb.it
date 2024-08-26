@@ -213,7 +213,7 @@ function renderForm(category) {
 
 }
 
-export async function categoriesPage(ctx, next) {
+export async function categoriesPage() {
     var categories;
     selectedCategoryId = null;
     async function loadCategories() {

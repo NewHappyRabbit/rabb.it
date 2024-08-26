@@ -1,7 +1,7 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Sale, documentTypes, paymentTypes, saleTypes } from "../models/sale.js";
+import { Sale } from "../models/sale.js";
 import { Product } from "../models/product.js";
 import { Company } from "../models/company.js";
 import { Customer } from "../models/customer.js";

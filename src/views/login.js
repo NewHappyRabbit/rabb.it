@@ -16,7 +16,7 @@ export function adminAuth(ctx, next) {
 }
 
 export async function logout() {
-    await axios.get('/logout').then(res => {
+    await axios.get('/logout').then(() => {
         document.cookie = "user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         loggedInUser = null;
         socket.disconnect();

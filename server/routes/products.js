@@ -1,6 +1,6 @@
 // https://dev.to/franciscomendes10866/image-compression-with-node-js-4d7h
 import { permit } from "../middleware/auth.js";
-import { app, appURL, basePath, io } from '../app.js';
+import { app, basePath, io } from '../app.js';
 import express from 'express';
 import { Product } from "../models/product.js";
 import { AutoIncrement } from "../models/autoincrement.js";
@@ -10,7 +10,6 @@ import fs from 'fs';
 import { Sale } from "../models/sale.js";
 import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURLS, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { uploadImg } from "./common.js";
-import { WooCommerce } from "../config/woocommerce.js";
 
 export function productSockets(socket) {
     socket.on('send-print', (product, quantity) => {

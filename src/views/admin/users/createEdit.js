@@ -94,9 +94,6 @@ async function createEditUser(e) {
 }
 
 export async function createEditUserPage(ctx, next) {
-    if (loggedInUser && loggedInUser.role !== 'admin')
-        return page('/');
-
     const id = ctx.params.id;
     userRoles = await axios.get('/users/roles').then(res => res.data);
     if (id) {

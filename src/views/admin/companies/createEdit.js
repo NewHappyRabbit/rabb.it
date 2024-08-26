@@ -116,9 +116,6 @@ async function createEditCompany(e) {
 }
 
 export async function createEditCompanyPage(ctx, next) {
-    if (loggedInUser && loggedInUser.role !== 'admin')
-        return page('/');
-
     const id = ctx.params.id;
     if (id) {
         try {

@@ -9,7 +9,7 @@ import fs from 'fs';
 if (!fs.existsSync(path.join(dirname(fileURLToPath(import.meta.url)), '../logs/live.log')))
     fs.writeFileSync(path.join(dirname(fileURLToPath(import.meta.url)), '../logs/live.log'), '');
 
-const fileAndConsole = {
+/* const fileAndConsole = {
     targets: [
         {
             target: 'pino/file',
@@ -20,7 +20,7 @@ const fileAndConsole = {
             options: { destination: path.join(dirname(fileURLToPath(import.meta.url)), `../logs/live.log`) },
         },
     ]
-};
+}; */
 
 const consoleOnly = {
     targets: [

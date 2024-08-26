@@ -32,9 +32,12 @@
 		"web-prod": "webpack --config webpack.prod.config.cjs --mode=production"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.9.1",
 		"compression-webpack-plugin": "^11.1.0",
 		"copy-webpack-plugin": "^12.0.2",
 		"css-loader": "^7.1.2",
+		"eslint": "^9.9.1",
+		"globals": "^15.9.0",
 		"html-webpack-plugin": "^5.6.0",
 		"mini-css-extract-plugin": "^2.7.6",
 		"nodemon": "^3.0.1",

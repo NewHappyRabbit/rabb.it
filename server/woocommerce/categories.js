@@ -1,3 +1,4 @@
+import { appURL } from "../app.js";
 import { WooCommerce } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 
@@ -71,7 +72,7 @@ export async function WooEditCategory(category) {
         data.image = { src: `${appURL}${category.image}` };
     }
 
-    WooCommerce.put(`products/categories/${category.wooId}`, data).then((response) => {
+    WooCommerce.put(`products/categories/${category.wooId}`, data).then(() => {
         // Success
         console.log('Category successfully edited in WooCommerce!')
     }).catch((error) => {
@@ -87,7 +88,7 @@ export async function WooDeleteCategory(wooId) {
 
     WooCommerce.delete(`products/categories/${wooId}`, {
         force: true
-    }).then((response) => {
+    }).then(() => {
         // Success
         console.log('Category successfully deleted in WooCommerce!')
     }).catch((error) => {

@@ -53,9 +53,6 @@ async function loadUsers() {
 }
 
 export function usersPage() {
-    if (loggedInUser && loggedInUser.role !== 'admin')
-        return page('/');
-
     render(html`
         ${nav()}
         <div class="container-fluid">

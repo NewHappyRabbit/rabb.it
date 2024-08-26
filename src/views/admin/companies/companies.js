@@ -82,9 +82,6 @@ async function loadCompanies() {
 
 
 export async function companiesPage() {
-    if (loggedInUser && loggedInUser.role !== 'admin')
-        return page('/');
-
     const deleteModal = () => html`
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true" >
         <div class="modal-dialog">

@@ -154,7 +154,7 @@ export function numberToBGText(number) {
             if (number === 2)
                 return "два";
 
-            return num0.hasOwnProperty(number) ? num0[number] : num0[mod10] += 'надесет';
+            return number in num0 ? num0[number] : num0[mod10] += 'надесет';
         }
 
         // Till 100
@@ -166,7 +166,7 @@ export function numberToBGText(number) {
 
         // Till 1,000
         if (number > 99 && number < 1000) {
-            let temp = num100.hasOwnProperty(div100) ? num100[div100] : num0[div100] + 'стотин';
+            let temp = div100 in num100 ? num100[div100] : num0[div100] + 'стотин';
             if ((mod100 % 10 === 0 || mod100 < 20) && mod100 !== 0) temp += ' и';
             if (mod100) temp += " " + convert(mod100);
 
@@ -208,7 +208,7 @@ export function numberToBGText(number) {
 
         /* Over a billion */
         if (number > 99999999 && number <= 2000000000) {
-            temp = (div1000000000 == 1) ? "един милиард" : "";
+            let temp = (div1000000000 == 1) ? "един милиард" : "";
             temp = (div1000000000 == 2) ? "два милиарда" : temp;
             if (mod1000000000)
                 temp += " " + convert(mod1000000000);

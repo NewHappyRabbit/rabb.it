@@ -4,7 +4,6 @@ import { loggedInUser } from '@/views/login';
 
 export var selectedPrinter, availablePrinters = [], printerClass = 'text-warning';
 
-
 function attachSockets() {
     // initialize socket.io print commands only on the device that has a printer connected
     socket.on('printRestock', products => {
@@ -44,17 +43,6 @@ export async function printerSetup() {
         }, function () { alert("Грешка в намирането на принтери") }, "printer")
 
         const printerModalDiv = document.getElementById('selectPrinterModalDiv');
-
-        /* selectedPrinter.read((data) => {
-            if (data)
-                console.log('Printer connected successfully!')
-            else
-                alert('Не успяхме да се свържем с принтера! Моля, проверете дали е включен и свързан с компютъра.')
-        }, (error) => {
-            // Cant establish connection to device (probably unplugged or turned off)
-            console.error(error);
-            alert('Не успяхме да се свържем с принтера! Моля, проверете дали е включен и свързан с компютъра.');
-        }) */
 
         try {
             if (printerModalDiv)

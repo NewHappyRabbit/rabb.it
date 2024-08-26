@@ -75,9 +75,6 @@ function validateSettings(data) {
 }
 
 export async function settingsPage() {
-    if (loggedInUser && loggedInUser.role !== 'admin')
-        return page('/');
-
     var settings;
     try {
         const req = await axios.get('/settings');

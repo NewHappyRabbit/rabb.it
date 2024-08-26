@@ -232,7 +232,7 @@ async function restockProducts() {
     }
 }
 
-export async function restockPage(ctx, next) {
+export async function restockPage() {
     try {
         const res = await axios.get('/products/restock');
         products = res.data;
