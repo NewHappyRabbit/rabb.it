@@ -56,6 +56,9 @@ async function validateOrder(data) {
 
         if (product.discount && (product.discount < 0 || product.discount > 100))
             return { status: 400, error: 'Отстъпката трябва да е в границите между 0 и 100' };
+
+        if (!product.unitOfMeasure)
+            return { status: 400, error: 'Липсва мярка за артикул' };
     }
 
     if (!data.paymentType || Object.keys(paymentTypes).indexOf(data.paymentType) === -1)
@@ -216,7 +219,7 @@ export function ordersRoutes() {
                 if (product.product) {
                     const existingProduct = await Product.findById(product.product);
 
-                    if (data.orderType === 'wholeorder') {
+                    if (data.orderType === 'wholesale') {
                         if (existingProduct.quantity < product.quantity) // check if there are enough quantity
                             return res.status(400).send(`Няма достатъчно пакети от продукта: ${existingProduct.name} [${existingProduct.code}]`);
 
@@ -237,7 +240,6 @@ export function ordersRoutes() {
                     } else {
                         if (existingProduct.sizes.length > 0 && existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < product.quantity) // check if there are enough quantity of size
                             return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
-
 
                         if (existingProduct.sizes.length === 0) { //simple product
                             existingProduct.quantity -= product.quantity; // from quantity
@@ -274,13 +276,12 @@ export function ordersRoutes() {
 
             data.number = seq.seq;
 
-            const orderId = await new Order(data).save();
+            const order = await new Order(data).save();
 
             WooUpdateQuantityProducts(doneProducts);
 
-            const orderData = await Order.findById(orderId).populate('customer company products.product');
-            res.status(201).json(orderData);
-            req.log.info(orderData, 'New order created');
+            res.status(201).send(order._id.toString());
+            req.log.info(order, 'New order created');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -344,7 +345,8 @@ export function ordersRoutes() {
                     const existingProduct = await Product.findById(product.product);
                     const qtyDiff = product.quantity - (order.products.find(p => p.product == product.product)?.quantity || 0);
 
-                    if (order.orderType === 'wholeorder') {
+                    //TODO Test both order edits and see if sizes are returned/removed correctly
+                    if (order.orderType === 'wholesale') {
                         // if qty was added
                         if (qtyDiff > 0) {
                             if (existingProduct.quantity < qtyDiff) // check if there are enough quantity
@@ -373,35 +375,58 @@ export function ordersRoutes() {
 
                         }
                     } else if (order.orderType === 'retail') {
-                        if (qtyDiff > 0) {
-                            if (product.size && existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < qtyDiff) // check if there are enough quantity of size
+                        // check if newly added product or the size was changed
+                        if (order.products.find(p => p.product == product.product) && product.size && product.size !== order.products.find(p => p.product == product.product).size) {
+                            // check if there are enough quantity of size
+                            const oldSize = order.products.find(p => p.product == product.product).size;
+                            const oldQty = order.products.find(p => p.product == product.product).quantity;
+
+                            const newSize = product.size;
+                            const newQty = product.quantity;
+
+                            if (existingProduct.sizes.filter(size => size.size === newSize)[0].quantity < newQty)
                                 return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
-                            else if (existingProduct.sizes.length === 0 && existingProduct.quantity < qtyDiff) // check if there are enough quantity
-                                return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
 
-                            if (existingProduct.sizes.length > 0) { // variable product
-                                existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= qtyDiff; // from size
+                            // remove qty from newly selected size
+                            existingProduct.sizes.filter(size => size.size === newSize)[0].quantity -= newQty;
 
-                                existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+                            // add to old size
+                            existingProduct.sizes.filter(size => size.size === oldSize)[0].quantity += oldQty;
 
-                                // if no quantity of any size is left, mark as out of stock
-                                if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
-                                    existingProduct.outOfStock = true;
-                            } else {
-                                existingProduct.quantity -= qtyDiff; // from quantity
-                                if (existingProduct.quantity <= 0)
-                                    existingProduct.outOfStock = true;
-                            }
-                        } else if (qtyDiff < 0) {
-                            if (existingProduct.sizes.length) { // variable product
-                                existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= qtyDiff; // from size
-
-                                // find lowest size value and set as quantity value
-                                existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
-                            } else
-                                existingProduct.quantity -= qtyDiff; // from quantity
+                            console.log({ oldSize, oldQty, newSize, newQty })
 
                             existingProduct.outOfStock = false;
+                        } else {
+                            if (qtyDiff > 0) {
+                                if (product.size && existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < qtyDiff) // check if there are enough quantity of size
+                                    return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
+                                else if (existingProduct.sizes.length === 0 && existingProduct.quantity < qtyDiff) // check if there are enough quantity
+                                    return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
+
+                                if (existingProduct.sizes.length > 0) { // variable product
+                                    existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= qtyDiff; // from size
+
+                                    existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+
+                                    // if no quantity of any size is left, mark as out of stock
+                                    if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
+                                        existingProduct.outOfStock = true;
+                                } else {
+                                    existingProduct.quantity -= qtyDiff; // from quantity
+                                    if (existingProduct.quantity <= 0)
+                                        existingProduct.outOfStock = true;
+                                }
+                            } else if (qtyDiff < 0) {
+                                if (existingProduct.sizes.length) { // variable product
+                                    existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= qtyDiff; // from size
+
+                                    // find lowest size value and set as quantity value
+                                    existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+                                } else
+                                    existingProduct.quantity -= qtyDiff; // from quantity
+
+                                existingProduct.outOfStock = false;
+                            }
                         }
 
                     }
@@ -414,15 +439,16 @@ export function ordersRoutes() {
             // if all goes well, save all products
             doneProducts.forEach(async product => await product.save());
             doneProducts = [];
+
             // Check if any products were completely removed
-            order.products.forEach(async product => {
+            for (let product of order.products) {
                 // if product is in db
                 if (product.product && !data.products.find(p => p.product == product.product)) {
                     // Check if product already in doneProducts
                     const found = doneProducts.find(p => p._id == product._id);
 
                     const existingProduct = found || await Product.findById(product.product);
-                    if (order.orderType === 'wholeorder') {
+                    if (order.orderType === 'wholesale') {
                         //return quantity to quantity
                         existingProduct.quantity += product.quantity; // to quantity
                         if (existingProduct.sizes.length > 0)
@@ -446,7 +472,7 @@ export function ordersRoutes() {
                     if (!found)
                         doneProducts.push(existingProduct);
                 }
-            });
+            }
 
             // if all goes well, save all products
             doneProducts.forEach(async product => await product.save());
@@ -466,11 +492,12 @@ export function ordersRoutes() {
             }
 
             await Order.findByIdAndUpdate(id, data);
+            res.status(201).send(id);
 
             const orderData = await Order.findById(id).populate('customer company products.product');
-            res.status(201).json(orderData);
             req.log.info(orderData, 'Order updated');
         } catch (error) {
+            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -486,7 +513,7 @@ export function ordersRoutes() {
 
             // Return quantity to products
             order.products.forEach(async product => {
-                if (order.orderType === 'wholeorder' && product.product) {
+                if (order.orderType === 'wholesale' && product.product) {
                     const existingProduct = await Product.findById(product.product);
                     if (existingProduct.sizes.length > 0) {
                         existingProduct.sizes.forEach(size => { // to each size

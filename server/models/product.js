@@ -19,6 +19,8 @@ export const imageSchema = new Schema({
     }
 }, { _id: false });
 
+const defaultUnitOfMeasure = 'пакет';
+
 const productSchema = new Schema({
     category: {
         type: Schema.Types.ObjectId,
@@ -44,6 +46,10 @@ const productSchema = new Schema({
         required: true
     },
     description: String,
+    unitOfMeasure: {
+        type: String,
+        default: defaultUnitOfMeasure,
+    },
     quantity: {
         type: Number,
         match: [/^\d*$/, 'Пакетите трябва да са просто число: пример 5, 50'],

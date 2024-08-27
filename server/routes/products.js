@@ -73,6 +73,11 @@ async function validateProduct(data) {
         }
     }
 
+    // remove empty keys values
+    for (const key in data) {
+        if (!data[key])
+            delete data[key];
+    }
 }
 
 export function productsRoutes() {
@@ -161,7 +166,7 @@ export function productsRoutes() {
     productsRouter.get('/products/all', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             // this route is used to get all products for orders page
-            const products = await Product.find({ outOfStock: { $ne: true } }).select('name code barcode type sizes retailPrice wholesalePrice quantity minQty');
+            const products = await Product.find({ outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty');
 
             res.json(products);
         } catch (error) {
@@ -304,7 +309,6 @@ export function productsRoutes() {
             if (req.files.image) {
                 const mainImage = req.files.image[0].buffer;
                 data.image = await uploadImg(mainImage, 'products');
-
 
                 if (req.files.additionalImages?.length > 0) {
                     const additionalImages = req.files.additionalImages.map(file => file.buffer);

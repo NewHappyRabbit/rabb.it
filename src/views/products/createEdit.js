@@ -133,8 +133,17 @@ function removeSize(e) {
 const quantityTemplate = () => html`
         <div class="row mb-3" id="qtyTemplate">
             <div class="col-12 col-sm-4 mb-3">
-                <label for="quantity" class="form-label">Пакети</label>
-                <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${editPage}">
+                <label for="quantity" class="form-label">Брой | Мярка</label>
+                <div class="input-group border-primary">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${editPage}">
+                    <input class="form-control" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
+                    <datalist id="unitOfMeasureOptions">
+                        <option value="пакет"></option>
+                        <option value="бр."></option>
+                        <option value="кг."></option>
+                        <option value="л."></option>
+                    </datalist>
+                </div>
             </div>
 
             <div class="col-12 col-sm-3 mb-3 d-none">
@@ -172,7 +181,7 @@ const pricesTemplate = () => html`
                 <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
             </div>
 
-            <div class="col">
+            <div class="col pe-0">
                 <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
                 <input class="form-control border-primary" type="text" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
             </div>
@@ -293,6 +302,7 @@ async function createEditProduct(e) {
             alertEl.classList.remove('d-none', 'alert-danger');
             alertEl.classList.add('alert-success');
             document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
             alertEl.textContent = `Продуктът е ${product ? 'редактиран' : 'създаден'} успешно.`;
         }
     } catch (err) {
@@ -465,7 +475,7 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <div id="barcodeVideo"></div>
-                    <label for="barcode" class="form-label p-0">Баркод</label>
+                    <label for="barcode" class="form-label">Баркод</label>
                     <div class="input-group p-0">
                         <input class="form-control" type="text" name="barcode" id="barcode" .value=${product && product.barcode || ''} autocomplete="off">
                         <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>

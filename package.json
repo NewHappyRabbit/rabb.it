@@ -3,6 +3,18 @@
 	"version": "1.0.0",
 	"author": "NewHappyRabbit <newhappyrabbit3@gmail.com>",
 	"type": "module",
+	"scripts": {
+		"test": "vitest",
+		"server-dev": "nodemon server/app.js",
+		"server-start": "node server/app.js",
+		"web-dev": "webpack --config webpack.dev.config.cjs --mode=development",
+		"web-prod": "webpack --config webpack.prod.config.cjs --mode=production"
+	},
+	"nodemonConfig": {
+		"ignore": [
+			"/public/**"
+		]
+	},
 	"dependencies": {
 		"@woocommerce/woocommerce-rest-api": "^1.0.1",
 		"axios": "^1.4.0",
@@ -23,13 +35,6 @@
 		"sharp": "0.32.0",
 		"socket.io": "^4.4.1",
 		"socket.io-client": "^4.4.1"
-	},
-	"scripts": {
-		"test": "vitest",
-		"server-dev": "nodemon server/app.js",
-		"server-start": "node server/app.js",
-		"web-dev": "webpack --config webpack.dev.config.cjs --mode=development",
-		"web-prod": "webpack --config webpack.prod.config.cjs --mode=production"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.9.1",

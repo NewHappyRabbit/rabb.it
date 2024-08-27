@@ -23,7 +23,7 @@ export const orderTypes = {
     retail: 'Дребно',
 }
 
-const saleSchema = new Schema({
+const orderSchema = new Schema({
     number: {
         type: String,
         required: true,
@@ -63,6 +63,10 @@ const saleSchema = new Schema({
             },
             qtyInPackage: { // quantity in package (used when product doesnt exist in DB and is created on the fly in orders)
                 type: Number,
+            },
+            unitOfMeasure: {
+                type: String,
+                required: true
             },
             size: {// if retail order, size must be selected
                 type: String,
@@ -124,4 +128,4 @@ const saleSchema = new Schema({
     timestamps: true
 });
 
-export const Order = mongoose.model('Order', saleSchema);
+export const Order = mongoose.model('Order', orderSchema);

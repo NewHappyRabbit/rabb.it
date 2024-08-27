@@ -9,7 +9,7 @@ import Quagga from 'quagga';
 import page from 'page';
 import { numberToBGText } from "@/api";
 
-var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], editPage = false;
+var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
 const defaultDocumentType = 'stokova';
 
 function changeOrderType(e) {
@@ -17,17 +17,19 @@ function changeOrderType(e) {
 
     // recalculate price for every added product
     addedProducts.forEach(product => {
-        if (product.product) {
+        if (product.product)
             product.price = orderType === 'wholesale' ? product.product.wholesalePrice : product.product.retailPrice;
-        }
     })
+    rerenderTable();
+}
+
+function selectDocumentType(e) {
+    documentType = e.target.value;
     rerenderTable();
 }
 
 function rerenderTable() {
     orderType === 'wholesale' ? render(wholesaleProductsTable(addedProducts), document.getElementById('table')) : render(retailProductsTable(addedProducts), document.getElementById('table'));
-
-    documentType = document.getElementById('type').value;
 
     render(bottomRow(params, companies), document.getElementById('bottomRow'));
 
@@ -79,7 +81,7 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="type" class="form-label">Тип на документ:</label>
-            <select name="type" @change=${rerenderTable} id="type" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
+            <select name="type" @change=${selectDocumentType} id="type" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
                 ${Object.entries(params.documentTypes).map(type => html`<option ?selected=${(order && type[0] == order.type) || (!order && type[0] === defaultDocumentType)} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
@@ -93,7 +95,7 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="orderType" class="form-label">Тип на продажба:</label>
-            <select ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} @change=${changeOrderType} name="orderType" id="orderType" class="form-control" required>
+            <select ?disabled=${order} @change=${changeOrderType} name="orderType" id="orderType" class="form-control" required>
                 ${Object.entries(params.orderTypes).map(type => html`<option ?selected=${order && type[0] == order.orderType} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
@@ -171,20 +173,22 @@ function updateQuantity(e) {
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
 
+    e.target.value = parseInt(e.target.value);
+
     if (orderType === 'wholesale') {
-        if (editPage)
+        if (order)
             addedProducts[arrayIndex].quantity = e.target.value;
-        else if (+e.target.value > +e.target.max) {
+        else if (e.target.max !== '' && +e.target.value > +e.target.max) {
             e.target.value = e.target.max;
             addedProducts[arrayIndex].quantity = e.target.max;
         }
         else
             addedProducts[arrayIndex].quantity = e.target.value;
     } else if (orderType === 'retail') {
-        if (editPage) {
+        if (order) {
             addedProducts[arrayIndex].quantity = e.target.value;
         }
-        else if (+e.target.value > +e.target.max) {
+        else if (e.target.max !== '' && +e.target.value > +e.target.max) {
             e.target.value = e.target.max;
             addedProducts[arrayIndex].quantity = e.target.max;
         }
@@ -200,6 +204,11 @@ function updateSize(e) {
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
     addedProducts[arrayIndex].size = e.target.value;
+
+    if (orderType === 'retail' && !order) {// if order retail, compare current qty with newly selected size available qty
+        const maxQtyForSize = addedProducts[arrayIndex].product?.sizes.find(s => s.size == addedProducts[arrayIndex].size).quantity
+        addedProducts[arrayIndex].quantity = addedProducts[arrayIndex].quantity > maxQtyForSize ? parseInt(maxQtyForSize) : addedProducts[arrayIndex].quantity;
+    }
 
     rerenderTable();
 }
@@ -233,7 +242,15 @@ function updateQtyInPackage(e) {
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
-    addedProducts[arrayIndex].qtyInPackage = e.target.value;
+    e.target.value ? addedProducts[arrayIndex].qtyInPackage = parseInt(e.target.value) : delete addedProducts[arrayIndex].qtyInPackage;
+    rerenderTable();
+}
+
+function updateUnitOfMeasure(e) {
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+    addedProducts[arrayIndex].unitOfMeasure = e.target.value;
     rerenderTable();
 }
 
@@ -265,8 +282,9 @@ const wholesaleProductsTable = (products) => html`
                 <th>Продукт</th>
                 <th>Брой в пакет</th>
                 <th>Цена за брой</th>
-                <th>Пакети</th>
-                <th>Цена за пакет</th>
+                <th>Мярка</th>
+                <th>Количество</th>
+                <th>Цена</th>
                 <th>Отстъпка %</th>
                 <th>Сума</th>
                 <th>Действия</th>
@@ -277,14 +295,16 @@ const wholesaleProductsTable = (products) => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
                     ${product.product ? html`<td>${product.product.sizes.length ? product.product.sizes.length + ' бр.' : ''}</td>` :
-        html`<td><input @change = ${updateQtyInPackage} name = "qtyInPackage" class= "form-control".value = ${product.qtyInPackage || ""} type = "number" step = "1" min = "0" inputmode = "numeric" ? disabled = ${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
+        html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
-                    <td>${product.product && product.product.sizes.length ? formatPrice(product.price / product.product.sizes.length) : ''}
+                    <td>${product?.product?.sizes?.length ? formatPrice(product.price / product.product.sizes.length) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+
+                    <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
 
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
-                            <span class="input-group-text" id="basic-addon2">/${product?.product?.quantity || '0'}</span>
+                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            ${product?.product?.quantity ? html`<span class="input-group-text">/${product?.product?.quantity}</span>` : ''}
                         </div>
                     </td>
 
@@ -296,54 +316,11 @@ const wholesaleProductsTable = (products) => html`
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>
                 `)}
-                
+
             ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
 `;
-// Original table for wholesale
-/* const wholesaleProductsTable = (products) => html`
-    <table class="table mt-3 table-striped">
-        <thead>
-            <tr>
-                <th>Продукт</th>
-                <th>Брой</th>
-                <th>Брой в пакет</th>
-                <th>Размери</th>
-                <th>Цена</th>
-                <th>Цена за размер</th>
-                <th>Отстъпка %</th>
-                <th>Сума</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody class="table-group-divider">
-            ${products?.map(product => html`
-                <tr addedProductsIndex=${product.index}>
-                    <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
-                    <td>
-                        <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
-                            <span class="input-group-text" id="basic-addon2">/${product?.product?.quantity || '0'}</span>
-                        </div>
-                    </td>
-                    ${product.product ? html`
-                            <td>${product.product.sizes.length || ''}</td>
-                            <td>${product.product.sizes.map(size => size.size).join(', ')}</td>`
-        : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class="form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td><td></td>`
-    }
-                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    <td>${product.product && product.product.sizes.length ? formatPrice(product.price / product.product.sizes.length) : ''}</td>
-                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
-                    <td>
-                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
-                </tr>
-            `)}
-            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
-        </tbody>
-    </table>
-`; */
 
 const retailProductsTable = (products) => html`
     <table class="table mt-3 table-striped">
@@ -351,7 +328,8 @@ const retailProductsTable = (products) => html`
             <tr>
                 <th>Продукт</th>
                 <th>Размер</th>
-                <th>Брой</th>
+                <th>Мярка</th>
+                <th>Количество</th>
                 <th>Цена</th>
                 <th>Отстъпка %</th>
                 <th>Сума</th>
@@ -362,6 +340,7 @@ const retailProductsTable = (products) => html`
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
+
                     <td>
                         ${product.product && product.product.sizes.length ? html`
                             <select @change=${updateSize} name="size" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
@@ -369,19 +348,26 @@ const retailProductsTable = (products) => html`
                                 ${product.product.sizes.map(size => html`<option value=${size.size} ?selected=${size.size === product.size} ?disabled=${size.quantity < 1}>${size.size}</option>`)}
                             </select>` : product.product ? '' : html`<input @change=${updateSize} name="size" class="form-control" type="text" .value=${product?.size || ''} ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} />`}
                     </td>
+
+
+                    <td>${product?.product?.unitOfMeasure === 'пакет' ? ' бр.' : product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
+
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && (product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || '')}  required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product.size && product?.product?.sizes?.find(s => s.size == product.size)?.quantity}  required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             <span class="input-group-text" id="basic-addon2">/${product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || ''}</span>
-                        </div >
-                    </td >
+                        </div>
+                    </td>
+
                     <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    
                     <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+                    
                     <td>
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
-                </tr >
-    `)}
+                </tr>`)}
             ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
@@ -410,7 +396,7 @@ function scanBarcode() {
     };
 
     Quagga.init(config, function (err) {
-        if (err) return console.log(err);
+        if (err) return console.error(err);
         Quagga.start();
 
         Quagga.onDetected(data => {
@@ -455,8 +441,6 @@ function stopBarcode() {
 function addProduct(e) {
     e.preventDefault();
 
-    console.log(e, e.target.value)
-
     if (e.target.value === '')
         return;
 
@@ -492,6 +476,7 @@ function addProduct(e) {
                     addedProducts.push({
                         index: addedProductsIndex++,
                         product: productInDB,
+                        unitOfMeasure: productInDB.unitOfMeasure,
                         quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
                         price: orderType === 'wholesale' ? productInDB.wholesalePrice : productInDB.retailPrice,
                         discount: selectedCustomer?.discount || 0
@@ -503,6 +488,7 @@ function addProduct(e) {
                     quantity,
                     price: 0,
                     qtyInPackage: 0,
+                    unitOfMeasure: 'пакет',
                     discount: selectedCustomer?.discount || 0
                 });
         } else if (orderType === 'retail') {
@@ -527,6 +513,7 @@ function addProduct(e) {
                         product: productInDB,
                         quantity: 1,
                         price: productInDB.retailPrice,
+                        unitOfMeasure: 'бр.',
                         discount: selectedCustomer?.discount || 0
                     });
             }
@@ -536,6 +523,7 @@ function addProduct(e) {
                     name: product,
                     quantity,
                     price: 0,
+                    unitOfMeasure: 'бр.',
                     discount: selectedCustomer?.discount || 0
                 });
             }
@@ -629,12 +617,16 @@ function validateOrder(data) {
             } else markValidEl(row.querySelector('input[name="quantity"]'));
         }
 
-        if (product.discount < 0 || product.discount > 100) {
+        const discountRegex = /^\d{1,}(\.\d{1})?$/; // good: 0.1, 2; bad: 0.01
+
+        if (product.discount < 0 || product.discount > 100 || !discountRegex.test(product.discount)) {
             markInvalidEl(row.querySelector('input[name="discount"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="discount"]'));
 
-        if (!product.price || product.price < 0.01) {
+        const priceRegex = /^\d{1,}(\.\d{1,2})?$/; // good: 0.01, 0.2, 1; bad: 0.001
+
+        if (!product.price || product.price < 0.01 || !priceRegex.test(product.price)) {
             markInvalidEl(row.querySelector('input[name="price"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="price"]'));
@@ -643,6 +635,11 @@ function validateOrder(data) {
             markInvalidEl(row.querySelector('input[name="quantity"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="quantity"]'));
+
+        if (!product.unitOfMeasure) {
+            markInvalidEl(row.querySelector('input[name="unitOfMeasure"]'));
+            invalidFlag = true;
+        } else if (product.unitOfMeasure && !product.product) markValidEl(row.querySelector('input[name="unitOfMeasure"]'));
     });
 
     return invalidFlag;
@@ -655,8 +652,6 @@ async function createEditOrder() {
     toggleSubmitBtn();
 
     const form = document.querySelector('form');
-    form.classList.add('was-validated');
-    form.classList.remove('needs-validation')
     const formData = new FormData(form);
     var filteredProducts = [];
 
@@ -669,7 +664,8 @@ async function createEditOrder() {
                     product: product.product._id,
                     quantity: product.quantity,
                     price: product.price,
-                    discount: product.discount
+                    discount: product.discount,
+                    unitOfMeasure: product.product.unitOfMeasure
                 });
             else
                 filteredProducts.push({
@@ -678,7 +674,8 @@ async function createEditOrder() {
                     quantity: product.quantity,
                     price: product.price,
                     ...(product.qtyInPackage > 0 && { qtyInPackage: product.qtyInPackage }),
-                    discount: product.discount
+                    discount: product.discount,
+                    unitOfMeasure: product.unitOfMeasure
                 });
         });
     } else if (orderType === 'retail') {
@@ -690,7 +687,8 @@ async function createEditOrder() {
                     quantity: product.quantity,
                     price: product.price,
                     ...(product.size && { size: product.size }),
-                    discount: product.discount
+                    discount: product.discount,
+                    unitOfMeasure: product.unitOfMeasure
                 });
             else
                 filteredProducts.push({
@@ -699,16 +697,17 @@ async function createEditOrder() {
                     quantity: product.quantity,
                     price: product.price,
                     size: product.size,
-                    discount: product.discount
+                    discount: product.discount,
+                    unitOfMeasure: product.unitOfMeasure
                 });
         });
     }
 
     const data = {
         date: document.getElementById('date').value,
-        type: documentType,
+        type: document.getElementById('type').value,
         customer: selectedCustomer?._id,
-        orderType: orderType,
+        orderType: document.getElementById('orderType').value,
         products: filteredProducts,
         paymentType: document.getElementById('paymentType').value,
         paidAmount: +(formData.get('paidAmount').replace(',', '.')),
@@ -724,18 +723,17 @@ async function createEditOrder() {
         return toggleSubmitBtn();
     }
 
+    form.classList.add('was-validated');
+    form.classList.remove('needs-validation')
+
     const alertEl = document.getElementById('alert');
     try {
         const req = order ? await axios.put(`/orders/${order._id}`, data) : await axios.post('/orders', data);
 
         if (req.status === 201) {
             toggleSubmitBtn();
-            alertEl.classList.add('d-none');
-            document.getElementById('orderType').disabled = true;
-            document.getElementById('number').value = req.data.number;
-            printSale(req.data);
-            // after printing, go to edit page of same order
-            page(`/orders/${req.data._id}`);
+
+            page(`/orders/${req.data}?print`);
         }
     } catch (err) {
         toggleSubmitBtn();
@@ -844,13 +842,14 @@ const printTableWholesale = (tax, products, type) => html`
             <tr class="fw-bold text-center">
                 <td>№</td>
                 <td>Код</td>
-                <td>Продукт</td>
-                <td>Пакети</td>
-                <td>Броя в пакет</td>
+                <td>Стока</td>
+                <td>Мярка</td>
+                <td>Количество</td>
+                <td>Брой в пакет</td>
                 <td>Цена</td>
                 <td>Отстъпка</td>
                 <td>Цена след ТО%</td>
-                <td>Цена за размер след ТО%</td>
+                <td>Цена за брой след ТО%</td>
                 <td>Сума</td>
             </tr>
         </thead>
@@ -860,6 +859,7 @@ const printTableWholesale = (tax, products, type) => html`
                     <td>${++index}</td>
                     <td>${product?.product?.code || ''}</td>
                     <td>${product?.product?.name || product.name}</td>
+                    <td>${product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
                     <td>${product.quantity}</td>
                     <td>${product?.product?.sizes?.length || product.qtyInPackage}</td>
                     <td>${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
@@ -879,7 +879,8 @@ const printTableRetail = (tax, products, type) => html`
             <tr class="fw-bold text-center">
                 <td>№</td>
                 <td>Код</td>
-                <td>Продукт</td>
+                <td>Стока</td>
+                <td>Мярка</td>
                 <td>Размер</td>
                 <td>Брой</td>
                 <td>Цена</td>
@@ -894,6 +895,8 @@ const printTableRetail = (tax, products, type) => html`
                     <td>${++index}</td>
                     <td>${product?.product?.code || ''}</td>
                     <td>${product?.product?.name || product.name}</td>
+                    <!-- if product with sizes, its probably "брой", else its "пакет" -->
+                    <td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
                     <td>${product?.size}</td>
                     <td>${product.quantity}</td>
                     <td>${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
@@ -918,7 +921,7 @@ const template = (params, customers) => html`
     </div>
     <div id="printContainer" class="d-none d-print-block"></div>`;
 
-export async function createEditSalePage(ctx, next) {
+export async function createEditOrderPage(ctx, next) {
     try {
         params = (await axios.get('/orders/params')).data;
         companies = (await axios.get('/companies')).data;
@@ -927,7 +930,6 @@ export async function createEditSalePage(ctx, next) {
         addedProductsIndex = 0;
 
         if (ctx.params.id) {
-            editPage = true;
             const req = await axios.get(`/orders/${ctx.params.id}`);
             order = req.data;
             orderType = order.orderType;
@@ -935,12 +937,29 @@ export async function createEditSalePage(ctx, next) {
             addedProducts.map(product => product.index = addedProductsIndex++);
             selectedCustomer = order.customer;
             selectedCompany = companies.filter(c => c._id === order.company)[0];
+
+            // if order was just created and print was requested
+            if (ctx.querystring.includes('print')) {
+                printSale(order);
+                return page(`/orders/${ctx.params.id}`);
+            }
         } else {
-            editPage = false;
             order = undefined;
             orderType = 'wholesale';
             addedProducts = [];
             selectedCompany = companies[0];
+            selectedCustomer = undefined;
+        }
+        // reset form
+        const form = document.querySelector('form');
+        const alertEl = document.getElementById('alert');
+        if (form && alertEl) {
+            // form.reset();
+            form.classList.remove('was-validated');
+            form.classList.add('needs-validation');
+            alertEl.classList.add('d-none');
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
         }
 
         render(template(params, customers), container);
