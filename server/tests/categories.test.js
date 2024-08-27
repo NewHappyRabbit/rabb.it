@@ -87,7 +87,7 @@ describe('POST /categories', async () => {
 
         test('image uploaded and saved', () => {
             expect(category.image.length).toBeGreaterThan(0);
-            expect(fs.existsSync('public' + category.image)).toEqual(true); // saved to public/images/ folder
+            expect(fs.existsSync(category.image.path)).toEqual(true); // saved to public/images/ folder
         });
     });
 })

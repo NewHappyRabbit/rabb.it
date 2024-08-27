@@ -303,8 +303,8 @@ export function productsRoutes() {
 
             if (req.files.image) {
                 const mainImage = req.files.image[0].buffer;
-                const mainImagePath = await uploadImg(mainImage);
-                data.image = mainImagePath;
+                data.image = await uploadImg(mainImage);
+
 
                 if (req.files.additionalImages?.length > 0) {
                     const additionalImages = req.files.additionalImages.map(file => file.buffer);
@@ -350,6 +350,7 @@ export function productsRoutes() {
             res.status(201).send();
             req.log.info(savedProduct, 'Product created');
         } catch (error) {
+            console.log({ error })
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -381,14 +382,15 @@ export function productsRoutes() {
             // Check if new image was uploaded
             if (req.files.image) {
                 const mainImage = req.files.image[0].buffer;
-                const mainImagePath = await uploadImg(mainImage);
-                data.image = mainImagePath;
+                data.image = await uploadImg(mainImage);
 
                 // delete original image if it exists
-                fs.existsSync(`public${product.image}`) &&
-                    fs.unlink(`public${product.image}`, (err) => {
-                        if (err) console.error(err);
-                    });
+                if (product.image) {
+                    fs.existsSync(product.image.path) &&
+                        fs.unlink(product.image.path, (err) => {
+                            if (err) console.error(err);
+                        });
+                }
             } else if (product.image)
                 data.image = product.image;
 
@@ -401,12 +403,14 @@ export function productsRoutes() {
 
                 data.additionalImages = additionalImagesPaths;
 
-                // delete original images
-                for (const img of product.additionalImages) {
-                    fs.existsSync(`public${img}`) &&
-                        fs.unlink(`public${img}`, (err) => {
-                            if (err) console.error(err);
-                        });
+                // delete original images if they exist
+                if (product.additionalImages.length > 0) {
+                    for (const img of product.additionalImages) {
+                        fs.existsSync(img.path) &&
+                            fs.unlink(img.path, (err) => {
+                                if (err) console.error(err);
+                            });
+                    }
                 }
             } else data.additionalImages = product.additionalImages;
 
@@ -449,16 +453,16 @@ export function productsRoutes() {
 
             // delete images
             if (product.image) {
-                fs.existsSync(`public${product.image}`) &&
-                    fs.unlink(`public${product.image}`, (err) => {
+                fs.existsSync(product.image.path) &&
+                    fs.unlink(product.image.path, (err) => {
                         if (err) console.error(err);
                     });
             }
 
             if (product.additionalImages.length > 0)
                 for (const img of product.additionalImages) {
-                    fs.existsSync(`public${img}`) &&
-                        fs.unlink(`public${img}`, (err) => {
+                    fs.existsSync(img.path) &&
+                        fs.unlink(img.path, (err) => {
                             if (err) console.error(err);
                         });
                 }

@@ -4,7 +4,7 @@ import { html, render } from 'lit/html.js';
 import axios from "axios";
 import page from 'page';
 import { nav } from '@/views/nav.js';
-import { markInvalid, markValid, loadPreviewImage, publicURL } from "@/api.js";
+import { markInvalid, markValid, loadPreviewImage } from "@/api.js";
 import { until } from 'lit/directives/until.js';
 import { spinner } from "@/views/components";
 import { loggedInUser } from "@/views/login";
@@ -151,7 +151,7 @@ const modalForm = (category) => html`
         <div class="row mb-3">
             <label for="image" class="form-label">Снимка</label>
             <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
-            <img id="imagePreview" class="${category?.image ? '' : 'd-none'} img-thumbnail w-25" .src=${category && publicURL + category.image} alt="">
+            <img id="imagePreview" class="${category?.image ? '' : 'd-none'} img-thumbnail" .src=${category?.image?.url} alt="">
         </div>
         <div class="mb-3">
             <label for="order" class="form-label">Подредба</label>

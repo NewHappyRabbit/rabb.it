@@ -1,4 +1,3 @@
-import { appURL } from "../app.js";
 import { WooCommerce } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { slugify } from "../models/functions/global.js";
@@ -222,11 +221,11 @@ export async function WooCreateProduct(product) {
 
     if (process.env.ENV !== 'dev' && product.image) {
         //TODO Test if images are uploading on live site
-        data.images = [{ src: `${appURL}${product.image}` }];
+        data.images = [{ src: `${process.env.URL}${product.image}` }];
 
         if (product.additionalImages) {
             for (const image of product.additionalImages)
-                data.images.push({ src: `${appURL}${image}` });
+                data.images.push({ src: `${process.env.URL}${image}` });
         }
     }
 
@@ -267,11 +266,11 @@ export async function WooEditProduct(oldProductData, newProductData) {
     //TODO I think if no image is passed it will delete the images in the product, test to see. If not, check if the img is different
     if (process.env.ENV !== 'dev' && newProductData.image) {
         //TODO Test if images are uploading on live site
-        data.images = [{ src: `${appURL}${newProductData.image}` }];
+        data.images = [{ src: `${process.env.URL}${newProductData.image}` }];
 
         if (newProductData.additionalImages) {
             for (const image of newProductData.additionalImages)
-                data.images.push({ src: `${appURL}${image}` });
+                data.images.push({ src: `${process.env.URL}${image}` });
         }
     }
 

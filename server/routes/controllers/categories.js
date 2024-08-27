@@ -37,10 +37,8 @@ export const CategoryController = {
 
         data.slug = slug;
 
-        if (img) {
-            const imgPath = await uploadImg(img.buffer);
-            data.image = imgPath;
-        }
+        if (img)
+            data.image = await uploadImg(img.buffer);
 
         return { category: await new Category(data).save(), status: 201 };
     }

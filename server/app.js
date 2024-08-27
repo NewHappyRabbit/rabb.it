@@ -12,6 +12,21 @@ import path from 'path';
 import { Server } from "socket.io";
 import { productSockets } from './routes/products.js';
 
+// Check if all required environment variables are defined
+let missingVariables = [];
+['ENV', 'URL', 'MONGO_USER', 'MONGO_PASSWORD', 'MONGO_URI', 'JWT_SECRET'].forEach((env) => {
+    if (!process.env[env]) missingVariables.push(env);
+});
+if (missingVariables.length) throw new Error(`Missing environment variables: ${missingVariables.join(',')}`);
+
+// Check if all or none of WooCommerce variables are defined
+let missingWooVariables = [];
+['WOO_URL', 'WOO_KEY', 'WOO_SECRET'].forEach((env) => {
+    if (!process.env[env]) missingWooVariables.push(env);
+})
+if (missingWooVariables.length === 1 || missingWooVariables === 2) throw new Error(`Missing environment variables: ${missingWooVariables.join(',')}`);
+
+
 export const app = express();
 
 // Set base path for all routes
@@ -37,7 +52,6 @@ if (fs.existsSync(`${sslDir}/${process.env.ENV}-key.pem`) && fs.existsSync(`${ss
         ssl.ca = fs.readFileSync(`${sslDir}/${process.env.ENV}-ca.pem`);
 } else throw new Error('No SSL certificate found!');
 
-export const appURL = 'https://app.emo-sklad.bg'; // used for woocommerce url when getting product image to upload it
 const httpPort = 3000;
 const httpsPort = 8443;
 

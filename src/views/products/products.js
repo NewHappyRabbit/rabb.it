@@ -5,7 +5,7 @@ import { html, render } from 'lit/html.js';
 import { nav } from '@/views/nav.js';
 import { until } from 'lit/directives/until.js';
 import axios from 'axios';
-import { addQuery, delay, removeQuery, publicURL, unslugify, formatPrice } from '@/api';
+import { addQuery, delay, removeQuery, unslugify, formatPrice } from '@/api';
 import { spinner } from '@/views/components';
 import { loggedInUser } from '@/views/login';
 import { socket } from '@/api';
@@ -131,7 +131,7 @@ const table = (products, prevCursor, nextCursor) => html`
                 <tbody>
                     ${products.map(product => html`
                         <tr>
-                            <td>${product.image && product.image.length ? html`<img class="img-thumbnail" src=${publicURL + product.image}/>` : ''}</td>
+                            <td>${product?.image?.url ? html`<img class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
                             <td>${product.category.path ? `${uslugifyPath(product.category.path)} > ${product.category.name}` : product.category.name}</td>
                             <td>${product.code}</td>
                             <td>${product.name}</td>

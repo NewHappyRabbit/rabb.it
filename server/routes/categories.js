@@ -113,14 +113,15 @@ export function categoriesRoutes() {
             }
 
             if (img) {
-                const imgPath = await uploadImg(img.buffer);
-                data.image = imgPath;
+                data.image = await uploadImg(img.buffer);
 
                 // delete original image if it exists
-                fs.existsSync(`public${currentCategory.image}`) &&
-                    fs.unlink(`public${currentCategory.image}`, (err) => {
-                        if (err) console.error(err);
-                    });
+                if (currentCategory.image) {
+                    fs.existsSync(currentCategory.image.path) &&
+                        fs.unlink(currentCategory.image.path, (err) => {
+                            if (err) console.error(err);
+                        });
+                }
             }
 
             await currentCategory.updateOne(data);
@@ -159,10 +160,12 @@ export function categoriesRoutes() {
             const wooId = category.wooId;
 
             // delete original image if it exists
-            fs.existsSync(`public${category.image}`) &&
-                fs.unlink(`public${category.image}`, (err) => {
-                    if (err) console.error(err);
-                });
+            if (category.image) {
+                fs.existsSync(category.image.path) &&
+                    fs.unlink(category.image.path, (err) => {
+                        if (err) console.error(err);
+                    });
+            }
 
             await Category.findByIdAndDelete(id);
             WooDeleteCategory(wooId);
@@ -170,7 +173,8 @@ export function categoriesRoutes() {
             res.status(204).send();
             req.log.info(category, 'Category deleted')
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            console.log(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });

@@ -2,8 +2,8 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { html } from 'lit/html.js';
 import { loggedInUser } from '@/views/login';
-export let serverURL = 'https://localhost:8443'; // used for requests [LOCAL DEV ONLY]
-export let publicURL = 'https://localhost:8443'; // used for resources like img, etc. [LOCAL DEV ONLY]
+export let serverURL = 'https://localhost:8443'; // used for requests
+export let publicURL = 'https://localhost:8443'; // used for resources like img, etc.
 
 let socketPath = '/socket.io';
 

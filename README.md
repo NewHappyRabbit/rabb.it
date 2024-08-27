@@ -142,6 +142,7 @@ To run this project, you will need to add all of the following environment varia
 | Variable | Value | Decsription |
 | - | - | - |
 | `ENV` | "live" or "dev" | Used for Express, MongoDB, logging
+| `URL` | string (ex. "https://localhost:3003" or "https://website.com") | URL to the current site, used as path for uploading images. Don't add the trailing slash "/" at the end!
 | `MONGO_USER` | string (ex. "user123") | Username for MongoDB connection
 | `MONGO_PASSWORD` | string (ex. "veryLongPassword") | Password for MongoDB connection
 | `MONGO_URI` | string (ex. mongodb+srv://cluster.server.mongodb.net) | Connection URI for MongoDB
@@ -236,8 +237,8 @@ After all that is done, push to your repository and pull the changes from your h
 ---
 
 ## Roadmap
-Visit our [Trello Board](https://trello.com/b/59GbDQte/rabbit) to check out what's coming up like new features, bug fixes and ideas!
 
+Visit our [Trello Board](https://trello.com/b/59GbDQte/rabbit) to check out what's coming up like new features, bug fixes and ideas!
 
 ## Tech Stack used
 

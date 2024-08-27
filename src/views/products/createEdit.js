@@ -1,7 +1,7 @@
 import '@/css/products.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
-import { markInvalid, publicURL, markValid, roundPrice, successScan, loadPreviewImage } from '@/api';
+import { markInvalid, markValid, roundPrice, successScan, loadPreviewImage } from '@/api';
 import axios from "axios";
 import { categoriesOptions } from '@/views/categories/categories';
 import { until } from 'lit/directives/until.js';
@@ -428,7 +428,7 @@ export async function createEditProductPage(ctx, next) {
                 <div class="row mb-3">
                     <label for="image" class="form-label">Главна снимка</label>
                     <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
-                    <img id="imagePreview" class="${product?.image ? '' : 'd-none'} img-thumbnail w-25" .src=${product && publicURL + product.image} alt="">
+                    <img id="imagePreview" class="${product?.image?.url ? '' : 'd-none'} img-thumbnail w-25" .src=${product?.image?.url} alt="">
                 </div>
 
                 <div class="row mb-3">
@@ -504,12 +504,8 @@ export async function createEditProductPage(ctx, next) {
 
     render(template(), container);
     render(sizesTemplate(selectedSizes), document.getElementById('addedSizes'));
-    if (product && product.additionalImages) {
-        const arr = product.additionalImages.map(i => imgTemplate(i));
-        render(arr, document.getElementById('additionalImagesPreview'));
-    }
 
     // If product has images, render them
     if (product && product.additionalImages.length > 0)
-        render(product.additionalImages.map(img => imgTemplate(publicURL + img)), document.getElementById('additionalImagesPreview'));
+        render(product.additionalImages.map(img => imgTemplate(img.url)), document.getElementById('additionalImagesPreview'));
 }

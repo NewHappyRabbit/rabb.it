@@ -1,8 +1,11 @@
 import sharp from "sharp";
 
-export async function uploadImg(image) {
+export async function uploadImg(image, folder) {
     const fileName = `${Date.now()}.jpeg`;
-    const path = `public/images/${fileName}`;
+    let tempPath = '/images/' + (folder ? folder + '/' : '') + fileName;
+    const path = 'public' + tempPath; // used for file system
+    const url = process.env.URL + tempPath; // used for front end to load image
+
     const options = {
         width: null,
         height: 1200,
@@ -11,5 +14,5 @@ export async function uploadImg(image) {
 
     await sharp(image).resize(options).jpeg().toFile(path);
 
-    return `/images/${fileName}`;
+    return { url, path };
 }

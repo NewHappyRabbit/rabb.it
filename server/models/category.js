@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { imageSchema } from "./product.js";
 
 const { Schema } = mongoose;
 
@@ -20,7 +21,7 @@ const categorySchema = new Schema({
         type: Number,
         default: 0
     },
-    image: String,
+    image: imageSchema,
     wooId: String
 });
 

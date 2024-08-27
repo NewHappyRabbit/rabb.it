@@ -2,6 +2,23 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
+export const imageSchema = new Schema({
+    path: {
+        type: String,
+        required: true,
+    },
+    url: {
+        type: String,
+        required: true,
+        validate: {
+            validator: function (v) {
+                return v.startsWith('https://');
+            },
+            message: 'Линкът на изображението трябва да започва с https:\/\/!'
+        }
+    }
+}, { _id: false });
+
 const productSchema = new Schema({
     category: {
         type: Schema.Types.ObjectId,
@@ -79,8 +96,8 @@ const productSchema = new Schema({
         default: false,
         required: true,
     },
-    image: String,
-    additionalImages: [String],
+    image: imageSchema,
+    additionalImages: [imageSchema],
     deleted: {
         type: Boolean,
         default: false
