@@ -14,7 +14,7 @@ const customerSchema = new Schema({
     phone: String,
     email: {
         type: String,
-        match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/
+        match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
     },
     vat: {
         type: String,
@@ -22,9 +22,13 @@ const customerSchema = new Schema({
         unique: true,
         match: /^[0-9]{9,10}$/,
     },
-    taxvat: {
+    taxvat: { // example: BG123123123
         type: String,
-        match: /^[0-9]{9,10}$/,
+        required: false,
+        index: {
+            unique: true,
+            sparse: true
+        },
     },
     address: {
         type: String,

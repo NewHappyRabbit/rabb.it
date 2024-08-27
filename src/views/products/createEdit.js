@@ -250,8 +250,7 @@ async function createEditProduct(e) {
     toggleSubmitBtn();
 
     const form = e.target;
-    form.classList.add('was-validated');
-    form.classList.remove('needs-validation');
+
     const formData = new FormData(form);
     // Convert prices from "," to "."
     formData.set('deliveryPrice', formData.get('deliveryPrice').replace(',', '.'));
@@ -266,6 +265,9 @@ async function createEditProduct(e) {
     if (invalidData)
         return toggleSubmitBtn();
 
+    form.classList.add('was-validated');
+    form.classList.remove('needs-validation');
+
     const alertEl = document.getElementById('alert');
 
     try {
@@ -274,7 +276,6 @@ async function createEditProduct(e) {
             toggleSubmitBtn();
 
             if (!product) { // if product creation and not editing
-                document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
                 document.getElementById('category').classList.remove('is-valid', 'is-invalid');
                 selectedSizes = [];
                 render(sizesTemplate(), document.getElementById('addedSizes'));
@@ -284,6 +285,8 @@ async function createEditProduct(e) {
 
                 form.reset();
             }
+
+            document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
 
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
@@ -310,12 +313,12 @@ async function createEditProduct(e) {
             }
 
         }
-        else if (err.response.status === 500) {
+        else if (err.response?.status === 500) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = 'Грешка в сървъра';
             console.error(err);
-        }
+        } else console.error(err)
     }
 
 }
@@ -462,15 +465,15 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <div id="barcodeVideo"></div>
-                    <label for="barcode" class="form-label">Баркод</label>
-                    <div class="input-group">
+                    <label for="barcode" class="form-label p-0">Баркод</label>
+                    <div class="input-group p-0">
                         <input class="form-control" type="text" name="barcode" id="barcode" .value=${product && product.barcode || ''} autocomplete="off">
                         <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
                         <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
                     </div>
-                    <svg id="barcodeImg"></svg>
                 </div>
 
+                <h3>Опции</h3>
                 <div class="mb-3">
                     <input class="form-check-input" type="checkbox" value="" name="hidden" id="hidden" ?disabled=${product} ?checked=${product?.hidden}>
                     <label class="form-check-label" for="hidden">

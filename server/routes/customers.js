@@ -120,14 +120,13 @@ export function customersRoutes() {
             if (validation)
                 return res.status(validation.status).send(validation.error);
 
-            // check if vat and taxvat are unique
-            var existingCustomer;
-            if (data.taxvat)
-                existingCustomer = await Customer.findOne({ $or: [{ vat: data.vat }, { taxvat: data.taxvat }] });
-            else existingCustomer = await Customer.findOne({ vat: data.vat });
+            const existingVat = await Customer.findOne({ vat: data.vat });
+            if (existingVat)
+                return res.status(400).send('Клиент с този ЕИК вече съществува');
 
-            if (existingCustomer)
-                return res.status(400).send('Клиент с този ЕИК/ДДС ЕИК вече съществува');
+            const existingTaxVat = data.taxvat ? await Customer.findOne({ taxvat: data.taxvat }) : null;
+            if (existingTaxVat)
+                return res.status(400).send('Клиент с този ДДС ЕИК вече съществува');
 
             // Add MOL to receivers so it autofills of first sale
             data.receivers = [data.mol];
@@ -151,14 +150,13 @@ export function customersRoutes() {
                 return res.status(validation.status).send(validation.error);
             }
 
-            // check if vat and taxvat are unique
-            var existingCustomer;
-            if (data.taxvat)
-                existingCustomer = await Customer.findOne({ $or: [{ vat: data.vat }, { taxvat: data.taxvat }] });
-            else existingCustomer = await Customer.findOne({ vat: data.vat });
+            const existingVat = await Customer.findOne({ vat: data.vat });
+            if (existingVat && existingVat._id.toString() !== req.params.id)
+                return res.status(400).send('Клиент с този ЕИК вече съществува');
 
-            if (existingCustomer && existingCustomer._id != req.params.id)
-                return res.status(400).send('Клиент с този ЕИК/ДДС ЕИК вече съществува');
+            const existingTaxVat = data.taxvat ? await Customer.findOne({ taxvat: data.taxvat }) : null;
+            if (existingTaxVat && existingTaxVat._id.toString() !== req.params.id)
+                return res.status(400).send('Клиент с този ДДС ЕИК вече съществува');
 
             // Add new MOL to receivers array
             const customerOld = await Customer.findById(req.params.id);

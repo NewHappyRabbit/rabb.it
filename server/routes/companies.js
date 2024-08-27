@@ -15,6 +15,9 @@ function validateCompany(data) {
 
     if (!bank.name || !bank.code || !bank.iban || bank.iban.length > 34)
         return { status: 400, error: 'Невалидни банкови данни' };
+
+    for (let key in data)
+        if (data[key] === "") delete data[key];
 }
 
 export function companiesRoutes() {
@@ -53,14 +56,13 @@ export function companiesRoutes() {
             if (validation)
                 return res.status(validation.status).send(validation.error);
 
-            // check if vat and taxvat are unique
-            var existingCompany;
-            if (data.taxvat)
-                existingCompany = await Company.findOne({ $or: [{ vat: data.vat }, { taxvat: data.taxvat }] });
-            else existingCompany = await Company.findOne({ vat: data.vat });
+            const existingVat = await Company.findOne({ vat: data.vat });
+            if (existingVat)
+                return res.status(400).send('Фирма с този ЕИК вече съществува');
 
-            if (existingCompany)
-                return res.status(400).send('Фирма с този ЕИК/ДДС ЕИК вече съществува');
+            const existingTaxVat = data.taxvat ? await Company.findOne({ taxvat: data.taxvat }) : null;
+            if (existingTaxVat)
+                return res.status(400).send('Фирма с този ДДС ЕИК вече съществува');
 
             // check if no companies exist and set as default
             const companies = await Company.find();
@@ -75,6 +77,7 @@ export function companiesRoutes() {
             res.status(201).send();
             req.log.info(company, 'Company created');
         } catch (error) {
+            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -89,14 +92,13 @@ export function companiesRoutes() {
                 return res.status(validation.status).send(validation.error);
             }
 
-            // check if vat and taxvat are unique
-            var existingCompany;
-            if (data.taxvat)
-                existingCompany = await Company.findOne({ $or: [{ vat: data.vat }, { taxvat: data.taxvat }] });
-            else existingCompany = await Company.findOne({ vat: data.vat });
+            const existingVat = await Company.findOne({ vat: data.vat });
+            if (existingVat && existingVat._id.toString() !== req.params.id)
+                return res.status(400).send('Фирма с този ЕИК вече съществува');
 
-            if (existingCompany && existingCompany._id.toString() != req.params.id)
-                return res.status(400).send('Фирма с този ЕИК/ДДС ЕИК вече съществува');
+            const existingTaxVat = data.taxvat ? await Company.findOne({ taxvat: data.taxvat }) : null;
+            if (existingTaxVat && existingTaxVat._id.toString() !== req.params.id)
+                return res.status(400).send('Фирма с този ДДС ЕИК вече съществува');
 
             // Add new MOL to receivers array
             const companyOld = await Company.findById(req.params.id);

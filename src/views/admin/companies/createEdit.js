@@ -4,7 +4,6 @@ import { html, render } from 'lit/html.js';
 import axios from "axios";
 import { nav } from "@/views/nav";
 import { toggleSubmitBtn, submitBtn } from "@/views/components";
-import { loggedInUser } from "@/views/login";
 
 var company = '';
 
@@ -55,8 +54,6 @@ async function createEditCompany(e) {
     toggleSubmitBtn();
 
     const form = e.target;
-    form.classList.add('was-validated');
-    form.classList.remove('needs-validation')
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
@@ -69,6 +66,9 @@ async function createEditCompany(e) {
     const invalidData = validateCompany(data);
     if (invalidData) return toggleSubmitBtn();
 
+    form.classList.add('was-validated');
+    form.classList.remove('needs-validation');
+
     const alertEl = document.getElementById('alert');
     try {
         const req = company ? await axios.put(`/companies/${company._id}`, data) : await axios.post('/companies', data);
@@ -77,8 +77,10 @@ async function createEditCompany(e) {
             toggleSubmitBtn();
             if (!company) {
                 form.reset();
-                document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
+                document.getElementById('tax').value = 20;
             }
+
+            document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
             alertEl.classList.remove('d-none', 'alert-danger');
@@ -87,14 +89,16 @@ async function createEditCompany(e) {
         }
     } catch (err) {
         toggleSubmitBtn();
-        if (err.response.status === 400) {
+        if (err.response?.status === 400) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = err.response.data;
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
 
-            if (err.response.data.toLowerCase().includes('еик')) {
+            if (err.response.data.toLowerCase().includes('ддс еик')) {
+                markInvalid('taxvat');
+            } else if (err.response.data.toLowerCase().includes('еик')) {
                 markInvalid('vat');
             }
 
@@ -106,12 +110,12 @@ async function createEditCompany(e) {
                 markInvalid('tax');
             }
         }
-        else if (err.response.status === 500) {
+        else if (err.response?.status === 500) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = 'Грешка в сървъра';
             console.error(err);
-        }
+        } else console.error(err)
     }
 }
 
@@ -144,14 +148,14 @@ export async function createEditCompanyPage(ctx, next) {
                 <div class="col-sm-4">
                     <label for="vat" class="form-label">ЕИК</label>
                     <div class="input-group">
-                        <input class="form-control border-primary" type="string" id="vat" name="vat" .value=${company && company.vat} placeholder="9 цифри" pattern="[0-9]{9}" inputmode="numeric" maxlength="9" required autocomplete="off">
+                        <input class="form-control border-primary" type="text" id="vat" name="vat" .value=${company && company.vat} placeholder="9 цифри" pattern="[0-9]{9}" inputmode="numeric" maxlength="9" required autocomplete="off">
                     </div>
                 </div>
 
                 <div class="col-sm-4">
                     <label for="taxvat" class="form-label">ДДС ЕИК</label>
                     <div class="input-group">
-                        <input class="form-control" type="string" id="taxvat" name="taxvat" .value=${company?.taxvat || ''} placeholder="пример: BG123..." autocomplete="off">
+                        <input class="form-control" type="text" id="taxvat" name="taxvat" .value=${company?.taxvat || ''} placeholder="пример: BG123..." autocomplete="off">
                     </div>
                 </div>
 

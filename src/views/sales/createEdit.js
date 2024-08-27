@@ -759,12 +759,12 @@ async function createEditSale() {
                 markInvalid('discount');
             }
         }
-        else if (err.response.status === 500) {
+        else if (err.response?.status === 500) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = 'Грешка в сървъра';
             console.error(err);
-        }
+        } else console.error(err)
     }
 }
 

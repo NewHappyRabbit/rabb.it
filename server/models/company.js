@@ -34,6 +34,11 @@ const companySchema = new Schema({
     },
     taxvat: { // example: BG123123123
         type: String,
+        required: false,
+        index: {
+            unique: true,
+            sparse: true
+        },
     },
     tax: {
         type: Number,

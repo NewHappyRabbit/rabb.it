@@ -6,5 +6,4 @@ package-lock.json
 server/logs/live.log
 server/ssl-certificates/dev-*
 .vscode/settings.json
-public.old
 public/urls.txt

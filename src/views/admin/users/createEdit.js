@@ -51,10 +51,10 @@ async function createEditUser(e) {
 
         if (req.status === 201) {
             toggleSubmitBtn();
-            if (!user) {
+            if (!user)
                 form.reset();
-                document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
-            }
+
+            document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
             alertEl.classList.remove('d-none', 'alert-danger');
@@ -84,12 +84,12 @@ async function createEditUser(e) {
                 markInvalid('discount');
             }
         }
-        else if (err.response.status === 500) {
+        else if (err.response?.status === 500) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = 'Грешка в сървъра';
             console.error(err);
-        }
+        } else console.error(err)
     }
 }
 

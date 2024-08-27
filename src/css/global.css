@@ -63,3 +63,9 @@ input[readonly] {
 		box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 	}
 }
+
+/* Fix border radius for buttons in input-groups */
+.input-group button.btn {
+	border-top-right-radius: var(--bs-border-radius) !important;
+	border-bottom-right-radius: var(--bs-border-radius) !important;
+}

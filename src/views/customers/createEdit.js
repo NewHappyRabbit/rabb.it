@@ -55,10 +55,9 @@ async function createEditCustomer(e) {
         if (req.status === 201) {
             toggleSubmitBtn();
 
-            if (!customer) {
+            if (!customer)
                 form.reset();
-                document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
-            }
+            document.querySelectorAll('input').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
 
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
@@ -76,7 +75,9 @@ async function createEditCustomer(e) {
             form.classList.remove('was-validated');
             form.classList.add('needs-validation');
 
-            if (err.response.data.toLowerCase().includes('еик')) {
+            if (err.response.data.toLowerCase().includes('ддс еик')) {
+                markInvalid('taxvat');
+            } else if (err.response.data.toLowerCase().includes('еик')) {
                 markInvalid('vat');
             }
 
@@ -88,12 +89,12 @@ async function createEditCustomer(e) {
                 markInvalid('discount');
             }
         }
-        else if (err.response.status === 500) {
+        else if (err.response?.status === 500) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = 'Грешка в сървъра';
             console.error(err);
-        }
+        } else console.error(err)
     }
 }
 
