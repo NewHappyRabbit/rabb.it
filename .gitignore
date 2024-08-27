@@ -1,9 +1,10 @@
 node_modules/
 .DS_Store
 .env
-public/images/*.jpeg
 package-lock.json
 server/logs/live.log
 server/ssl-certificates/dev-*
 .vscode/settings.json
 public/urls.txt
+public/images/*/*.jpeg
+public/images/*.jpeg
