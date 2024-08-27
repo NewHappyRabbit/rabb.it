@@ -113,7 +113,7 @@ export function categoriesRoutes() {
             }
 
             if (img) {
-                data.image = await uploadImg(img.buffer);
+                data.image = await uploadImg(img.buffer, 'categories');
 
                 // delete original image if it exists
                 if (currentCategory.image) {

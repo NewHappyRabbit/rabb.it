@@ -303,14 +303,14 @@ export function productsRoutes() {
 
             if (req.files.image) {
                 const mainImage = req.files.image[0].buffer;
-                data.image = await uploadImg(mainImage);
+                data.image = await uploadImg(mainImage, 'products');
 
 
                 if (req.files.additionalImages?.length > 0) {
                     const additionalImages = req.files.additionalImages.map(file => file.buffer);
                     var additionalImagesPaths = [];
                     for (const img of additionalImages)
-                        additionalImagesPaths.push(await uploadImg(img));
+                        additionalImagesPaths.push(await uploadImg(img, 'products'));
 
                     data.additionalImages = additionalImagesPaths;
                 } else data.additionalImages = [];
@@ -382,7 +382,7 @@ export function productsRoutes() {
             // Check if new image was uploaded
             if (req.files.image) {
                 const mainImage = req.files.image[0].buffer;
-                data.image = await uploadImg(mainImage);
+                data.image = await uploadImg(mainImage, 'products');
 
                 // delete original image if it exists
                 if (product.image) {
@@ -399,7 +399,7 @@ export function productsRoutes() {
                 const additionalImages = req.files.additionalImages.map(file => file.buffer);
                 var additionalImagesPaths = [];
                 for (const img of additionalImages)
-                    additionalImagesPaths.push(await uploadImg(img));
+                    additionalImagesPaths.push(await uploadImg(img, 'products'));
 
                 data.additionalImages = additionalImagesPaths;
 
