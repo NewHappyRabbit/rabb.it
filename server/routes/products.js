@@ -7,7 +7,7 @@ import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import multer from 'multer';
 import fs from 'fs';
-import { Sale } from "../models/sale.js";
+import { Order } from "../models/order.js";
 import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURLS, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { uploadImg } from "./common.js";
 
@@ -160,7 +160,7 @@ export function productsRoutes() {
 
     productsRouter.get('/products/all', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            // this route is used to get all products for sales page
+            // this route is used to get all products for orders page
             const products = await Product.find({ outOfStock: { $ne: true } }).select('name code barcode type sizes retailPrice wholesalePrice quantity minQty');
 
             res.json(products);
@@ -465,7 +465,7 @@ export function productsRoutes() {
 
             const wooId = product.wooId;
 
-            const inDocument = await Sale.findOne({ 'products.product': req.params.id });
+            const inDocument = await Order.findOne({ 'products.product': req.params.id });
             if (inDocument) {
                 product.deleted = true;
                 await product.save();

@@ -6,10 +6,10 @@ import { customersRoutes } from '@/views/customers/routes.js';
 import { productsRoutes } from '@/views/products/routes.js';
 import { categoriesRoutes } from '@/views/categories/routes.js';
 import { usersRoutes } from '@/views/admin/users/routes.js';
-import { salesRoutes } from '@/views/sales/routes.js';
+import { salesRoutes } from '@/views/orders/routes.js';
 import { settingsRoutes } from '@/views/admin/settings/routes.js';
 import { companiesRoutes } from '@/views/admin/companies/routes.js';
-import { referencesSalesRoutes } from '@/views/references/sales/routes.js';
+import { referencesSalesRoutes } from '@/views/references/orders/routes.js';
 import { toggleDarkMode, initSocket } from '@/api';
 import { printerSetup } from '@/printer';
 
@@ -24,9 +24,9 @@ function auth(ctx, next) {
 
 function keybinds(e) {
     if (!loggedInUser || e.ctrlKey === false) return;
-    if (e.code === 'Digit2') { // CTRL+2 - new sale page
+    if (e.code === 'Digit2') { // CTRL+2 - new order page
         e.preventDefault();
-        page('/sales/create');
+        page('/orders/create');
     } else if (e.code === 'Digit3') { // CTRL+3 - new product page
         e.preventDefault();
         page('/products/create')

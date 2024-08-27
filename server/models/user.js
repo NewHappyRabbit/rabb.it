@@ -11,20 +11,20 @@ export const userRoles = {
 //TODO DELETE BELOW, its purely for reference
 const rolePermissions = {
     user: {
-        sales: ['create', 'view', 'print'],
+        orders: ['create', 'view', 'print'],
         products: ['create', 'view', 'restock', 'print'],
         customers: ['create', 'view'],
         categories: ['view'],
     },
     manager: {
-        sales: ['create', 'view', 'print', 'edit'],
+        orders: ['create', 'view', 'print', 'edit'],
         products: ['create', 'view', 'restock', 'print', 'edit'],
         customers: ['create', 'view', 'edit'],
         categories: ['view', 'create', 'edit'],
         references: ['view']
     },
     admin: {
-        sales: ['create', 'view', 'print', 'edit', 'delete'],
+        orders: ['create', 'view', 'print', 'edit', 'delete'],
         products: ['create', 'view', 'restock', 'print', 'edit', 'delete'],
         customers: ['create', 'view', 'edit', 'delete'],
         categories: ['view', 'create', 'edit', 'delete'],

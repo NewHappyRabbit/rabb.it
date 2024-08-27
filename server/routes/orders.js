@@ -1,14 +1,14 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Sale, documentTypes, paymentTypes, saleTypes } from "../models/sale.js";
+import { Order, documentTypes, paymentTypes, orderTypes } from "../models/order.js";
 import { Product } from "../models/product.js";
 import { Company } from "../models/company.js";
 import { Customer } from "../models/customer.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 
-async function validateSale(data) {
+async function validateOrder(data) {
     if (!data.date)
         return { status: 400, error: 'Въведете дата' };
 
@@ -23,7 +23,7 @@ async function validateSale(data) {
     if (!existingCustomer)
         return { status: 400, error: 'Клиентът не съществува' };
 
-    if (!data.saleType || Object.keys(saleTypes).indexOf(data.saleType) === -1)
+    if (!data.orderType || Object.keys(orderTypes).indexOf(data.orderType) === -1)
         return { status: 400, error: 'Въведете тип на продажбата' };
 
     if (!data.products || data.products.length === 0)
@@ -79,13 +79,13 @@ async function validateSale(data) {
         return { status: 400, error: 'Въведете изпращач' };
 }
 
-export function salesRoutes() {
-    const salesRouter = express.Router();
+export function ordersRoutes() {
+    const ordersRouter = express.Router();
 
-    salesRouter.get('/sales/params', permit('user', 'manager', 'admin'), async (req, res) => {
+    ordersRouter.get('/orders/params', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             var data = {
-                saleTypes,
+                orderTypes,
                 paymentTypes,
                 documentTypes
             };
@@ -97,13 +97,13 @@ export function salesRoutes() {
         }
     });
 
-    salesRouter.get('/sales', permit('user', 'manager', 'admin'), async (req, res) => {
+    ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             let query = {
                 $and: [{ deleted: { $ne: true } }]
             };
 
-            const { cursor, from, to, type, saleType, customer, company, paymentType, unpaid, number } = req.query;
+            const { cursor, from, to, type, orderType, customer, company, paymentType, unpaid, number } = req.query;
             var prevCursor = null;
             var nextCursor = null;
             var limit = 15;
@@ -118,7 +118,7 @@ export function salesRoutes() {
 
             type && query.$and.push({ type });
 
-            saleType && query.$and.push({ saleType });
+            orderType && query.$and.push({ orderType });
 
             paymentType && query.$and.push({ paymentType });
 
@@ -134,14 +134,14 @@ export function salesRoutes() {
                 query.$and.push({ 'company': comp._id });
             }
 
-            const sales = await Sale.find(query).limit(limit).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
+            const orders = await Order.find(query).limit(limit).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
 
-            if (!sales || sales.length === 0)
-                return res.json({ sales: [], prevCursor, nextCursor });
+            if (!orders || orders.length === 0)
+                return res.json({ orders: [], prevCursor, nextCursor });
 
-            // get next sale to generate cursor for traversing
-            if (sales.length === limit)
-                nextCursor = sales[sales.length - 1]._id;
+            // get next order to generate cursor for traversing
+            if (orders.length === limit)
+                nextCursor = orders[orders.length - 1]._id;
 
             if (cursor) {
                 const prevQuery = query;
@@ -149,36 +149,36 @@ export function salesRoutes() {
                     if (q._id) q._id = { $gt: cursor };
                 })
 
-                const prevSales = await Sale.find(query).sort({ _id: -1 });
-                prevCursor = prevSales[prevSales.length - limit + 1]?._id || null;
+                const prevOrders = await Order.find(query).sort({ _id: -1 });
+                prevCursor = prevOrders[prevOrders.length - limit + 1]?._id || null;
             }
 
-            res.json({ sales, prevCursor, nextCursor });
+            res.json({ orders, prevCursor, nextCursor });
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    salesRouter.get('/sales/:id', permit('user', 'manager', 'admin'), async (req, res) => {
+    ordersRouter.get('/orders/:id', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const sale = await Sale.findById(req.params.id).populate('products.product customer company');
+            const order = await Order.findById(req.params.id).populate('products.product customer company');
 
-            if (!sale)
+            if (!order)
                 return res.status(404).send('Продажбата не е намерена');
 
-            res.json(sale);
+            res.json(order);
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    salesRouter.post('/sales', permit('user', 'manager', 'admin'), async (req, res) => {
+    ordersRouter.post('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const data = { ...req.body };
 
-            const validation = await validateSale(data);
+            const validation = await validateOrder(data);
 
             if (validation)
                 return res.status(validation.status).send(validation.error);
@@ -216,7 +216,7 @@ export function salesRoutes() {
                 if (product.product) {
                     const existingProduct = await Product.findById(product.product);
 
-                    if (data.saleType === 'wholesale') {
+                    if (data.orderType === 'wholeorder') {
                         if (existingProduct.quantity < product.quantity) // check if there are enough quantity
                             return res.status(400).send(`Няма достатъчно пакети от продукта: ${existingProduct.name} [${existingProduct.code}]`);
 
@@ -274,35 +274,35 @@ export function salesRoutes() {
 
             data.number = seq.seq;
 
-            const saleId = await new Sale(data).save();
+            const orderId = await new Order(data).save();
 
             WooUpdateQuantityProducts(doneProducts);
 
-            const saleData = await Sale.findById(saleId).populate('customer company products.product');
-            res.status(201).json(saleData);
-            req.log.info(saleData, 'New sale created');
+            const orderData = await Order.findById(orderId).populate('customer company products.product');
+            res.status(201).json(orderData);
+            req.log.info(orderData, 'New order created');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    salesRouter.put('/sales/:id', permit('manager', 'admin'), async (req, res) => {
+    ordersRouter.put('/orders/:id', permit('manager', 'admin'), async (req, res) => {
         try {
             const data = req.body
 
-            const validation = await validateSale(data);
+            const validation = await validateOrder(data);
 
             if (validation)
                 return res.status(validation.status).send(validation.error);
 
             const id = req.params.id;
-            const sale = await Sale.findById(id);
-            if (!sale)
+            const order = await Order.findById(id);
+            if (!order)
                 return res.status(404).send('Документът не е намерен');
 
             // Check if sender and receiver were changed
-            if (data.sender !== sale.sender) {
+            if (data.sender !== order.sender) {
                 const company = await Company.findById(data.company);
 
                 if (!company)
@@ -316,7 +316,7 @@ export function salesRoutes() {
                 await company.save();
             }
 
-            if (data.receiver !== sale.receiver) {
+            if (data.receiver !== order.receiver) {
                 const customer = await Customer.findById(data.customer);
 
                 if (!customer)
@@ -342,9 +342,9 @@ export function salesRoutes() {
 
                 if (product.product) { // If product in db
                     const existingProduct = await Product.findById(product.product);
-                    const qtyDiff = product.quantity - (sale.products.find(p => p.product == product.product)?.quantity || 0);
+                    const qtyDiff = product.quantity - (order.products.find(p => p.product == product.product)?.quantity || 0);
 
-                    if (sale.saleType === 'wholesale') {
+                    if (order.orderType === 'wholeorder') {
                         // if qty was added
                         if (qtyDiff > 0) {
                             if (existingProduct.quantity < qtyDiff) // check if there are enough quantity
@@ -372,7 +372,7 @@ export function salesRoutes() {
                             existingProduct.outOfStock = false;
 
                         }
-                    } else if (sale.saleType === 'retail') {
+                    } else if (order.orderType === 'retail') {
                         if (qtyDiff > 0) {
                             if (product.size && existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < qtyDiff) // check if there are enough quantity of size
                                 return res.status(400).send(`Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]`);
@@ -415,14 +415,14 @@ export function salesRoutes() {
             doneProducts.forEach(async product => await product.save());
             doneProducts = [];
             // Check if any products were completely removed
-            sale.products.forEach(async product => {
+            order.products.forEach(async product => {
                 // if product is in db
                 if (product.product && !data.products.find(p => p.product == product.product)) {
                     // Check if product already in doneProducts
                     const found = doneProducts.find(p => p._id == product._id);
 
                     const existingProduct = found || await Product.findById(product.product);
-                    if (sale.saleType === 'wholesale') {
+                    if (order.orderType === 'wholeorder') {
                         //return quantity to quantity
                         existingProduct.quantity += product.quantity; // to quantity
                         if (existingProduct.sizes.length > 0)
@@ -431,7 +431,7 @@ export function salesRoutes() {
                             });
 
                         existingProduct.outOfStock = false;
-                    } else if (sale.saleType === 'retail') {
+                    } else if (order.orderType === 'retail') {
                         if (existingProduct.sizes.length > 0) { // variable, return size
                             existingProduct.sizes.filter(size => size.size === product.size)[0].quantity += product.quantity; // to size
 
@@ -456,7 +456,7 @@ export function salesRoutes() {
             data.unpaid = (data.paidAmount || 0).toFixed(2) < total.toFixed(2);
 
             // Check if company or document type was changed and change document number
-            if (data.company !== sale.company.toString() || data.type !== sale.type) {
+            if (data.company !== order.company.toString() || data.type !== order.type) {
                 var seq = await AutoIncrement.findOneAndUpdate({ name: data.type, company: data.company }, { $inc: { seq: 1 } }, { new: true }).select('seq');
 
                 if (!seq)
@@ -465,28 +465,28 @@ export function salesRoutes() {
                 data.number = seq.seq;
             }
 
-            await Sale.findByIdAndUpdate(id, data);
+            await Order.findByIdAndUpdate(id, data);
 
-            const saleData = await Sale.findById(id).populate('customer company products.product');
-            res.status(201).json(saleData);
-            req.log.info(saleData, 'Sale updated');
+            const orderData = await Order.findById(id).populate('customer company products.product');
+            res.status(201).json(orderData);
+            req.log.info(orderData, 'Order updated');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    salesRouter.delete('/sales/:id', permit('admin'), async (req, res) => {
+    ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
             const id = req.params.id;
-            const sale = await Sale.findById(id);
+            const order = await Order.findById(id);
 
-            if (!sale)
+            if (!order)
                 return res.status(404).send('Документът не е намерен');
 
             // Return quantity to products
-            sale.products.forEach(async product => {
-                if (sale.saleType === 'wholesale' && product.product) {
+            order.products.forEach(async product => {
+                if (order.orderType === 'wholeorder' && product.product) {
                     const existingProduct = await Product.findById(product.product);
                     if (existingProduct.sizes.length > 0) {
                         existingProduct.sizes.forEach(size => { // to each size
@@ -501,7 +501,7 @@ export function salesRoutes() {
 
                     existingProduct.outOfStock = false;
                     await existingProduct.save();
-                } else if (sale.saleType === 'retail' && product.product) {
+                } else if (order.orderType === 'retail' && product.product) {
                     const existingProduct = await Product.findById(product.product);
 
                     if (existingProduct.sizes.length > 0) {
@@ -518,16 +518,16 @@ export function salesRoutes() {
                 }
             });
 
-            sale.deleted = true;
-            await sale.save();
+            order.deleted = true;
+            await order.save();
 
             res.status(204).send();
-            req.log.info(sale, 'Sale deleted');
+            req.log.info(order, 'Order deleted');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    app.use(basePath, salesRouter);
+    app.use(basePath, ordersRouter);
 }

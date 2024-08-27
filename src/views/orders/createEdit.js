@@ -9,23 +9,23 @@ import Quagga from 'quagga';
 import page from 'page';
 import { numberToBGText } from "@/api";
 
-var sale, params, companies, documentType, saleType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], editPage = false;
+var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], editPage = false;
 const defaultDocumentType = 'stokova';
 
-function changeSaleType(e) {
-    saleType = e.target.value;
+function changeOrderType(e) {
+    orderType = e.target.value;
 
     // recalculate price for every added product
     addedProducts.forEach(product => {
         if (product.product) {
-            product.price = saleType === 'wholesale' ? product.product.wholesalePrice : product.product.retailPrice;
+            product.price = orderType === 'wholesale' ? product.product.wholesalePrice : product.product.retailPrice;
         }
     })
     rerenderTable();
 }
 
 function rerenderTable() {
-    saleType === 'wholesale' ? render(wholesaleProductsTable(addedProducts), document.getElementById('table')) : render(retailProductsTable(addedProducts), document.getElementById('table'));
+    orderType === 'wholesale' ? render(wholesaleProductsTable(addedProducts), document.getElementById('table')) : render(retailProductsTable(addedProducts), document.getElementById('table'));
 
     documentType = document.getElementById('type').value;
 
@@ -72,15 +72,15 @@ const topRow = (params, customers) => html`
     <div class="row align-items-end g-3">
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
-            <input @change=${selectCustomer} .value=${sale ? `${sale.customer.name} [${sale.customer.vat}] ${sale.customer.phone ? `(${sale.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} required>
+            <input @change=${selectCustomer} .value=${order ? `${order.customer.name} [${order.customer.vat}] ${order.customer.phone ? `(${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
             <datalist id="customersList">
                 ${customers && customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}] ${customer.phone ? `(${customer.phone})` : ''}`}></option>`)};
             </datalist>
         </div>
         <div class="col-6 col-sm">
             <label for="type" class="form-label">Тип на документ:</label>
-            <select name="type" @change=${rerenderTable} id="type" class="form-control" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}>
-                ${Object.entries(params.documentTypes).map(type => html`<option ?selected=${(sale && type[0] == sale.type) || (!sale && type[0] === defaultDocumentType)} value=${type[0]}>${type[1]}</option>`)}
+            <select name="type" @change=${rerenderTable} id="type" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
+                ${Object.entries(params.documentTypes).map(type => html`<option ?selected=${(order && type[0] == order.type) || (!order && type[0] === defaultDocumentType)} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
         <div class="col-6 col-sm">
@@ -89,23 +89,23 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="number" class="form-label">Документ номер:</label>
-            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" value=${sale && sale.number} disabled placeholder="Автоматично">
+            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" value=${order && order.number} disabled placeholder="Автоматично">
         </div>
         <div class="col-6 col-sm">
-            <label for="saleType" class="form-label">Тип на продажба:</label>
-            <select ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} @change=${changeSaleType} name="saleType" id="saleType" class="form-control" required>
-                ${Object.entries(params.saleTypes).map(type => html`<option ?selected=${sale && type[0] == sale.saleType} value=${type[0]}>${type[1]}</option>`)}
+            <label for="orderType" class="form-label">Тип на продажба:</label>
+            <select ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} @change=${changeOrderType} name="orderType" id="orderType" class="form-control" required>
+                ${Object.entries(params.orderTypes).map(type => html`<option ?selected=${order && type[0] == order.orderType} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
         <div class="col-6 col-sm">
-            <button @click=${setDiscount} type="button" class="btn btn-secondary" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}>Задай обща отстъпка</button>
+            <button @click=${setDiscount} type="button" class="btn btn-secondary" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>Задай обща отстъпка</button>
         </div>
     </div>
 `;
 
 const senderTemplate = () => html`
     <label for="sender" class="form-label">Предал:</label>
-    <input list="sendersList" class="form-control" name="sender" id="sender" type="text" .value=${sale?.sender || selectedCompany?.senders?.slice(-1)[0] || ''} ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} autocomplete="off" required/>
+    <input list="sendersList" class="form-control" name="sender" id="sender" type="text" .value=${order?.sender || selectedCompany?.senders?.slice(-1)[0] || ''} ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} autocomplete="off" required/>
     <datalist id="sendersList">
         ${selectedCompany && selectedCompany?.senders?.map(sender => html`<option value=${sender}></option>`)}
     </datalist>
@@ -113,7 +113,7 @@ const senderTemplate = () => html`
 
 const receiverTemplate = (receivers) => html`
     <label for="receiver" class="form-label">Получил:</label>
-    <input list="receiversList" class="form-control" name="receiver" id="receiver" type="text" .value=${sale?.receiver || receivers?.slice(-1)[0] || ''} autocomplete="off" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} required/>
+    <input list="receiversList" class="form-control" name="receiver" id="receiver" type="text" .value=${order?.receiver || receivers?.slice(-1)[0] || ''} autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required/>
     <datalist id="receiversList">
         ${receivers?.map(receiver => html`<option value=${receiver}></option>`)}
     </datalist>
@@ -122,8 +122,8 @@ const receiverTemplate = (receivers) => html`
 const bottomRow = (params, companies) => html`
     <div class="col-6 col-sm">
         <label for="company" class="form-label">Обект:</label>
-        <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} required>
-            ${companies && companies.map(company => html`<option ?selected=${sale && company._id == sale.company._id} value=${company._id}>${company.name}</option>`)}
+        <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+            ${companies && companies.map(company => html`<option ?selected=${order && company._id == order.company._id} value=${company._id}>${company.name}</option>`)}
         </select>
     </div>
 
@@ -133,14 +133,14 @@ const bottomRow = (params, companies) => html`
 
     <div class="col-6 col-sm">
         <label for="paymentType" class="form-label">Начин на плащане:</label>
-        <select name="paymentType" id="paymentType" class="form-control" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} required>
-            ${Object.entries(params.paymentTypes).map(type => html`<option ?selected=${sale && type[0] == sale.paymentType} value=${type[0]}>${type[1]}</option>`)}
+        <select name="paymentType" id="paymentType" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+            ${Object.entries(params.paymentTypes).map(type => html`<option ?selected=${order && type[0] == order.paymentType} value=${type[0]}>${type[1]}</option>`)}
         </select>
     </div>
 
     <div class="col-12 col-sm">
         <label for="paidAmount" class="form-label">Платена сума:</label>
-        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${sale ? sale.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/>
+        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
     </div>
 
     ${documentType === 'invoice' ? html`
@@ -162,7 +162,7 @@ const bottomRow = (params, companies) => html`
 
     <div class="col-12 col-sm text-center">
         <div >Общо: <span id="total"></span></div>
-        ${submitBtn({ func: createEditSale, text: "Запази и принтирай", type: "button" })}
+        ${submitBtn({ func: createEditOrder, text: "Запази и принтирай", type: "button" })}
     </div>
 `;
 
@@ -171,7 +171,7 @@ function updateQuantity(e) {
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
 
-    if (saleType === 'wholesale') {
+    if (orderType === 'wholesale') {
         if (editPage)
             addedProducts[arrayIndex].quantity = e.target.value;
         else if (+e.target.value > +e.target.max) {
@@ -180,7 +180,7 @@ function updateQuantity(e) {
         }
         else
             addedProducts[arrayIndex].quantity = e.target.value;
-    } else if (saleType === 'retail') {
+    } else if (orderType === 'retail') {
         if (editPage) {
             addedProducts[arrayIndex].quantity = e.target.value;
         }
@@ -277,27 +277,27 @@ const wholesaleProductsTable = (products) => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
                     ${product.product ? html`<td>${product.product.sizes.length ? product.product.sizes.length + ' бр.' : ''}</td>` :
-        html`<td><input @change = ${updateQtyInPackage} name = "qtyInPackage" class= "form-control".value = ${product.qtyInPackage || ""} type = "number" step = "1" min = "0" inputmode = "numeric" ? disabled = ${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
+        html`<td><input @change = ${updateQtyInPackage} name = "qtyInPackage" class= "form-control".value = ${product.qtyInPackage || ""} type = "number" step = "1" min = "0" inputmode = "numeric" ? disabled = ${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
                     <td>${product.product && product.product.sizes.length ? formatPrice(product.price / product.product.sizes.length) : ''}
 
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             <span class="input-group-text" id="basic-addon2">/${product?.product?.quantity || '0'}</span>
                         </div>
                     </td>
 
-                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
-                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
                     <td style="text-align: end">
-                        ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
+                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>
                 `)}
                 
-            ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
+            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
 `;
@@ -323,24 +323,24 @@ const wholesaleProductsTable = (products) => html`
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             <span class="input-group-text" id="basic-addon2">/${product?.product?.quantity || '0'}</span>
                         </div>
                     </td>
                     ${product.product ? html`
                             <td>${product.product.sizes.length || ''}</td>
                             <td>${product.product.sizes.map(size => size.size).join(', ')}</td>`
-        : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class="form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td><td></td>`
+        : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class="form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td><td></td>`
     }
-                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
                     <td>${product.product && product.product.sizes.length ? formatPrice(product.price / product.product.sizes.length) : ''}</td>
-                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
                     <td>
-                        ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
+                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>
             `)}
-            ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
+            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
 `; */
@@ -364,25 +364,25 @@ const retailProductsTable = (products) => html`
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
                     <td>
                         ${product.product && product.product.sizes.length ? html`
-                            <select @change=${updateSize} name="size" class="form-control" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}>
+                            <select @change=${updateSize} name="size" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
                                 <option ?selected=${!product?.size} disabled>Избери</option>
                                 ${product.product.sizes.map(size => html`<option value=${size.size} ?selected=${size.size === product.size} ?disabled=${size.quantity < 1}>${size.size}</option>`)}
-                            </select>` : product.product ? '' : html`<input @change=${updateSize} name="size" class="form-control" type="text" .value=${product?.size || ''} ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)} />`}
+                            </select>` : product.product ? '' : html`<input @change=${updateSize} name="size" class="form-control" type="text" .value=${product?.size || ''} ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} />`}
                     </td>
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && (product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || '')}  required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!editPage && (product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || '')}  required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             <span class="input-group-text" id="basic-addon2">/${product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || ''}</span>
                         </div >
                     </td >
-                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${sale && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
                     <td>
-                        ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
+                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr >
     `)}
-            ${sale && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
+            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
 `;
@@ -464,7 +464,7 @@ function addProduct(e) {
     if ((e.ctrlKey && e.key === 'v' || e.code === 'MetaLeft') || e.code === 'Enter' || e.code === 'NumpadEnter') {
         var product, quantity = 1;
 
-        if (saleType === 'wholesale') {
+        if (orderType === 'wholesale') {
             // check if quantity was entered
             if (e.target.value.split('*').length === 1)
                 product = e.target.value;
@@ -493,7 +493,7 @@ function addProduct(e) {
                         index: addedProductsIndex++,
                         product: productInDB,
                         quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
-                        price: saleType === 'wholesale' ? productInDB.wholesalePrice : productInDB.retailPrice,
+                        price: orderType === 'wholesale' ? productInDB.wholesalePrice : productInDB.retailPrice,
                         discount: selectedCustomer?.discount || 0
                     });
             } else
@@ -505,7 +505,7 @@ function addProduct(e) {
                     qtyInPackage: 0,
                     discount: selectedCustomer?.discount || 0
                 });
-        } else if (saleType === 'retail') {
+        } else if (orderType === 'retail') {
             product = e.target.value;
             // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
             const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
@@ -549,7 +549,7 @@ function addProduct(e) {
     }
 }
 
-function validateSale(data) {
+function validateOrder(data) {
     var invalidFlag = false;
 
     if (!data.customer) {
@@ -567,10 +567,10 @@ function validateSale(data) {
         invalidFlag = true;
     } else markValid('date');
 
-    if (!data.saleType) {
-        markInvalid('saleType');
+    if (!data.orderType) {
+        markInvalid('orderType');
         invalidFlag = true;
-    } else markValid('saleType');
+    } else markValid('orderType');
 
     if (!data.paymentType) {
         markInvalid('paymentType');
@@ -606,14 +606,14 @@ function validateSale(data) {
         if (!product.name && !product.product)
             invalidFlag = true;
 
-        if (product.name && saleType === 'wholesale') {
+        if (product.name && orderType === 'wholesale') {
             if (product.qtyInPackage < 0) {
                 markInvalidEl(row.querySelector('input[name="qtyInPackage"]'));
                 invalidFlag = true;
             } else markValidEl(row.querySelector('input[name="qtyInPackage"]'));
         }
 
-        if (product.product && saleType === 'retail') {
+        if (product.product && orderType === 'retail') {
             const sizeEl = row.querySelector('select[name="size"]');
 
             if (sizeEl && !product.size) {
@@ -622,7 +622,7 @@ function validateSale(data) {
             } else if (sizeEl && product.size) markValidEl(sizeEl);
         }
 
-        if (product.name && saleType === 'retail') {
+        if (product.name && orderType === 'retail') {
             if (!product.quantity || product.quantity < 1) {
                 markInvalidEl(row.querySelector('input[name="quantity"]'));
                 invalidFlag = true;
@@ -648,9 +648,9 @@ function validateSale(data) {
     return invalidFlag;
 }
 
-async function createEditSale() {
-    if (sale && !['manager', 'admin'].includes(loggedInUser.role)) // normal user editing, just print because they cant edit anything
-        return printSale(sale);
+async function createEditOrder() {
+    if (order && !['manager', 'admin'].includes(loggedInUser.role)) // normal user editing, just print because they cant edit anything
+        return printSale(order);
 
     toggleSubmitBtn();
 
@@ -661,7 +661,7 @@ async function createEditSale() {
     var filteredProducts = [];
 
     // transform addedProducts to the type used in backend
-    if (saleType === 'wholesale') {
+    if (orderType === 'wholesale') {
         addedProducts.forEach(product => {
             if (product.product)
                 filteredProducts.push({
@@ -681,7 +681,7 @@ async function createEditSale() {
                     discount: product.discount
                 });
         });
-    } else if (saleType === 'retail') {
+    } else if (orderType === 'retail') {
         addedProducts.forEach(product => {
             if (product.product)
                 filteredProducts.push({
@@ -708,7 +708,7 @@ async function createEditSale() {
         date: document.getElementById('date').value,
         type: documentType,
         customer: selectedCustomer?._id,
-        saleType: saleType,
+        orderType: orderType,
         products: filteredProducts,
         paymentType: document.getElementById('paymentType').value,
         paidAmount: +(formData.get('paidAmount').replace(',', '.')),
@@ -717,7 +717,7 @@ async function createEditSale() {
         sender: document.getElementById('sender').value
     }
 
-    const invalidData = validateSale(data);
+    const invalidData = validateOrder(data);
 
     if (invalidData) {
         form.classList.remove('was-validated');
@@ -726,16 +726,16 @@ async function createEditSale() {
 
     const alertEl = document.getElementById('alert');
     try {
-        const req = sale ? await axios.put(`/sales/${sale._id}`, data) : await axios.post('/sales', data);
+        const req = order ? await axios.put(`/orders/${order._id}`, data) : await axios.post('/orders', data);
 
         if (req.status === 201) {
             toggleSubmitBtn();
             alertEl.classList.add('d-none');
-            document.getElementById('saleType').disabled = true;
+            document.getElementById('orderType').disabled = true;
             document.getElementById('number').value = req.data.number;
             printSale(req.data);
-            // after printing, go to edit page of same sale
-            page(`/sales/${req.data._id}`);
+            // after printing, go to edit page of same order
+            page(`/orders/${req.data._id}`);
         }
     } catch (err) {
         toggleSubmitBtn();
@@ -813,7 +813,7 @@ const printContainer = (data, param) => html`
                 <div>Телефон: ${data.company?.phone || ''}</div>
             </div>
 
-            ${data.saleType === 'wholesale' ? printTableWholesale(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type) : printTableRetail(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type)}
+            ${data.orderType === 'wholesale' ? printTableWholesale(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type) : printTableRetail(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type)}
             <div style="font-size: 1rem">
                 Словом: ${numberToBGText(data.total)}
             </div>
@@ -920,7 +920,7 @@ const template = (params, customers) => html`
 
 export async function createEditSalePage(ctx, next) {
     try {
-        params = (await axios.get('/sales/params')).data;
+        params = (await axios.get('/orders/params')).data;
         companies = (await axios.get('/companies')).data;
         customers = (await axios.get('/customers/forSales')).data;
         products = (await axios.get('/products/all')).data;
@@ -928,17 +928,17 @@ export async function createEditSalePage(ctx, next) {
 
         if (ctx.params.id) {
             editPage = true;
-            const req = await axios.get(`/sales/${ctx.params.id}`);
-            sale = req.data;
-            saleType = sale.saleType;
-            addedProducts = sale.products;
+            const req = await axios.get(`/orders/${ctx.params.id}`);
+            order = req.data;
+            orderType = order.orderType;
+            addedProducts = order.products;
             addedProducts.map(product => product.index = addedProductsIndex++);
-            selectedCustomer = sale.customer;
-            selectedCompany = companies.filter(c => c._id === sale.company)[0];
+            selectedCustomer = order.customer;
+            selectedCompany = companies.filter(c => c._id === order.company)[0];
         } else {
             editPage = false;
-            sale = undefined;
-            saleType = 'wholesale';
+            order = undefined;
+            orderType = 'wholesale';
             addedProducts = [];
             selectedCompany = companies[0];
         }
@@ -949,7 +949,7 @@ export async function createEditSalePage(ctx, next) {
         render(receiverTemplate(), document.getElementById('receiverDiv'));
 
         // Set date in field
-        document.getElementById('date').valueAsDate = sale ? new Date(sale.date) : new Date();
+        document.getElementById('date').valueAsDate = order ? new Date(order.date) : new Date();
 
         // Add listener for barcode scanner
         const barcodeInput = document.getElementById('product');

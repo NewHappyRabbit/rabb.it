@@ -6,27 +6,27 @@ import axios from "axios";
 import { until } from "lit/directives/until.js";
 import { spinner } from "@/views/components";
 import page from 'page';
-import { loggedInUser } from "@/views/login.js";
+import { loggedInUser } from "@/views/login";
 
-var selectedSale, pageCtx, path, params, selectedFilters = {};
+var pageCtx, path, params, selectedFilters = {};
 var temp;
 
 function switchPage(cursor) {
     const query = pageCtx.querystring;
 
     if (query.length === 0)
-        page('/sales/?cursor=' + cursor);
+        page('/references/orders/?cursor=' + cursor);
     else if (query.includes('cursor')) {
         // replace cursor value in query
         const newQuery = query.split('&').map(q => q.includes('cursor') ? 'cursor=' + cursor : q).join('&');
-        page('/sales/?' + newQuery);
+        page('/references/orders/?' + newQuery);
     } else {
         // add cursor to query
-        page('/sales/?' + query + '&cursor=' + cursor);
+        page('/references/orders/?' + query + '&cursor=' + cursor);
     }
 }
 
-const table = (sales, prevCursor, nextCursor) => html`
+const table = (orders, prevCursor, nextCursor) => html`
     <div class="table-responsive">
         <table class="mt-3 table table-striped table-hover text-center">
             <thead>
@@ -35,31 +35,38 @@ const table = (sales, prevCursor, nextCursor) => html`
                     <th scope="col">Номер</th>
                     <th scope="col">Партньор</th>
                     <th scope="col">Обект</th>
+                    <th scope="col">Потребител</th>
                     <th scope="col">Дата</th>
-                    <th scope="col">Стойност</th>
+                    <th scope="col">Артикул</th>
+                    <th scope="col">Цена</th>
+                    <th scope="col">Пакети/Бройки</th>
+                    <th scope="col">Бройки в пакет/Размер</th>
+                    <th scope="col">Отстъпка %</th>
+                    <th scope="col">Сума</th>
                     <th scope="col">Начин на плащане</th>
                     <th scope="col">Тип на продажба</th>
-                    <th scope="col">Задължения</th>
-                    <th scope="col">Действия</th>
                 </tr>
             </thead>
             <tbody>
-                ${sales?.map(sale => html`
-                    <tr class=${sale.unpaid === true ? "table-danger" : ""}>
-                        <td>${params.documentTypes[sale.type]}</td>
-                        <td>${sale.number}</td>
-                        <td>${sale.customer.name}</td>
-                        <td>${sale.company.name}</td>
-                        <td>${new Date(sale.date).toLocaleDateString('bg')}</td>
-                        <td>${formatPrice(sale.total)}</td>
-                        <td>${params.paymentTypes[sale.paymentType]}</td>
-                        <td>${params.saleTypes[sale.saleType]}</td>
-                        <td>${sale.unpaid === true ? formatPrice(sale.total - sale.paidAmount) : ""}</td>
-                        <td>
-                            <a href="/sales/${sale._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</a>
-                            ${loggedInUser.role === 'admin' ? html`<button @click=${() => selectedSale = sale._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
-                        </td>
+                ${orders?.map(order => html`
+                    ${order.products.map(product => html`
+                    <tr>
+                        <td>${params.documentTypes[order.type]}</td>
+                        <td>${order.number}</td>
+                        <td>${order.customer.name}</td>
+                        <td>${order.company.name}</td>
+                        <td>${order.user.username}</td>
+                        <td>${new Date(order.date).toLocaleDateString('bg')}</td>
+                        <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
+                        <td>${formatPrice(product.price)}</td>
+                        <td>${product.quantity}</td>
+                        <td>${product?.qtyInPackage || product?.size || (product?.product?.sizes && Object.keys(product.product.sizes).length) || ''}</td>
+                        <td>${product?.discount}</td>
+                        <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+                        <td>${params.paymentTypes[order.paymentType]}</td>
+                        <td>${params.orderTypes[order.orderType]}</td>
                     </tr>
+                    `)}
                 `)}
             </tbody>
         </table>
@@ -82,41 +89,62 @@ async function applyFilters(e) {
     if (data.company)
         data.company = data.company.split('[')[1].split(']')[0];
 
-    if (data.unpaid)
-        data.unpaid = true;
+    if (data.user)
+        data.user = data.user.split('[')[1].split(']')[0];
+
+    if (data.product)
+        data.product = data.product.split('[')[1].split(']')[0];
 
     // remove empty fields
     Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
 
     if (data.length === 0)
-        page('/sales')
+        page('/references/orders')
     else if (data.length === 1)
-        page(`/sales?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
+        page(`/references/orders?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
     else {
         const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
-        page(`/sales?${uri}`);
+        page(`/references/orders?${uri}`);
     }
 }
 
-const filters = (customers, companies, params) => html`
+const filters = (customers, companies, users, products, params) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
             <div class="col-6 col-sm">
-                <label for="customer">Партньор:</label>
-                <input .value=${(temp = customers.filter(c => c.vat === selectedFilters?.customer)[0]) ? `${temp.name} [${temp.vat}] ${temp.phone ? `(${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
-                <datalist id="customersList">
-                    ${customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}] ${customer.phone ? `(${customer.phone})` : ''}`}>`)}
+                <label for="product">Продукт:</label>
+                <input .value=${(temp = products.filter(c => c.code === selectedFilters?.product)[0]) ? `${temp.name} [${temp.code}]` : ''} list="productsList" placeholder="Име/код" name="product" id="product" class="form-control" autocomplete="off">
+                <datalist id="productsList">
+                    ${products.map(product => html`<option value=${`${product.name} [${product.code}]`}>`)}
                 </datalist>
             </div>
             <div class="col-6 col-sm">
-                <label for="company">Обект:</label>
+                <label for="customer">Партньор:</label>
+                <input .value=${(temp = customers.filter(c => c.vat === selectedFilters?.customer)[0]) ? `${temp.name} [${temp.vat}]` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
+                <datalist id="customersList">
+                    ${customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}]`}>`)}
+                </datalist>
+            </div>
+            <div class="col-6 col-sm">
+                <label for="company">Издадена от фирма:</label>
                 <input .value=${(temp = companies.filter(c => c.vat === selectedFilters?.company)[0]) ? `${temp.name} [${temp.vat}]` : ''} list="companiesList" placeholder="Всички" name="company" id="company" class="form-control" autocomplete="off">
                 <datalist id="companiesList">
                     ${companies.map(company => html`<option value=${`${company.name} [${company.vat}]`}>`)}
                 </datalist>
             </div>
             <div class="col-6 col-sm">
-                <label for="number" class="form-label">Номер на документ</label>
-                <input type="text" .value=${selectedFilters?.number || ''} id="number" name="number" class="form-control" autocomplete="off"/>
+                <label for="user">Издадена от потребител:</label>
+                <input .value=${(temp = users.filter(c => c._id === selectedFilters?.user)[0]) ? `${temp.username} [${temp._id}]` : ''} list="usersList" placeholder="Всички" name="user" id="user" class="form-control" autocomplete="off">
+                <datalist id="usersList">
+                    ${users.map(user => html`<option value=${`${user.username} [${user._id}]`}>`)}
+                </datalist>
+            </div>
+            <div class="col-6 col-sm">
+                <label class="form-label">Номер на документ</label>
+                <div class="d-flex gap-1 align-items-center">
+                    <input type="text" .value=${selectedFilters?.numberFrom || ''} id="numberFrom" name="numberFrom" class="form-control" autocomplete="off"/>
+                    <span>-</span>
+                    <input type="text" .value=${selectedFilters?.numberTo || ''} id="numberTo" name="numberTo" class="form-control" autocomplete="off"/>
+                </div>
             </div>
             <div class="col-6 col-sm">
                 <label for="type" class="form-label">Тип на документ:</label>
@@ -133,10 +161,10 @@ const filters = (customers, companies, params) => html`
                 </select>
             </div>
             <div class="col-6 col-sm">
-                <label for="saleType">Тип на продажба</label>
-                <select id="saleType" name="saleType" class="form-control">
+                <label for="orderType">Тип на продажба</label>
+                <select id="orderType" name="orderType" class="form-control">
                     <option value="" selected>Всички</option>
-                    ${Object.entries(params.saleTypes).map(type => html`<option ?selected=${selectedFilters?.saleType === type[0]} value=${type[0]}>${type[1]}</option>`)}
+                    ${Object.entries(params.orderTypes).map(type => html`<option ?selected=${selectedFilters?.orderType === type[0]} value=${type[0]}>${type[1]}</option>`)}
                 </select>
             </div>
             <div class="col-6 col-sm">
@@ -147,49 +175,35 @@ const filters = (customers, companies, params) => html`
                 <label for="to">До:</label>
                 <input type="date" id="to" .value=${selectedFilters?.to || ''} name="to" class="form-control">
             </div>
-            <div class="col-12 col-sm">
-                <div class="form-check form-switch p-0">
-                    <label class="form-check-label d-block" for="unpaid">Само неплатени:</label>
-                    <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="unpaid" ?checked=${selectedFilters?.unpaid} name="unpaid">
-                </div>
-            </div>
         </form>
 `;
 
-async function loadSales() {
+async function loadReferences() {
     try {
         const req = await axios.get(path)
-        const sales = req.data.sales;
+        const orders = req.data.orders;
         const prevCursor = req.data.prevCursor;
         const nextCursor = req.data.nextCursor;
 
-        params = (await axios.get('/sales/params')).data;
+        params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers/all')).data;
         const companies = (await axios.get('/companies')).data;
+        const users = (await axios.get('/users')).data;
+        const products = (await axios.get('/products/all')).data;
 
         return html`
-        ${filters(customers, companies, params)}
-        ${table(sales, prevCursor, nextCursor)}`
+        ${filters(customers, companies, users, products, params)}
+        ${table(orders, prevCursor, nextCursor)}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
     }
 }
 
-async function deleteSale() {
-    try {
-        const req = await axios.delete(`/sales/${selectedSale}`);
+export function referencesOrdersPage(ctx, next) {
+    if (loggedInUser.role !== 'admin')
+        return page('/');
 
-        if (req.status === 204) {
-            page('/sales');
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Възникна грешка');
-    }
-}
-
-export function salesPage(ctx, next) {
     path = ctx.path;
     pageCtx = ctx;
     temp = undefined;
@@ -200,31 +214,11 @@ export function salesPage(ctx, next) {
     else
         selectedFilters = {};
 
-    const cancelModal = () => html`
-    <div class="modal fade" id = "cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true" >
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="cancelModalLabel">Анулирай продажба</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Сигурни ли сте че искате да анулирате продажбата? Това ще върне всички продукти в склада.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
-                    <button @click=${deleteSale} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай</button>
-                </div>
-            </div>
-        </div>
-    </div>`;
-
     const template = () => html`
-        ${cancelModal()}
         ${nav()}
         <div class="container-fluid">
-            <a href='/sales/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продажба</a>
-            ${until(loadSales(), spinner)}
+            <button class="btn btn-primary text-end">Принтирай</button>
+            ${until(loadReferences(), spinner)}
         </div>
     `;
 

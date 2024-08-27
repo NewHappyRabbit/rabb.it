@@ -5,7 +5,7 @@ import { customersRoutes } from './customers.js';
 import { productsRoutes } from './products.js';
 import { usersRoutes } from "./users.js";
 import { settingsRoutes } from './settings.js';
-import { salesRoutes } from './sales.js';
+import { ordersRoutes } from './orders.js';
 import { companiesRoutes } from './companies.js';
 import { referencesSalesRoutes } from './references.js';
 import { rateLimit } from 'express-rate-limit'
@@ -34,7 +34,7 @@ export function loadRoutes() {
     productsRoutes();
     categoriesRoutes();
     settingsRoutes();
-    salesRoutes();
+    ordersRoutes();
     companiesRoutes();
     referencesSalesRoutes();
 

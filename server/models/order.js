@@ -18,7 +18,7 @@ export const paymentTypes = {
     other: 'Друго'
 }
 
-export const saleTypes = {
+export const orderTypes = {
     wholesale: 'Едро',
     retail: 'Дребно',
 }
@@ -43,11 +43,11 @@ const saleSchema = new Schema({
         ref: 'Customer',
         required: true
     },
-    saleType: {
+    orderType: {
         type: String,
-        enum: Object.keys(saleTypes),
+        enum: Object.keys(orderTypes),
         required: true,
-        default: Object.keys(saleTypes)[0]
+        default: Object.keys(orderTypes)[0]
     },
     products: [
         {
@@ -55,19 +55,19 @@ const saleSchema = new Schema({
                 type: Schema.Types.ObjectId,
                 ref: 'Product'
             },
-            name: String, // if product doesnt exist in db and is created on the fly in sales
+            name: String, // if product doesnt exist in db and is created on the fly in orders
             quantity: { // quantity or packages
                 type: Number,
                 required: true,
                 min: 1
             },
-            qtyInPackage: { // quantity in package (used when product doesnt exist in DB and is created on the fly in sales)
+            qtyInPackage: { // quantity in package (used when product doesnt exist in DB and is created on the fly in orders)
                 type: Number,
             },
-            size: {// if retail sale, size must be selected
+            size: {// if retail order, size must be selected
                 type: String,
                 required: function () {
-                    return this.saleType === 'retail';
+                    return this.orderType === 'retail';
                 }
             },
             price: { // price per package/quantity without discount
@@ -124,4 +124,4 @@ const saleSchema = new Schema({
     timestamps: true
 });
 
-export const Sale = mongoose.model('Sale', saleSchema);
+export const Order = mongoose.model('Order', saleSchema);

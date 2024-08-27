@@ -2,7 +2,7 @@ import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
 import { Company } from "../models/company.js";
-import { Sale } from "../models/sale.js";
+import { Order } from "../models/order.js";
 
 
 function validateCompany(data) {
@@ -69,7 +69,7 @@ export function companiesRoutes() {
             if (companies.length === 0)
                 data.default = true;
 
-            // Add MOL to senders so it autofills on first sale
+            // Add MOL to senders so it autofills on first order
             data.senders = [data.mol];
 
             const company = await new Company(data).save();
@@ -123,7 +123,7 @@ export function companiesRoutes() {
             if (!company)
                 return res.status(404).send('Фирмата не е намерена');
 
-            const hasDocuments = (await Sale.find({ company: company }).limit(1)).length > 0;
+            const hasDocuments = (await Order.find({ company: company }).limit(1)).length > 0;
 
             if (hasDocuments)
                 return res.status(400).send('Тази фирма има издадени документи и не може да бъде изтрита!');

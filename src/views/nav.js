@@ -35,7 +35,7 @@ export const nav = () => html`
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbar">
-                <ul class="navbar-nav g-3 text-center mb-lg-0">
+                <ul class="navbar-nav g-3 text-center mb-lg-0 align-items-end">
                     ${loggedInUser && loggedInUser.role === 'admin' ? html`<li class="nav-item dropdown">
                         <a class="nav-link link-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-shield-lock"></i> Админ</a>
                         <ul class="dropdown-menu dropdown-menu-md-end">
@@ -48,10 +48,10 @@ export const nav = () => html`
                         <a class="nav-link" href="/products"><i class="bi bi-box-seam"></i> Стоки</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/sales/create"><i class="bi bi-plus"></i> Създай продажба</a>
+                        <a class="nav-link" href="/orders/create"><i class="bi bi-plus"></i> Създай продажба</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/sales"><i class="bi bi-cart"></i> Продажби</a>
+                        <a class="nav-link" href="/orders"><i class="bi bi-cart"></i> Продажби</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/customers"><i class="bi bi-people"></i> Партньори</a>
@@ -62,7 +62,7 @@ export const nav = () => html`
                             <i class="bi bi-file-earmark-text"></i> Справки
                         </a>
                         <ul class="dropdown-menu dropdown-menu-md-end">
-                            <li><a class="dropdown-item" href="/references/sales"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
+                            <li><a class="dropdown-item" href="/references/orders"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
                         </ul>
                     </li>` : ''}
                     <li class="nav-item dropdown">

@@ -2,7 +2,7 @@ import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
 import { Customer } from "../models/customer.js";
-import { Sale } from "../models/sale.js";
+import { Order } from "../models/order.js";
 
 function validateCustomer(data) {
     const { name, mol, vat, address, discount } = data;
@@ -78,7 +78,7 @@ export function customersRoutes() {
 
     customersRouter.get('/customers/all', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            // This route is used for view sales page to get all customers
+            // This route is used for view orders page to get all customers
             const customers = await Customer.find({ deleted: { $ne: true } }).select('name vat phone');
             res.json(customers);
         } catch (error) {
@@ -89,7 +89,7 @@ export function customersRoutes() {
 
     customersRouter.get('/customers/forSales', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            // this route is used in create/edit sales page to get all customers
+            // this route is used in create/edit orders page to get all customers
             const customers = await Customer.find({ deleted: { $ne: true } }).select('name vat discount receivers phone');
             res.json(customers);
         } catch (error) {
@@ -128,7 +128,7 @@ export function customersRoutes() {
             if (existingTaxVat)
                 return res.status(400).send('Клиент с този ДДС ЕИК вече съществува');
 
-            // Add MOL to receivers so it autofills of first sale
+            // Add MOL to receivers so it autofills of first order
             data.receivers = [data.mol];
 
             const customer = await new Customer(data).save();
@@ -182,7 +182,7 @@ export function customersRoutes() {
             if (!customer)
                 return res.status(404).send('Customer not found');
 
-            const hasDocuments = (await Sale.find({ customer }).limit(1)).length > 0;
+            const hasDocuments = (await Order.find({ customer }).limit(1)).length > 0;
 
             if (hasDocuments)
                 await customer.updateOne({ deleted: true });

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from "bcryptjs";
 import { User, userRoles } from '../models/user.js';
 import express from 'express';
-import { Sale } from "../models/sale.js";
+import { Order } from "../models/order.js";
 const jwtSecret = process.env.JWT_SECRET;
 
 async function createDefaultUsers() {
@@ -141,7 +141,7 @@ export function usersRoutes() {
             if (!user)
                 return res.status(404).send("Потребителят не е намерен")
 
-            const inSale = await Sale.findOne({ user: id });
+            const inSale = await Order.findOne({ user: id });
             if (inSale)
                 return res.status(400).send("Потребителят има продажби и не може да бъде изтрит");
 
