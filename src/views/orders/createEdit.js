@@ -776,15 +776,21 @@ async function createEditOrder() {
 async function printSale(data) {
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
+    let flags = {};
+    // Check if any product has discount, if none - dont show column
+    flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
+
+    // Check if any product has qtyInPackage, if none - dont show column
+    flags.tableShowQtyInPackage = data.products.some(product => product.qtyInPackage > 0);
 
     // should print something like this: invoice original, invoice copy, etc etc depending on whats selected as type
     const printPages = [];
-    printPages.push(printContainer(data));
+    printPages.push(printContainer({ data, flags }));
     if (printCopy === true) // print a copy of the invoice
-        printPages.push(printContainer(data, { copy: true }));
+        printPages.push(printContainer({ data, param: { copy: true }, flags }));
 
     if (printStokova === true) // print stokova of the invoice
-        printPages.push(printContainer(data, { stokova: true }));
+        printPages.push(printContainer({ data, param: { stokova: true }, flags }));
 
     render(printPages, document.getElementById('printContainer'));
     window.print();
@@ -792,7 +798,7 @@ async function printSale(data) {
 
 // invoice should have deducted tax in product price and shown as sum at the end
 // stokova should have all products with tax included in price and shown as sum at the end
-const printContainer = (data, param) => html`
+const printContainer = ({ data, param, flags }) => html`
     <div style="break-after:page;">
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
@@ -818,7 +824,7 @@ const printContainer = (data, param) => html`
                 <div>Телефон: ${data.company?.phone || ''}</div>
             </div>
 
-            ${data.orderType === 'wholesale' ? printTableWholesale(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type) : printTableRetail(data.company.tax, data.products, param?.stokova ? 'stokova' : data.type)}
+            ${data.orderType === 'wholesale' ? printTableWholesale({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags }) : printTableRetail({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags })}
             <div style="font-size: 1rem">
                 Словом: ${numberToBGText(data.total)}
             </div>
@@ -843,7 +849,7 @@ const printContainer = (data, param) => html`
     </div>
 `;
 
-const printTableWholesale = (tax, products, type) => html`
+const printTableWholesale = ({ tax, products, type, flags }) => html`
     <table class="table table-bordered">
         <thead>
             <tr class="fw-bold text-center">
@@ -851,12 +857,12 @@ const printTableWholesale = (tax, products, type) => html`
                 <td>Код</td>
                 <td>Стока</td>
                 <td>Мярка</td>
-                <td>Количество</td>
+                <td>Пакети</td>
                 <td>Брой в пакет</td>
+                <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
                 <td>Цена</td>
-                <td>Отстъпка</td>
-                <td>Цена след ТО%</td>
-                <td>Цена за брой след ТО%</td>
+                ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
+                ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
             </tr>
         </thead>
@@ -864,23 +870,33 @@ const printTableWholesale = (tax, products, type) => html`
             ${products.map((product, index) => html`
                 <tr class="text-center">
                     <td>${++index}</td>
+
                     <td>${product?.product?.code || ''}</td>
+
                     <td>${product?.product?.name || product.name}</td>
+
                     <td>${product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
-                    <td>${product.quantity}</td>
+
+                    <td class="text-nowrap">${product.quantity}</td>
+
                     <td>${product?.product?.sizes?.length || product.qtyInPackage}</td>
-                    <td>${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
-                    <td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>
-                    <td>${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), tax)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
+
                     <td>${product.qtyInPackage || product?.product?.sizes.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.product?.sizes?.length || product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.product?.sizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
-                    <td>${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
+
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
+
+                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
+
+                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), tax)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>` : ''}
+
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
                 </tr>
             `)}
         </tbody>
     </table>
 `;
 
-const printTableRetail = (tax, products, type) => html`
+const printTableRetail = ({ tax, products, type, flags }) => html`
 <table class="table table-bordered">
         <thead>
             <tr class="fw-bold text-center">
@@ -891,8 +907,8 @@ const printTableRetail = (tax, products, type) => html`
                 <td>Размер</td>
                 <td>Брой</td>
                 <td>Цена</td>
-                <td>Отстъпка %</td>
-                <td>Цена след ТО%</td>
+                ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
+                ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
             </tr>
         </thead>
@@ -905,11 +921,12 @@ const printTableRetail = (tax, products, type) => html`
                     <!-- if product with sizes, its probably "брой", else its "пакет" -->
                     <td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
                     <td>${product?.size}</td>
-                    <td>${product.quantity}</td>
-                    <td>${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
-                    <td>${product?.discount || ''}</td>
-                    <td>${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), tax)) : ''}</td>
-                    <td>${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
+                    <td class="text-nowrap">${product.quantity}</td>
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
+                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
+                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), tax)) : ''}</td>` : ''}
+                    
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
                 </tr>
             `)}
         </tbody>
