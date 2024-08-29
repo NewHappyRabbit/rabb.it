@@ -10,3 +10,46 @@ export function transliterate(word) {
 export function slugify(word) {
     return transliterate(word.toLowerCase().replace(/ /g, '-'))
 }
+
+export function sparseFix(schema, field) {
+    /*
+    This function fixes the sparse indexing
+    By default, saving/updating as empty string in unique fields will throw error on the index
+    This fixes it by settings the value as undefined, thus removing the field completely before saving
+    */
+
+    schema.pre('save', function (next) {
+        if (this[field] === '')
+            this[field] = undefined;
+
+        next();
+    });
+
+    schema.pre('update', function (next) {
+        const modifiedField = this.getUpdate().$set[field];
+
+        if (!modifiedField)
+            return next();
+
+        try {
+            this.getUpdate().$set[field] = undefined;
+            next();
+        } catch (error) {
+            return next(error);
+        }
+    });
+
+    schema.pre('updateOne', function (next) {
+        const modifiedField = this._update[field];
+
+        if (modifiedField !== '')
+            return next();
+
+        try {
+            this._update[field] = undefined;
+            next();
+        } catch (error) {
+            return next(error);
+        }
+    })
+}

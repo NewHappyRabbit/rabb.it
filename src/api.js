@@ -340,3 +340,25 @@ export function loadPreviewImage(e) {
 
     reader.readAsDataURL(image);
 }
+
+export const priceRegex = /^\d{1,}(\.\d{1,2})?$/; // good: 0.01, 0.2, 1; bad: 0.001
+export function fixInputPrice(target, round = false) {
+    // This function replaces comma with dot (from mobile keyboard)
+    // It also limits the number to 2 decimal places max
+    let value = target.value;
+
+    if (value === '') return;
+
+    value = Number(target.value.replace(',', '.'));
+
+    if (target.value === '' || isNaN(value))
+        return target.value = '';
+
+    // if last character is a comma, replace it with dot
+    if (target.value.slice(-1) === ',')
+        target.value = target.value.replace(',', '.');
+    else if (round && target.value.slice(-1) !== '.') // used in products page
+        target.value = roundPrice(value);
+    else if (target.value.slice(-1) !== '.' && !priceRegex.test(value)) // may be used in orders page, currently using round
+        target.value = value.toFixed(2);
+}

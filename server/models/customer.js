@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { sparseFix } from "./functions/global.js";
 
 const { Schema } = mongoose;
 
@@ -46,6 +47,8 @@ const customerSchema = new Schema({
         default: false,
     }
 });
+
+sparseFix(customerSchema, 'taxvat');
 
 const Customer = mongoose.model('Customer', customerSchema);
 

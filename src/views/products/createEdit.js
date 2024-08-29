@@ -1,7 +1,7 @@
 import '@/css/products.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
-import { markInvalid, markValid, roundPrice, successScan, loadPreviewImage } from '@/api';
+import { markInvalid, markValid, roundPrice, successScan, loadPreviewImage, priceRegex, fixInputPrice } from '@/api';
 import axios from "axios";
 import { categoriesOptions } from '@/views/categories/categories';
 import { until } from 'lit/directives/until.js';
@@ -15,8 +15,6 @@ var wholesaleMarkup;
 var retailMarkup;
 var product;
 var editPage = false;
-
-const priceRegex = /^\d{1,}(\.\d{1,2})?$/;
 
 async function loadCategories() {
     const req = await axios.get('/categories');
@@ -39,19 +37,16 @@ function calculateUnitPrice() {
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
 
-    const unitPrice = Number(unitPriceEl.value.replace(',', '.'));
+    fixInputPrice(unitPriceEl, true);
 
-    if (unitPriceEl.value === '' || isNaN(unitPrice)) {
+    const unitPrice = unitPriceEl.value;
+
+    if (unitPriceEl.value === '') {
         deliveryEl.value = '';
         wholesalePrice.value = '';
         retailPrice.value = '';
         return unitPriceEl.value = '';
     }
-
-    // if last character is a comma, replace it with dot
-    if (unitPriceEl.value.slice(-1) === ',')
-        unitPriceEl.value = unitPriceEl.value.replace(',', '.');
-    else if (unitPriceEl.value.slice(-1) !== '.') unitPriceEl.value = roundPrice(unitPrice);
 
     const deliveryPriceEl = document.getElementById('deliveryPrice');
     deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
@@ -64,23 +59,21 @@ function calculateProductPrices(e) {
     const wholesalePrice = document.getElementById('wholesalePrice');
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
-    const deliveryPrice = Number(deliveryPriceEl.value.replace(',', '.'));
 
-    if (deliveryPriceEl.value === '' || isNaN(deliveryPrice)) {
+    fixInputPrice(deliveryPriceEl, true);
+
+    const deliveryPrice = deliveryPriceEl.value;
+
+    if (deliveryPriceEl.value === '') {
         deliveryPriceEl.value = '';
         wholesalePrice.value = '';
         retailPrice.value = '';
         return unitPriceEl.value = '';
     }
 
-    // if last character is a comma, replace it with dot
-    if (deliveryPriceEl.value.slice(-1) === ',')
-        deliveryPriceEl.value = deliveryPriceEl.value.replace(',', '.');
-    else if (deliveryPriceEl.value.slice(-1) !== '.') deliveryPriceEl.value = roundPrice(deliveryPrice);
-
     // Update price per unit if coming from event (changing this price directly and not from the unitPrice funciton) and sizes are selected
     if (e && selectedSizes.length > 0)
-        unitPriceEl.value = roundPrice(deliveryPrice / selectedSizes.length);
+        unitPriceEl.value = (deliveryPrice / selectedSizes.length).toFixed(2);
 
     const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
 
@@ -191,7 +184,7 @@ const pricesTemplate = () => html`
 
             <div class="col">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
             </div>
 
             <div class="col pe-0">
@@ -277,17 +270,12 @@ async function createEditProduct(e) {
 
     const form = e.target;
     const formData = new FormData(form);
-    // Convert prices from "," to "."
-    formData.set('deliveryPrice', formData.get('deliveryPrice').replace(',', '.'));
-    formData.set('wholesalePrice', formData.get('wholesalePrice').replace(',', '.'));
-    formData.set('retailPrice', formData.get('retailPrice').replace(',', '.'));
 
     const data = Object.fromEntries(formData.entries());
     data.sizes = selectedSizes.map(size => ({ size, quantity: data.quantity }));
     formData.set('sizes', JSON.stringify(data.sizes));
 
     const invalidData = validateProduct(data);
-    return console.log(invalidData);
     if (invalidData)
         return toggleSubmitBtn();
 

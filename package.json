@@ -12,7 +12,8 @@
 	},
 	"nodemonConfig": {
 		"ignore": [
-			"/public/**"
+			"public/",
+			"src/"
 		]
 	},
 	"dependencies": {

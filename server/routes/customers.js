@@ -12,9 +12,6 @@ function validateCustomer(data) {
     // if discount entered, check if format is X or X.Y (ex. 1 or 1.5 or 1.55)
     if (discount && discount >= 0 && discount.match(/^(\d)+(\.\d{0,2}){0,1}$/) === null)
         return { status: 400, error: 'Невалидна отстъпка' };
-
-    for (let key in data)
-        if (data[key] === "") delete data[key];
 }
 
 export function customersRoutes() {

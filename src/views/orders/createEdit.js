@@ -7,7 +7,7 @@ import { submitBtn, toggleSubmitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
-import { numberToBGText } from "@/api";
+import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
 
 var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
 const defaultDocumentType = 'stokova';
@@ -214,27 +214,35 @@ function updateSize(e) {
 }
 
 function updateDiscount(e) {
+    const target = e.target;
+    fixInputPrice(target);
+    let value = target.value;
+
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
-    if (e.target.value > 100)
-        e.target.value = 100;
-    else if (e.target.value < 0)
-        e.target.value = 0;
 
-    addedProducts[arrayIndex].discount = e.target.value;
+    if (value > 100)
+        target.value = 100;
+    else if (value < 0)
+        target.value = 0;
+
+    value = target.value
+
+    addedProducts[arrayIndex].discount = value;
     rerenderTable();
 }
 
 function updatePrice(e) {
+    const target = e.target;
+    fixInputPrice(target, true);
+    const value = target.value;
+
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
-    const target = e.target;
-    target.value = target.value.replace(',', '.');
-    if (isNaN(Number(target.value)))
-        return target.value = '';
-    addedProducts[arrayIndex].price = target.value;
+
+    addedProducts[arrayIndex].price = value;
     rerenderTable();
 }
 
@@ -303,14 +311,14 @@ const wholesaleProductsTable = (products) => html`
 
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} @keyup=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             ${product?.product?.quantity ? html`<span class="input-group-text">/${product?.product?.quantity}</span>` : ''}
                         </div>
                     </td>
 
-                    <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updatePrice} @keyup=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
-                    <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" min="0" max="100" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
                     <td style="text-align: end">
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
@@ -623,8 +631,6 @@ function validateOrder(data) {
             markInvalidEl(row.querySelector('input[name="discount"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="discount"]'));
-
-        const priceRegex = /^\d{1,}(\.\d{1,2})?$/; // good: 0.01, 0.2, 1; bad: 0.001
 
         if (!product.price || product.price < 0.01 || !priceRegex.test(product.price)) {
             markInvalidEl(row.querySelector('input[name="price"]'));

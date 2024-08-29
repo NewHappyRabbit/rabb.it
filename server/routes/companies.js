@@ -15,9 +15,6 @@ function validateCompany(data) {
 
     if (!bank.name || !bank.code || !bank.iban || bank.iban.length > 34)
         return { status: 400, error: 'Невалидни банкови данни' };
-
-    for (let key in data)
-        if (data[key] === "") delete data[key];
 }
 
 export function companiesRoutes() {

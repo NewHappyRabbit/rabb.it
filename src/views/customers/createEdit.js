@@ -1,7 +1,7 @@
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
 import axios from "axios";
-import { markInvalid, markValid } from "@/api";
+import { markInvalid, markValid, priceRegex, fixInputPrice } from "@/api";
 import { nav } from "@/views/nav";
 import { toggleSubmitBtn, submitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
@@ -28,7 +28,7 @@ function validateCustomer(data) {
     else markValid('address');
 
     // if discount entered, check if format is X or X.Y or XY.Z (ex. 1 or 1.5 or 12.5)
-    if (data.discount && data.discount >= 0 && data.discount.match(/^(\d)+(\.\d{0,2}){0,1}$/) === null)
+    if (data.discount && (data.discount < 0 || data.discount > 100 || !priceRegex.test(data.discount)))
         invalidFlag = markInvalid('discount');
     else markValid('discount');
 
@@ -163,7 +163,7 @@ export async function createEditCustomerPage(ctx, next) {
 
                 <div class="mb-3">
                     <label for="discount" class="form-label">Отстъпка %</label>
-                    <input class="form-control" type="number" id="discount" name="discount" placeholder="0.00" step="0.01" min="0" inputmode="numeric" .value=${customer && customer.discount} autocomplete="off">
+                    <input @keyup=${(e) => fixInputPrice(e.target)} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer.discount ? customer.discount : ''} autocomplete="off">
                 </div>
 
                 <div id="alert" class="d-none alert" role="alert"></div>
