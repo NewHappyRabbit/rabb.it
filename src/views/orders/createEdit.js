@@ -360,11 +360,11 @@ const retailProductsTable = (products) => html`
                     </td>
 
                     <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    
+
                     <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    
+
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
-                    
+
                     <td>
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>`)}

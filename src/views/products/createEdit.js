@@ -16,6 +16,8 @@ var retailMarkup;
 var product;
 var editPage = false;
 
+const priceRegex = /^\d{1,}(\.\d{1,2})?$/;
+
 async function loadCategories() {
     const req = await axios.get('/categories');
     const categories = req.data;
@@ -29,7 +31,10 @@ async function loadCategories() {
     return categoriesOptions(options);
 }
 
-function calculateUnitPrice() {
+
+
+// For comma support
+/* function calculateUnitPrice() {
     if (selectedSizes.length === 0) return; // if no sizes added, do nothing
 
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
@@ -47,9 +52,47 @@ function calculateUnitPrice() {
     deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
 
     calculateProductPrices();
+} */
+
+function calculateUnitPrice() {
+    if (selectedSizes.length === 0) return; // if no sizes added, do nothing
+
+    const unitPriceEl = document.getElementById('deliveryPricePerUnit');
+    let unitPrice = Number(unitPriceEl.value);
+
+    const deliveryPriceEl = document.getElementById('deliveryPrice');
+    deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
+
+    calculateProductPrices();
 }
 
-function calculateProductPrices() {
+function calculateProductPrices(e) {
+    // Convert , to . (comma is shown/used when on iOS device)
+    const deliveryEl = document.getElementById('deliveryPrice');
+    const deliveryPrice = Number(deliveryEl.value);
+    const wholesalePrice = document.getElementById('wholesalePrice');
+    const retailPrice = document.getElementById('retailPrice');
+
+    if (deliveryPrice === '') {
+        wholesalePrice.value = '';
+        retailPrice.value = '';
+        return;
+    }
+
+    // Update price per unit if coming from event (changing this price directly and not from the unitPrice funciton) and sizes are selected
+    if (e && selectedSizes.length > 0)
+        document.getElementById('deliveryPricePerUnit').value = roundPrice(deliveryPrice / selectedSizes.length);
+
+    const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
+
+    //Retail price is calculated per piece, hencefore the price is divided by amount of sizes
+    const sizesLength = selectedSizes.length || 1;
+    const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
+    wholesalePrice.value = roundPrice(wholesale);
+    retailPrice.value = roundPrice(retail);
+}
+// For comma support
+/* function calculateProductPrices() {
     // Convert , to . (comma is shown/used when on iOS device)
     const deliveryEl = document.getElementById('deliveryPrice');
     deliveryEl.value = deliveryEl.value.replace(',', '.');
@@ -77,7 +120,7 @@ function calculateProductPrices() {
     const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
     wholesalePrice.value = roundPrice(wholesale);
     retailPrice.value = roundPrice(retail);
-}
+} */
 
 function updateQuantity() {
     const quantity = document.getElementById('quantity').value;
@@ -173,22 +216,34 @@ const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col">
                 <label for="deliveryPrice" class="form-label">Доставна цена за пакет</label>
-                <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="text" name="deliveryPrice" id="deliveryPrice" inputmode="decimal" required .value=${product && product.deliveryPrice} autocomplete="off">
+                <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="number" step="0.01" min="0" name="deliveryPrice" id="deliveryPrice" inputmode="decimal" required .value=${product && product.deliveryPrice} autocomplete="off">
+                <div class="invalid-feedback">
+                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
+                </div>
             </div>
 
             <div class="col">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="number" step="0.01" min="0" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
+                <div class="invalid-feedback">
+                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
+                </div>
             </div>
 
             <div class="col pe-0">
                 <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
-                <input class="form-control border-primary" type="text" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
+                <input class="form-control border-primary" type="number" step="0.01" min="0" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
+                <div class="invalid-feedback">
+                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
+                </div>
             </div>
 
             <div class="col d-none">
                 <label for="retailPrice" class="form-label">Цена на дребно <span class="text-primary">(+${retailMarkup}%)</span></label>
-                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+                <input class="form-control border-primary" type="nuumber" step="0.01" min="0" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+                <div class="invalid-feedback">
+                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
+                </div>
             </div>
         </div>
     `;
@@ -239,15 +294,19 @@ function validateProduct(data) {
         invalidFlag = markInvalid('quantity');
     else markValid('quantity');
 
-    if (!data.deliveryPrice || data.deliveryPrice < 0)
+    if (!data.deliveryPrice || data.deliveryPrice < 0 || !priceRegex.test(data.deliveryPrice))
         invalidFlag = markInvalid('deliveryPrice');
     else markValid('deliveryPrice');
 
-    if (!data.wholesalePrice || data.wholesalePrice < 0)
+    if (!data.deliveryPricePerUnit || data.deliveryPricePerUnit < 0 || !priceRegex.test(data.deliveryPricePerUnit))
+        invalidFlag = markInvalid('deliveryPricePerUnit');
+    else markValid('deliveryPricePerUnit');
+
+    if (!data.wholesalePrice || data.wholesalePrice < 0 || !priceRegex.test(data.wholesalePrice))
         invalidFlag = markInvalid('wholesalePrice');
     else markValid('wholesalePrice');
 
-    if (!data.retailPrice || data.retailPrice < 0)
+    if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice))
         invalidFlag = markInvalid('retailPrice');
     else markValid('retailPrice');
 
@@ -259,6 +318,16 @@ async function createEditProduct(e) {
     toggleSubmitBtn();
 
     const form = e.target;
+    console.log(form)
+    if (!form.checkValidity()) {
+        e.stopPropagation();
+        toggleSubmitBtn();
+        return form.classList.add('was-validated');
+    }
+
+    alert('all good!')
+
+    return;
 
     const formData = new FormData(form);
     // Convert prices from "," to "."
@@ -461,7 +530,7 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <label for="description" class="form-label">Описание</label>
-                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
+                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product?.description} autocomplete="off"></textarea>
                 </div>
 
                 ${quantityTemplate()}

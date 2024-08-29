@@ -72,12 +72,6 @@ async function validateProduct(data) {
                 return { status: 400, error: 'Невалидно количество за размер' };
         }
     }
-
-    // remove empty keys values
-    for (const key in data) {
-        if (!data[key])
-            delete data[key];
-    }
 }
 
 export function productsRoutes() {
