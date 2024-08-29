@@ -5,7 +5,6 @@ import page from 'page';
 import { until } from "lit/directives/until.js";
 import { nav } from "@/views/nav";
 import { spinner } from "@/views/components";
-import { loggedInUser } from "@/views/login";
 
 var selectedCompany;
 
@@ -46,11 +45,12 @@ const companyRow = (company) => html`
         <td class="text-nowrap">
             <button @click=${() => setDefault(company._id)} class="btn btn-primary" .disabled=${company.default}><i class="bi bi-star-fill"></i><span class="d-none d-sm-inline"> Задай по подразбиране</span></button>
             <a class="btn btn-secondary" href=${`/admin/companies/${company._id}`}><i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> Редактирай</span></a>
-            <button @click=${() => selectedCompany = company._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash"></i><span class="d-none d-sm-inline"> Изтрий</span></button>
+            <div class="d-inline" data-bs-toggle=${company.canBeDeleted ? 'tooltip' : ''} data-bs-title=${company.canBeDeleted ? 'Тази фирма не може да се изтрие, защото има продажби' : ''}>
+                <button @click=${() => selectedCompany = company._id} ?disabled=${company.canBeDeleted} class="btn btn-danger"  data-bs-target="#deleteModal" data-bs-toggle=${company.canBeDeleted ? '' : 'modal'}><i class="bi bi-trash"></i><span class="d-none d-sm-inline"> Изтрий</span></button>
+            </div>
         </td>
     </tr>
 `;
-
 const table = (companies) => html`
     <div class="table-responsive">
         <table class="mt-3 table table-striped table-hover text-center">
@@ -70,9 +70,15 @@ const table = (companies) => html`
 
 async function loadCompanies() {
     try {
-        const req = await axios.get('/companies')
+        const req = await axios.get('/companies?canBeDeleted=true')
         const companies = req.data;
 
+        setTimeout(() => {
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            console.log(tooltipTriggerList)
+            if (tooltipTriggerList.length)
+                [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+        }, 300);
         return table(companies);
     } catch (err) {
         console.error(err);

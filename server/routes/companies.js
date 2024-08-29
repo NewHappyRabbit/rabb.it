@@ -22,7 +22,15 @@ export function companiesRoutes() {
 
     companiesRouter.get('/companies', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const companies = await Company.find().sort({ default: -1 });
+            const query = req.query;
+            const companies = await Company.find().sort({ default: -1 }).lean(); // lean returns normal js object that we can modify
+
+            if (query.canBeDeleted == 'true') {
+                for (let company of companies) {
+                    const bool = await Order.findOne({ company: company });
+                    company.canBeDeleted = bool;
+                }
+            }
 
             res.json(companies);
         } catch (error) {
