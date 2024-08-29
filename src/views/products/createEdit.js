@@ -32,33 +32,26 @@ async function loadCategories() {
 }
 
 
-
-// For comma support
-/* function calculateUnitPrice() {
-    if (selectedSizes.length === 0) return; // if no sizes added, do nothing
-
-    const unitPriceEl = document.getElementById('deliveryPricePerUnit');
-    unitPriceEl.value = unitPriceEl.value.replace(',', '.');
-    if (isNaN(Number(unitPriceEl.value)))
-        return unitPriceEl.value = '';
-
-    // If price ends with ".", return
-    if (unitPriceEl.value.endsWith('.'))
-        return;
-
-    const deliveryPriceEl = document.getElementById('deliveryPrice');
-    const unitPrice = Number(unitPriceEl.value);
-
-    deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
-
-    calculateProductPrices();
-} */
-
 function calculateUnitPrice() {
     if (selectedSizes.length === 0) return; // if no sizes added, do nothing
-
+    const deliveryEl = document.getElementById('deliveryPrice');
+    const wholesalePrice = document.getElementById('wholesalePrice');
+    const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
-    let unitPrice = Number(unitPriceEl.value);
+
+    const unitPrice = Number(unitPriceEl.value.replace(',', '.'));
+
+    if (unitPriceEl.value === '' || isNaN(unitPrice)) {
+        deliveryEl.value = '';
+        wholesalePrice.value = '';
+        retailPrice.value = '';
+        return unitPriceEl.value = '';
+    }
+
+    // if last character is a comma, replace it with dot
+    if (unitPriceEl.value.slice(-1) === ',')
+        unitPriceEl.value = unitPriceEl.value.replace(',', '.');
+    else if (unitPriceEl.value.slice(-1) !== '.') unitPriceEl.value = roundPrice(unitPrice);
 
     const deliveryPriceEl = document.getElementById('deliveryPrice');
     deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
@@ -67,60 +60,37 @@ function calculateUnitPrice() {
 }
 
 function calculateProductPrices(e) {
-    // Convert , to . (comma is shown/used when on iOS device)
-    const deliveryEl = document.getElementById('deliveryPrice');
-    const deliveryPrice = Number(deliveryEl.value);
+    const deliveryPriceEl = document.getElementById('deliveryPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
     const retailPrice = document.getElementById('retailPrice');
+    const unitPriceEl = document.getElementById('deliveryPricePerUnit');
+    const deliveryPrice = Number(deliveryPriceEl.value.replace(',', '.'));
 
-    if (deliveryPrice === '') {
+    if (deliveryPriceEl.value === '' || isNaN(deliveryPrice)) {
+        deliveryPriceEl.value = '';
         wholesalePrice.value = '';
         retailPrice.value = '';
-        return;
+        return unitPriceEl.value = '';
     }
+
+    // if last character is a comma, replace it with dot
+    if (deliveryPriceEl.value.slice(-1) === ',')
+        deliveryPriceEl.value = deliveryPriceEl.value.replace(',', '.');
+    else if (deliveryPriceEl.value.slice(-1) !== '.') deliveryPriceEl.value = roundPrice(deliveryPrice);
 
     // Update price per unit if coming from event (changing this price directly and not from the unitPrice funciton) and sizes are selected
     if (e && selectedSizes.length > 0)
-        document.getElementById('deliveryPricePerUnit').value = roundPrice(deliveryPrice / selectedSizes.length);
+        unitPriceEl.value = roundPrice(deliveryPrice / selectedSizes.length);
 
     const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
 
     //Retail price is calculated per piece, hencefore the price is divided by amount of sizes
     const sizesLength = selectedSizes.length || 1;
     const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
+
     wholesalePrice.value = roundPrice(wholesale);
     retailPrice.value = roundPrice(retail);
 }
-// For comma support
-/* function calculateProductPrices() {
-    // Convert , to . (comma is shown/used when on iOS device)
-    const deliveryEl = document.getElementById('deliveryPrice');
-    deliveryEl.value = deliveryEl.value.replace(',', '.');
-    if (isNaN(Number(deliveryEl.value)))
-        return deliveryEl.value = '';
-
-    const deliveryPrice = Number(deliveryEl.value);
-    const wholesalePrice = document.getElementById('wholesalePrice');
-    const retailPrice = document.getElementById('retailPrice');
-
-    if (deliveryPrice === '') {
-        wholesalePrice.value = '';
-        retailPrice.value = '';
-        return;
-    }
-
-    // Update price per unit if sizes are selected
-    if (selectedSizes.length > 0)
-        document.getElementById('deliveryPricePerUnit').value = roundPrice(deliveryPrice / selectedSizes.length);
-
-    const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
-
-    //Retail price is calculated per piece, hencefore the price is divided by amount of sizes
-    const sizesLength = selectedSizes.length || 1;
-    const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
-    wholesalePrice.value = roundPrice(wholesale);
-    retailPrice.value = roundPrice(retail);
-} */
 
 function updateQuantity() {
     const quantity = document.getElementById('quantity').value;
@@ -216,34 +186,22 @@ const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col">
                 <label for="deliveryPrice" class="form-label">Доставна цена за пакет</label>
-                <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="number" step="0.01" min="0" name="deliveryPrice" id="deliveryPrice" inputmode="decimal" required .value=${product && product.deliveryPrice} autocomplete="off">
-                <div class="invalid-feedback">
-                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
-                </div>
+                <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="text" inputmode="decimal" name="deliveryPrice" id="deliveryPrice" required .value=${product && product.deliveryPrice} autocomplete="off">
             </div>
 
             <div class="col">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="number" step="0.01" min="0" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
-                <div class="invalid-feedback">
-                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
-                </div>
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && product.deliveryPrice / product.sizes.length} autocomplete="off">
             </div>
 
             <div class="col pe-0">
                 <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
-                <input class="form-control border-primary" type="number" step="0.01" min="0" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
-                <div class="invalid-feedback">
-                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
-                </div>
+                <input class="form-control border-primary" type="text" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
             </div>
 
             <div class="col d-none">
                 <label for="retailPrice" class="form-label">Цена на дребно <span class="text-primary">(+${retailMarkup}%)</span></label>
-                <input class="form-control border-primary" type="nuumber" step="0.01" min="0" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
-                <div class="invalid-feedback">
-                    Максимум 2 числа след точката.<br>Примерни приети стойности: "3", "5.2", "10.80"
-                </div>
+                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
             </div>
         </div>
     `;
@@ -318,17 +276,6 @@ async function createEditProduct(e) {
     toggleSubmitBtn();
 
     const form = e.target;
-    console.log(form)
-    if (!form.checkValidity()) {
-        e.stopPropagation();
-        toggleSubmitBtn();
-        return form.classList.add('was-validated');
-    }
-
-    alert('all good!')
-
-    return;
-
     const formData = new FormData(form);
     // Convert prices from "," to "."
     formData.set('deliveryPrice', formData.get('deliveryPrice').replace(',', '.'));
@@ -340,6 +287,7 @@ async function createEditProduct(e) {
     formData.set('sizes', JSON.stringify(data.sizes));
 
     const invalidData = validateProduct(data);
+    return console.log(invalidData);
     if (invalidData)
         return toggleSubmitBtn();
 
