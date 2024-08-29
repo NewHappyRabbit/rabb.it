@@ -1,3 +1,4 @@
+import '@/css/products.css';
 import { container } from "@/app.js";
 import { successScan } from "@/api.js";
 import { html, render } from 'lit/html.js';

@@ -1,3 +1,4 @@
+import '@/css/orders.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
 import { formatPrice, formatPriceNoCurrency, deductVat, markValid, markInvalid, markInvalidEl, markValidEl, successScan } from '@/api.js';
@@ -270,21 +271,21 @@ function removeProduct(e) {
 
 const addProductRow = () => html`
 <tr id="addNewProduct">
-    <td colspan="2">
+    <td colspan="3">
         <div class="input-group">
             <input @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="text" name="product" id="product" autocomplete="off">
             <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
             <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
         </div>
     </td>
-    <td colspan="7">
+    <td colspan="6">
         <div id="barcodeVideo"></div>
     </td>
 </tr>
 `;
 
 const wholesaleProductsTable = (products) => html`
-    <table class="table mt-3 table-striped">
+    <table id="orders" class="table mt-3 table-striped">
         <thead>
             <tr>
                 <th>Продукт</th>

@@ -1,3 +1,4 @@
+import '@/css/orders.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
 import { formatPrice } from '@/api.js';

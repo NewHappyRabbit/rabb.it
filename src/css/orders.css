@@ -1,0 +1,5 @@
+@media screen and (max-width: 768px) {
+	table#orders th {
+		min-width: 25vw !important;
+	}
+}
