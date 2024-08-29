@@ -23,7 +23,8 @@ async function loadCategories() {
     const options = {
         categories,
         selected: product && product.category,
-        showNoParent: false
+        showNoParent: false,
+        disableWithChilden: true
     }
 
     return categoriesOptions(options);
@@ -140,9 +141,9 @@ const quantityTemplate = () => html`
         <div class="row mb-3" id="qtyTemplate">
             <div class="col-12 col-sm-4 mb-3">
                 <label for="quantity" class="form-label">Брой | Мярка</label>
-                <div class="input-group border-primary">
-                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${editPage}">
-                    <input class="form-control" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
+                <div class="input-group">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${editPage}">
+                    <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
                     <datalist id="unitOfMeasureOptions">
                         <option value="пакет"></option>
                         <option value="бр."></option>
@@ -178,14 +179,15 @@ const quantityTemplate = () => html`
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col">
+                <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
+            </div>
+
+            <div class="col">
                 <label for="deliveryPrice" class="form-label">Доставна цена за пакет</label>
                 <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="text" inputmode="decimal" name="deliveryPrice" id="deliveryPrice" required .value=${product && product.deliveryPrice} autocomplete="off">
             </div>
 
-            <div class="col">
-                <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
-            </div>
 
             <div class="col pe-0">
                 <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
@@ -466,7 +468,7 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <label for="description" class="form-label">Описание</label>
-                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product?.description} autocomplete="off"></textarea>
+                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
                 </div>
 
                 ${quantityTemplate()}

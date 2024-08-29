@@ -166,8 +166,10 @@ const modalForm = (category) => html`
     </div>
 `;
 
-export function categoriesOptions(options) {
-    const { categories, selected, showNoParent = true } = options;
+export function categoriesOptions(params) {
+    const { categories, selected, showNoParent = true, disableWithChilden = false } = params;
+    // disableWithChilden - disable category if it has children (for selection in product creation)
+
     // add depth value
     for (let category of categories)
         category.depth = category.path ? category.path.split(',').filter(function (el) {
@@ -175,8 +177,9 @@ export function categoriesOptions(options) {
         }) : [];
 
     const parentCategories = categories.filter(cat => !cat.path);
+
     var options = showNoParent ? [html`<option value="">Без категория</option>`] : [];
-    const option = (category) => html`<option .selected=${selected && selected == category._id} slug="${category.slug}" value="${category._id}">${category.depth.map(() => '-').join(' ')}${category.name}</option>`;
+    const option = (category) => html`<option ?disabled=${disableWithChilden && categories.some(cat => cat.path?.includes(category.slug))} .selected=${selected && selected == category._id} slug="${category.slug}" value="${category._id}">${category.depth.map(() => '-').join(' ')}${category.name}</option>`;
 
     function recursion(category) {
         options.push(option(category));

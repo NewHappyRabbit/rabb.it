@@ -73,6 +73,17 @@ input[readonly] {
 	border-bottom-right-radius: var(--bs-border-radius) !important;
 }
 
+/* Fix for border color not being shown because we added border-primary to input (to mark as required)  */
+.form-control.is-invalid,
+.was-validated .form-control:invalid {
+	border-color: var(--bs-form-invalid-border-color) !important;
+}
+
+.form-select.is-valid,
+.was-validated .form-select:valid {
+	border-color: var(--bs-form-valid-border-color) !important;
+}
+
 /*!************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./src/css/products.css ***!
   \************************************************************************/
