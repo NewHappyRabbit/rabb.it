@@ -17,7 +17,8 @@ async function mongoConfig() {
 
     mongoose.connection.on('connected', () => {
         console.log("MongoDB connected successfully!");
-    })
+    });
+
     await mongoose.connect(uri, options)
         .then(console.log('Connecting to MongoDB at ' + uri))
         .catch(err => {

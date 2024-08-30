@@ -32,7 +32,7 @@ export function categoriesRoutes() {
 
             res.json(categories);
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
     });
@@ -50,11 +50,10 @@ export function categoriesRoutes() {
             WooCreateCategory(category);
 
             res.status(201).send();
-            req.log.info(category, 'Category created');
         } catch (error) {
             console.log(error);
 
-            req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
     });
@@ -73,10 +72,9 @@ export function categoriesRoutes() {
             WooEditCategory(category);
 
             res.status(201).send();
-            req.log.info(category, 'Category updated')
         } catch (error) {
             console.log(error);
-            req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
     });
@@ -84,41 +82,18 @@ export function categoriesRoutes() {
     categoriesRouter.delete('/categories/:id', permit('admin'), async (req, res) => {
         try {
             const id = req.params.id;
-            const category = await Category.findById(id);
-            if (!category)
-                return res.status(404).send('Category not found');
 
-            // Check if products assigned
-            const hasProducts = (await Product.find({ category: id }).limit(1)).length > 0;
+            const result = await CategoryController.deleteCategory({ id });
+            if (result.status !== 204)
+                return res.status(result.status).send(result.message);
 
-            if (hasProducts)
-                return res.status(400).send('Категорията има продукти. Моля, първо изтрийте или изместете продуктите.');
+            const wooId = result.wooId;
 
-            // Check if subcategories
-            const path = category.path ? `${category.path}${category.slug},` : `,${category.slug},`
-            const categories = await Category.find({ path: { $regex: path } }).limit(1);
-
-            if (categories.length > 0)
-                return res.status(400).send('Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.');
-
-            const wooId = category.wooId;
-
-            // delete original image if it exists
-            if (category.image) {
-                fs.existsSync(category.image.path) &&
-                    fs.unlink(category.image.path, (err) => {
-                        if (err) console.error(err);
-                    });
-            }
-
-            await Category.findByIdAndDelete(id);
             WooDeleteCategory(wooId);
 
             res.status(204).send();
-            req.log.info(category, 'Category deleted')
         } catch (error) {
-            console.log(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
     });

@@ -281,7 +281,6 @@ export function ordersRoutes() {
             WooUpdateQuantityProducts(doneProducts);
 
             res.status(201).send(order._id.toString());
-            req.log.info(order, 'New order created');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -495,7 +494,6 @@ export function ordersRoutes() {
             res.status(201).send(id);
 
             const orderData = await Order.findById(id).populate('customer company products.product');
-            req.log.info(orderData, 'Order updated');
         } catch (error) {
             console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
@@ -549,7 +547,6 @@ export function ordersRoutes() {
             await order.save();
 
             res.status(204).send();
-            req.log.info(order, 'Order deleted');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

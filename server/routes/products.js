@@ -256,7 +256,6 @@ export function productsRoutes() {
 
 
             res.status(200).send();
-            req.log.info(doneProducts, 'Products restocked');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -346,7 +345,6 @@ export function productsRoutes() {
                 io.emit('print', { name: savedProduct.name, code: savedProduct.code, barcode: savedProduct.barcode, wholesalePrice: savedProduct.wholesalePrice, sizes: savedProduct.sizes }, savedProduct.quantity);
 
             res.status(201).send();
-            req.log.info(savedProduct, 'Product created');
         } catch (error) {
             console.log({ error })
             req.log.debug({ body: req.body }) // Log the body of the request
@@ -434,8 +432,6 @@ export function productsRoutes() {
                 WooEditProduct(product, data);
 
             res.status(201).json(savedProduct);
-
-            req.log.info(savedProduct, 'Product updated');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -479,8 +475,6 @@ export function productsRoutes() {
                 WooDeleteProduct(wooId);
 
             res.status(204).send();
-
-            req.log.info(product, 'Product deleted');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

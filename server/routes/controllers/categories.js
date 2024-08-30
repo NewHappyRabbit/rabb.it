@@ -1,5 +1,6 @@
 import { Category } from "../../models/category.js"
 import { slugify } from "../../models/functions/global.js";
+import { Product } from "../../models/product.js";
 import { uploadImg } from "../common.js";
 import fs from 'fs';
 
@@ -44,7 +45,7 @@ export const CategoryController = {
         const category = await new Category(data).save();
         return { category, status: 201 };
     },
-    updateCategory: async ({ id, data, img, lean: false }) => {
+    updateCategory: async ({ id, data, img }) => {
         if (!data.name) return { status: 400, message: 'Name is required' };
 
         const currentCategory = await Category.findById(id);
@@ -100,8 +101,40 @@ export const CategoryController = {
                     });
             }
         }
-        let category = lean ? await currentCategory.updateOne(data, { new: true }).lean() : await currentCategory.updateOne(data, { new: true });
+
+        await currentCategory.updateOne(data);
+        const category = await Category.findById(id);
 
         return { category, status: 201 };
+    },
+    deleteCategory: async ({ id }) => {
+        const category = await Category.findById(id);
+        if (!category) return { status: 404, message: 'Category not found' };
+
+        // Check if products assigned
+        const hasProducts = (await Product.find({ category: id }).limit(1)).length > 0;
+
+        if (hasProducts)
+            return { status: 400, message: 'Категорията има продукти. Моля, първо изтрийте или изместете продуктите.' };
+
+        // Check if subcategories
+        const path = category.path ? `${category.path}${category.slug},` : `,${category.slug},`
+        const categories = await Category.find({ path: { $regex: path } }).limit(1);
+
+        if (categories.length > 0)
+            return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.' };
+
+        const wooId = category.wooId;
+
+        // delete original image if it exists
+        if (category.image) {
+            fs.existsSync(category.image.path) &&
+                fs.unlink(category.image.path, (err) => {
+                    if (err) console.error(err);
+                });
+        }
+
+        await Category.findByIdAndDelete(id);
+        return { status: 204, wooId }
     }
 }

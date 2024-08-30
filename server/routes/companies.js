@@ -80,7 +80,6 @@ export function companiesRoutes() {
             const company = await new Company(data).save();
 
             res.status(201).send();
-            req.log.info(company, 'Company created');
         } catch (error) {
             console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
@@ -114,7 +113,6 @@ export function companiesRoutes() {
             const company = await Company.updateOne({ _id: req.params.id }, data);
 
             res.status(201).send();
-            req.log.info(company, 'Company updated');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

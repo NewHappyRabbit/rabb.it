@@ -81,7 +81,6 @@ export function usersRoutes() {
             });
 
             res.status(201).send();
-            req.log.info({ username, role, _id: user._id }, 'User created');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -126,7 +125,6 @@ export function usersRoutes() {
             await user.updateOne(newData);
 
             res.status(201).json(user);
-            req.log.info({ username, role, _id: user._id }, 'User updated');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -148,7 +146,6 @@ export function usersRoutes() {
             await user.deleteOne();
 
             res.status(204).send();
-            req.log.info({ username: user.username, _id: user._id }, 'User deleted');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

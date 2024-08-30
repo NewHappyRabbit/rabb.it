@@ -131,7 +131,6 @@ export function customersRoutes() {
             const customer = await new Customer(data).save();
 
             res.status(201).send();
-            req.log.info(customer, 'Customer created');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -164,7 +163,6 @@ export function customersRoutes() {
             const customer = await Customer.updateOne({ _id: req.params.id }, data);
 
             res.status(201).send();
-            req.log.info(customer, 'Customer updated');
         } catch (error) {
             console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request

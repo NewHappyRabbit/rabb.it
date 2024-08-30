@@ -4,7 +4,7 @@
 	"author": "NewHappyRabbit <newhappyrabbit3@gmail.com>",
 	"type": "module",
 	"scripts": {
-		"test": "vitest",
+		"test": "vitest run", // dont use watch, for some reason it runs 2 tests at the same time and breaks the db queries
 		"server-dev": "nodemon server/app.js",
 		"server-start": "node server/app.js",
 		"web-dev": "webpack --config webpack.dev.config.cjs --mode=development",
