@@ -20,9 +20,10 @@ async function mongoConfig() {
     })
     await mongoose.connect(uri, options)
         .then(console.log('Connecting to MongoDB at ' + uri))
-        .catch(err => console.log('Error connecting to MongoDB: ' + err));
-
-
+        .catch(err => {
+            if (env === 'test') throw new Error('Error connecting to MongoDB: ' + err)
+            console.error('Error connecting to MongoDB: ' + err)
+        });
 }
 
 export { mongoConfig };

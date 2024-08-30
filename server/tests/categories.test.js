@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { afterAll, describe, expect, test } from 'vitest'
 import { CategoryController } from '../routes/controllers/categories'
 import { mongoConfig } from '../config/database'
 import 'dotenv/config';
@@ -6,69 +6,107 @@ import { Category } from '../models/category';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { setEnvVariables } from './common';
 
-vi.stubEnv('ENV', 'test');
-vi.stubEnv('MONGO_USER', process.env.MONGO_TEST_USER);
-vi.stubEnv('MONGO_PASSWORD', process.env.MONGO_TEST_PASSWORD);
-
+setEnvVariables();
 await mongoConfig();
 
+afterAll(async () => {
+    await Category.deleteMany({});
+})
+
+const categories = [];
 describe('POST /categories', async () => {
-    var firstCategoryId, secondCategoryId;
-    describe('Create simple category', async () => {
+    describe('Create category', async () => {
         const data = {
             name: 'Тест',
             order: 0
         };
 
         const result = await CategoryController.createCategory({ data });
-        test('status is 201', () => {
+        test('Status is 201', () => {
             expect(result.status).toBe(201);
         });
         const category = result.category;
 
-        test('category is an object', () => {
-            expect(category).toBeTypeOf('object');
+        test('Name is correct', () => {
+            expect(category.name).toEqual(data.name);
         });
 
-        test('category has name', () => {
-            expect(category.name).toBeTypeOf('string');
+        test('Order is correct', () => {
+            expect(category.order).toEqual(data.order);
         });
 
-        test('category slug is correct', () => {
+        test('Slug is correct', () => {
             expect(category.slug).toEqual("test");
         });
-        test('category has no path', () => {
+        test('Path is empty', () => {
             expect(category.path).toBe(null);
         });
-        firstCategoryId = category._id;
+        categories.push(category);
     });
 
     describe('Create sub-category', async () => {
         const data = {
-            name: 'Тест',
-            order: 0,
-            parent: firstCategoryId
+            name: 'Тест 2',
+            order: 5,
+            parent: categories[0]._id
         };
 
         const result = await CategoryController.createCategory({ data });
         const category = result.category;
-        secondCategoryId = category._id;
+        categories.push(category);
 
-        test('duplicate category slug is correct', () => {
-            expect(category.slug).toEqual("test-1");
+        test('Name is correct', () => {
+            expect(category.name).toEqual("Тест 2");
         });
 
-        test('category path is correct', () => {
+        test('Order is correct', () => {
+            expect(category.order).toEqual(5);
+        });
+
+        test('Slug is correct', () => {
+            expect(category.slug).toEqual("test-2");
+        });
+
+        test('Path is correct', () => {
             expect(category.path).toEqual(`,test,`);
         });
     });
 
-    describe('Create sub-sub-category with image', async () => {
+    describe('Create sub-category', async () => {
         const data = {
-            name: 'Тест',
+            name: 'Дрехи',
             order: 0,
-            parent: secondCategoryId,
+            parent: categories[0]._id
+        };
+
+        const result = await CategoryController.createCategory({ data });
+        const category = result.category;
+        categories.push(category);
+
+        test('Name is correct', () => {
+            expect(category.name).toEqual(data.name);
+        });
+
+        test('Order is correct', () => {
+            expect(category.order).toEqual(data.order);
+        });
+
+        test('Slug is correct', () => {
+            expect(category.slug).toEqual("drehi");
+        });
+
+        test('Path is correct', () => {
+            expect(category.path).toEqual(`,test,`);
+        });
+    });
+
+    describe('Create sub-sub-category with image and duplicate slug', async () => {
+        const data = {
+            name: 'Тест 2', // dont change
+            order: 0,
+            parent: categories[1]._id,
         };
 
         // Fake uploaded img from form
@@ -76,26 +114,101 @@ describe('POST /categories', async () => {
 
         const result = await CategoryController.createCategory({ data, img });
         const category = result.category;
+        categories.push(category);
 
-        test('duplicate category slug is correct', () => {
-            expect(category.slug).toEqual("test-2");
+        test('Name is correct', () => {
+            expect(category.name).toEqual(data.name);
         });
 
-        test('category path is correct', () => {
-            expect(category.path).toEqual(`,test,test-1,`);
+        test('Order is correct', () => {
+            expect(category.order).toEqual(data.order);
         });
 
-        test('image uploaded and saved', () => {
-            expect(category.image.length).toBeGreaterThan(0);
+        test('Duplicate slug is correct', () => {
+            expect(category.slug).toEqual("test-2-1");
+        });
+
+        test('Path is correct', () => {
+            expect(category.path).toEqual(`,test,test-2,`);
+        });
+
+        test('Image uploaded and saved', () => {
+            expect(category.image).toBeTypeOf('object');
             expect(fs.existsSync(category.image.path)).toEqual(true); // saved to public/images/ folder
         });
     });
-})
 
-test('GET /categories', async () => {
-    const data = await CategoryController.getCategories()
-    expect(data.length).toEqual(3)
-})
+});
+
+describe('GET /categories', async () => {
+    const data = await CategoryController.getCategories();
+
+    test('Categories count is correct', () => {
+        expect(data.length).toEqual(categories.length)
+    });
+
+    describe('Categories data is correct', () => {
+        for (let category of categories) {
+            const categoryInData = data.find(c => c._id.toString() === category._id.toString());
+
+            test('ID is correct', () => {
+                expect(categoryInData._id.toString()).toEqual(category._id.toString());
+            });
+
+            test('Name is correct', () => {
+                expect(categoryInData.name).toEqual(category.name);
+            });
+
+            test('Order is correct', () => {
+                expect(categoryInData.order).toEqual(category.order);
+            });
+
+            test('Slug is correct', () => {
+                expect(categoryInData.slug).toEqual(category.slug);
+            });
+
+            test('Image is correct', () => {
+                expect(categoryInData.image).toEqual(category.image);
+            });
+        }
+
+    });
+});
+
+describe('PUT /categories/:id', async () => {
+    describe('Update category', async () => {
+        const data = {
+            name: 'Тениски',
+            order: 0,
+        };
+
+        const result = await CategoryController.updateCategory({ id: categories[3]._id, data, lean: true });
+        const category = result.category;
+
+        test('Name is correct', () => {
+            expect(category.name).toEqual(data.name);
+        });
+
+        test('Order is correct', () => {
+            expect(category.order).toEqual(data.order);
+        });
+
+        test('Slug is correct', () => {
+            expect(category.slug).toEqual("tenisksi");
+        });
+
+        test('Path is correct', () => {
+            expect(category.path).toEqual(`,test,test-2,`);
+        });
+
+        if (category.image)
+            test('Image was not deleted', () => {
+                expect(category.image.path).toEqual(categories[3].image.path);
+            })
+
+    })
+
+});
 
 
 await Category.deleteMany({})
