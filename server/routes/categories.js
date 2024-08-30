@@ -1,30 +1,11 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Category } from "../models/category.js";
-import { Product } from "../models/product.js";
-import { slugify } from "../models/functions/global.js";
 import { WooCreateCategory, WooEditCategory, WooDeleteCategory } from "../woocommerce/categories.js";
-import { uploadImg } from "./common.js";
-import multer from "multer";
-import fs from 'fs';
-import { CategoryController } from "./controllers/categories.js";
+import { CategoryController, imageUploader } from "./controllers/categories.js";
 
 export function categoriesRoutes() {
     const categoriesRouter = express.Router();
-
-    const storage = multer.memoryStorage();
-    const fileFilter = (req, file, cb) => {
-        if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png')
-            cb(null, true);
-        else
-            cb(new Error('Only jpeg and png files are allowed!'));
-    }
-
-    const imageUploader = multer({
-        storage,
-        fileFilter
-    });
 
     categoriesRouter.get('/categories', permit('user', 'manager', 'admin'), async (req, res) => {
         try {

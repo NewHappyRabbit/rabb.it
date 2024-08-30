@@ -3,6 +3,7 @@ import { slugify } from "../../models/functions/global.js";
 import { Product } from "../../models/product.js";
 import { uploadImg } from "../common.js";
 import fs from 'fs';
+import multer from "multer";
 
 export const CategoryController = {
     getCategories: async () => await Category.find().sort({ path: 1, order: 1 }),
@@ -138,3 +139,16 @@ export const CategoryController = {
         return { status: 204, wooId }
     }
 }
+
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png')
+        cb(null, true);
+    else
+        cb(new Error('Only jpeg and png files are allowed!'));
+}
+
+export const imageUploader = multer({
+    storage,
+    fileFilter
+});
