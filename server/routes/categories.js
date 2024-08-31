@@ -2,14 +2,15 @@ import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooCreateCategory, WooEditCategory, WooDeleteCategory } from "../woocommerce/categories.js";
-import { CategoryController, imageUploader } from "./controllers/categories.js";
+import { CategoryController } from "./controllers/categories.js";
+import { imageUploader } from "./controllers/common.js";
 
 export function categoriesRoutes() {
     const categoriesRouter = express.Router();
 
     categoriesRouter.get('/categories', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const categories = await CategoryController.getCategories();
+            const categories = await CategoryController.get();
 
             res.json(categories);
         } catch (error) {
@@ -23,11 +24,10 @@ export function categoriesRoutes() {
             const data = { ...req.body };
             const img = req.file;
 
-            const result = await CategoryController.createCategory({ data, img });
-            if (result.status !== 201)
-                return res.status(result.status).send(result.message);
+            const { status, message, category } = await CategoryController.post({ data, img });
+            if (status !== 201)
+                return res.status(status).send(message);
 
-            const category = result.category;
             WooCreateCategory(category);
 
             res.status(201).send();
@@ -45,11 +45,10 @@ export function categoriesRoutes() {
             const id = req.params.id;
             const img = req.file;
 
-            const result = await CategoryController.updateCategory({ id, data, img });
-            if (result.status !== 201)
-                return res.status(result.status).send(result.message);
+            const { status, message, category } = await CategoryController.put({ id, data, img });
+            if (status !== 201)
+                return res.status(status).send(message);
 
-            const category = result.category;
             WooEditCategory(category);
 
             res.status(201).send();
@@ -64,11 +63,9 @@ export function categoriesRoutes() {
         try {
             const id = req.params.id;
 
-            const result = await CategoryController.deleteCategory({ id });
-            if (result.status !== 204)
-                return res.status(result.status).send(result.message);
-
-            const wooId = result.wooId;
+            const { status, message, wooId } = await CategoryController.delete({ id });
+            if (status !== 204)
+                return res.status(status).send(message);
 
             WooDeleteCategory(wooId);
 

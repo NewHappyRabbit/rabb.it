@@ -103,8 +103,10 @@ function updateQuantity() {
     calculateProductPrices();
 }
 
+
 function addSize(e) {
     e.preventDefault();
+    document.getElementById('deliveryPricePerUnit').disabled = false;
     const sizeEl = document.getElementById('size');
     const suffixEl = document.getElementById('suffix');
     const suffix = suffixEl.value;
@@ -129,6 +131,9 @@ function removeSize(e) {
     e.preventDefault();
     const size = e.target.textContent;
     selectedSizes = selectedSizes.filter(s => s !== size);
+
+    if (selectedSizes.length === 0)
+        document.getElementById('deliveryPricePerUnit').disabled = true;
 
     const addedSizes = document.getElementById('addedSizes');
 
@@ -180,7 +185,7 @@ const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" disabled .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
             </div>
 
             <div class="col">
@@ -251,7 +256,7 @@ function validateProduct(data) {
         invalidFlag = markInvalid('deliveryPrice');
     else markValid('deliveryPrice');
 
-    if (!data.deliveryPricePerUnit || data.deliveryPricePerUnit < 0 || !priceRegex.test(data.deliveryPricePerUnit))
+    if (selectedSizes.length && (!data.deliveryPricePerUnit || data.deliveryPricePerUnit < 0 || !priceRegex.test(data.deliveryPricePerUnit)))
         invalidFlag = markInvalid('deliveryPricePerUnit');
     else markValid('deliveryPricePerUnit');
 
@@ -421,6 +426,7 @@ export async function createEditProductPage(ctx, next) {
         if (ctx.params.id) {
             editPage = true;
             const req = await axios.get(`/products/${ctx.params.id}`);
+            console.log(req)
             product = req.data;
             selectedSizes = product.sizes.map(s => s.size);
         } else {
@@ -525,4 +531,8 @@ export async function createEditProductPage(ctx, next) {
     // If product has images, render them
     if (product && product.additionalImages.length > 0)
         render(product.additionalImages.map(img => imgTemplate(img.url)), document.getElementById('additionalImagesPreview'));
+
+    // If product has sizes, enable deliveryPricePerUnit
+    if (selectedSizes.length)
+        document.getElementById('deliveryPricePerUnit').disabled = false;
 }

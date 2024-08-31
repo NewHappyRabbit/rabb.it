@@ -25,7 +25,7 @@ describe('POST /categories', async () => {
             order: 0
         };
 
-        const result = await CategoryController.createCategory({ data });
+        const result = await CategoryController.post({ data });
         test('Status is 201', () => {
             expect(result.status).toBe(201);
         });
@@ -55,7 +55,7 @@ describe('POST /categories', async () => {
             parent: categories[0]._id
         };
 
-        const result = await CategoryController.createCategory({ data });
+        const result = await CategoryController.post({ data });
         const category = result.category;
         categories.push(category);
 
@@ -83,7 +83,7 @@ describe('POST /categories', async () => {
             parent: categories[0]._id
         };
 
-        const result = await CategoryController.createCategory({ data });
+        const result = await CategoryController.post({ data });
         const category = result.category;
         categories.push(category);
 
@@ -114,7 +114,7 @@ describe('POST /categories', async () => {
         // Fake uploaded img from form
         const img = { buffer: fs.readFileSync(path.join(dirname(fileURLToPath(import.meta.url)), 'testimg.png')) };
 
-        const result = await CategoryController.createCategory({ data, img });
+        const result = await CategoryController.post({ data, img });
         const category = result.category;
         categories.push(category);
         const imgExists = fs.existsSync(category.image.path)
@@ -146,7 +146,7 @@ describe('POST /categories', async () => {
 });
 
 describe('GET /categories', async () => {
-    const data = await CategoryController.getCategories();
+    const data = await CategoryController.get();
 
     test('Categories count is correct', () => {
         expect(data.length).toEqual(categories.length)
@@ -160,7 +160,7 @@ describe('PUT /categories/:id', async () => {
             order: 0,
         };
 
-        const result = await CategoryController.updateCategory({ id: categories[3]._id, data });
+        const result = await CategoryController.put({ id: categories[3]._id, data });
         const category = result.category;
 
         test('Name is correct', () => {
@@ -186,7 +186,7 @@ describe('PUT /categories/:id', async () => {
 });
 
 describe('DELETE /categories/:id', async () => {
-    const result = await CategoryController.deleteCategory({ id: categories[3]._id });
+    const result = await CategoryController.delete({ id: categories[3]._id });
 
     test('Category was deleted', () => {
         expect(result.status).toEqual(204);

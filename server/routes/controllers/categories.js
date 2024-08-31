@@ -1,16 +1,14 @@
 import { Category } from "../../models/category.js"
 import { slugify } from "../../models/functions/global.js";
 import { Product } from "../../models/product.js";
-import { uploadImg } from "../common.js";
+import { uploadImg } from "./common.js";
 import fs from 'fs';
-import multer from "multer";
 
 export const CategoryController = {
-    getCategories: async () => await Category.find().sort({ path: 1, order: 1 }),
-    createCategory: async ({ data, img }) => {
+    get: async () => await Category.find().sort({ path: 1, order: 1 }),
+    post: async ({ data, img }) => {
         if (!data.name)
             return { status: 400, message: 'Name is required' };
-        // return res.status(400).send('Name is required');
 
         data.order === '' ? data.order = 0 : data.order = parseInt(data.order);
 
@@ -19,7 +17,6 @@ export const CategoryController = {
             const parent = await Category.findById(data.parent);
             if (!parent)
                 return { status: 400, message: 'Parent category does not exist' };
-            // return res.status(400).send('Parent category does not exist');
 
             parent.path ? data.path = `${parent.path}${parent.slug},` : data.path = `,${parent.slug},`
         }
@@ -46,7 +43,7 @@ export const CategoryController = {
         const category = await new Category(data).save();
         return { category, status: 201 };
     },
-    updateCategory: async ({ id, data, img }) => {
+    put: async ({ id, data, img }) => {
         if (!data.name) return { status: 400, message: 'Name is required' };
 
         const currentCategory = await Category.findById(id);
@@ -108,7 +105,7 @@ export const CategoryController = {
 
         return { category, status: 201 };
     },
-    deleteCategory: async ({ id }) => {
+    delete: async ({ id }) => {
         const category = await Category.findById(id);
         if (!category) return { status: 404, message: 'Category not found' };
 
@@ -139,16 +136,3 @@ export const CategoryController = {
         return { status: 204, wooId }
     }
 }
-
-const storage = multer.memoryStorage();
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png')
-        cb(null, true);
-    else
-        cb(new Error('Only jpeg and png files are allowed!'));
-}
-
-export const imageUploader = multer({
-    storage,
-    fileFilter
-});

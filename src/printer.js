@@ -59,13 +59,13 @@ export async function printerSetup() {
             socket.emit('printerConnected');
         }, function (error) {
             socket.emit('remotePrinter');
-            console.error(error);
         });
     }, function (error) {
         socket.emit('remotePrinter');
-        console.error(error);
     });
     const printerModalDiv = document.getElementById('selectPrinterModalDiv');
+
+    if (!printerModalDiv) return; // not yet rendered
     render(printerModal(), printerModalDiv);
 }
 

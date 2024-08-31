@@ -1,4 +1,18 @@
 import sharp from "sharp";
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png')
+        cb(null, true);
+    else
+        cb(new Error('Only jpeg and png files are allowed!'));
+}
+
+export const imageUploader = multer({
+    storage,
+    fileFilter
+});
 
 export async function uploadImg(image, folder) {
     const fileName = `${Date.now()}.jpeg`;
