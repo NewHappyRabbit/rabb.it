@@ -12,24 +12,26 @@ import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURL
 import { uploadImg } from "./common.js";
 
 export function productSockets(socket) {
-    socket.on('remotePrinterCheck', () => {
-        // check if pc with printer is connected
-        socket.emit('remotePrinterCheck', io.in('printer').length > 0);
+    socket.on('disconnect', () => {
+        // On disconnect, check if pc with printer is connected
+        io.emit('remotePrinter', io.sockets.adapter.rooms.get("printer") !== undefined);
     });
 
-    socket.on('printerConnected', () => {
+    socket.on('remotePrinter', () => {
+        // This is activated when any client asks the server if there is a printer connected
+        // Emit to all clients just in case there was a change
+        io.emit('remotePrinter', io.sockets.adapter.rooms.get("printer") !== undefined);
+    });
+
+    socket.on('printerConnected', async () => {
         // When a PC with a printer connects, add it to a room called "printer" and send print commands only to that room
         socket.join('printer');
 
-        io.emit('remotePrinterFound'); // send emit command to all clients that are currently connected to change printer status icon
+        io.emit('remotePrinter', io.sockets.adapter.rooms.get("printer") !== undefined);
     })
 
-    socket.on('printerDisconnected', () => {
-        io.emit('remotePrinterLost');
-    });
-
     socket.on('send-print', (product, quantity) => {
-        if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
+        if (io.sockets.adapter.rooms.printer.length === 0) return; // if no pc with printer connected, do nothing
         if (!product || !product.name || !product.code || !product.barcode || !product.wholesalePrice || !quantity) return;
         const minifiedProduct = {
             name: product.name,

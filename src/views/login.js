@@ -4,6 +4,7 @@ import { html, render } from 'lit/html.js';
 import axios from "axios";
 import { printerSetup } from '@/printer';
 import { initSocket, socket } from '@/api';
+import { submitBtn, toggleSubmitBtn } from '@/views/components'
 
 export var loggedInUser = document.cookie.includes('user=') ? JSON.parse(document.cookie.split('; ').find(row => row.startsWith('user=')).split('=')[1]) : null
 
@@ -29,6 +30,7 @@ export async function logout() {
 
 async function login(e) {
     e.preventDefault();
+    toggleSubmitBtn();
 
     const formData = new FormData(e.target);
     const username = formData.get('username');
@@ -47,6 +49,7 @@ async function login(e) {
         document.cookie = cookie;
         loggedInUser = user;
 
+        toggleSubmitBtn();
         alertEl.classList.add('d-none');
         alertEl.textContent = '';
         page('/');
@@ -56,9 +59,12 @@ async function login(e) {
         // initialize printer
         printerSetup();
     }).catch(err => {
+        toggleSubmitBtn();
         console.error(err);
         alertEl.classList.remove('d-none');
-        alertEl.textContent = err.response.data;
+        if (err.response?.data)
+            alertEl.textContent = err.response.data;
+        else alertEl.textContent = 'Няма връзка със сървъра. Моля опитайте отново.'
     });
 }
 
@@ -78,9 +84,9 @@ export function loginPage() {
                 <label for="password" class="form-label">Парола</label>
                 <input class="form-control" type="password" id="password" name="password" minlength="6" required autocomplete="off">
             </div>
-            <button type="submit" class="btn btn-primary w-50 m-auto">Вход</button>
+            ${submitBtn({ text: "Вход", classes: "w-50 m-auto" })}
         </form>
-        <div id="alert" class="alert alert-danger d-none"></div>
+        <div id="alert" class="alert alert-danger mt-3 d-none"></div>
     </div>
     `;
 

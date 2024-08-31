@@ -6,26 +6,8 @@ export var selectedPrinter, availablePrinters = [], printerFound;
 
 export function printerSockets() {
     // check if pc with printer is connected (check happens if no printer found on this device)
-    socket.on('remotePrinterCheck', (bool) => {
-        console.info('Checking if remote PC with printer is connected: ', bool);
-        printerFound = bool;
-
-        const printerIcon = document.getElementById('printerIconNav');
-
-        if (printerFound) {
-            printerIcon.classList.add('text-success');
-            printerIcon.classList.remove('text-danger');
-            printerIcon.classList.remove('text-warning');
-        } else {
-            printerIcon.classList.add('text-danger');
-            printerIcon.classList.remove('text-success');
-            printerIcon.classList.remove('text-warning');
-        }
-    });
-
     // when a pc with printer connects or disconnects, update status
-    socket.on('remotePrinterFound', (bool) => {
-        console.info('Remote PC with printer is now available!');
+    socket.on('remotePrinter', (bool) => {
         printerFound = bool; // if true then it connected, if false it disconnected
 
         const printerIcon = document.getElementById('printerIconNav');
@@ -39,11 +21,6 @@ export function printerSockets() {
             printerIcon.classList.remove('text-warning');
         }
     })
-
-    // when a pc with printer disconnects, update status
-    socket.on('remotePrinterLost', () => {
-
-    });
 
     // initialize socket.io print commands only on the device that has a printer connected
     socket.on('printRestock', products => {
@@ -79,18 +56,15 @@ export async function printerSetup() {
             // if local printer found, emit to all other devices
             socket.emit('printerConnected');
         }, function (error) {
-            socket.emit('remotePrinterCheck');
+            socket.emit('remotePrinter');
             console.error(error);
         });
     }, function (error) {
-        socket.emit('remotePrinterCheck');
+        socket.emit('remotePrinter');
         console.error(error);
     });
     const printerModalDiv = document.getElementById('selectPrinterModalDiv');
     render(printerModal(), printerModalDiv);
-
-    //TODO DELETE FAKE TEST
-    socket.emit('printerConnected');
 }
 
 export const printerModal = () => html`
