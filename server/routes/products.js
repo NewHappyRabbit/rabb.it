@@ -448,12 +448,11 @@ export function productsRoutes() {
             }
 
             await product.updateOne(data);
-            const savedProduct = await Product.findById(id);
 
             if (product.hidden !== true) // if hidden then its not in the website
                 WooEditProduct(product, data);
 
-            res.status(201).json(savedProduct);
+            res.status(201).send();
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

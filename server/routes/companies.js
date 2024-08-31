@@ -110,7 +110,7 @@ export function companiesRoutes() {
             if (data.mol && !companyOld.senders.includes(data.mol)) // if new mol add to receivers
                 data.senders = [...companyOld.senders, data.mol];
 
-            const company = await Company.updateOne({ _id: req.params.id }, data);
+            await companyOld.updateOne(data);
 
             res.status(201).send();
         } catch (error) {
@@ -143,7 +143,6 @@ export function companiesRoutes() {
             await company.deleteOne();
 
             res.status(204).send();
-            res.log.info(company, 'Company deleted');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -163,8 +162,6 @@ export function companiesRoutes() {
 
             await company.save();
             res.status(201).send();
-
-            res.log.info(company, 'Company set as default');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

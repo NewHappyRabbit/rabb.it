@@ -11,6 +11,8 @@ export function printerSockets() {
         printerFound = bool; // if true then it connected, if false it disconnected
 
         const printerIcon = document.getElementById('printerIconNav');
+        if (!printerIcon) return; // nav is not yet rendered
+
         if (printerFound) {
             printerIcon.classList.add('text-success');
             printerIcon.classList.remove('text-danger');

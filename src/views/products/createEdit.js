@@ -266,7 +266,7 @@ function validateProduct(data) {
     return invalidFlag;
 }
 
-async function createEditProduct(e) {
+async function updateProduct(e) {
     e.preventDefault();
     toggleSubmitBtn();
 
@@ -441,7 +441,7 @@ export async function createEditProductPage(ctx, next) {
     const template = () => html`
         ${nav()}
         <div class="container-fluid">
-            <form enctype="multipart/form-data" novalidate @submit=${createEditProduct} id="createProductForm" class="needs-validation p-2">
+            <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
                 <div class="row mb-3">
                     <label for="image" class="form-label">Главна снимка</label>
                     <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">

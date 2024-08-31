@@ -51,7 +51,6 @@ export function settingsRoutes() {
             }
 
             res.status(201).send();
-            res.log.info(data, 'Settings updated');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

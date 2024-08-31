@@ -124,7 +124,7 @@ export function usersRoutes() {
 
             await user.updateOne(newData);
 
-            res.status(201).json(user);
+            res.status(201).send();
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

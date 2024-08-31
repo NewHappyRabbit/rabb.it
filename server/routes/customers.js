@@ -160,7 +160,7 @@ export function customersRoutes() {
             if (data.mol && !customerOld.receivers.includes(data.mol)) // if new mol add to receivers
                 data.receivers = [...customerOld.receivers, data.mol];
 
-            const customer = await Customer.updateOne({ _id: req.params.id }, data);
+            await customerOld.updateOne(data);
 
             res.status(201).send();
         } catch (error) {
@@ -185,7 +185,6 @@ export function customersRoutes() {
                 await customer.deleteOne();
 
             res.status(204).send();
-            res.log.info(customer, `Customer ${hasDocuments ? 'hidden' : 'deleted'}`);
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -203,7 +202,6 @@ export function customersRoutes() {
             await customer.save();
 
             res.status(201).send();
-            res.log.info(customer, 'Customer unhidden');
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
