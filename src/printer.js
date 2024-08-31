@@ -2,9 +2,49 @@ import { html, render } from 'lit-html';
 import { formatPrice, socket } from '@/api';
 import { loggedInUser } from '@/views/login';
 
-export var selectedPrinter, availablePrinters = [], printerClass = 'text-warning';
+export var selectedPrinter, availablePrinters = [], printerFound;
 
-function attachSockets() {
+export function printerSockets() {
+    // check if pc with printer is connected (check happens if no printer found on this device)
+    socket.on('remotePrinterCheck', (bool) => {
+        console.info('Checking if remote PC with printer is connected: ', bool);
+        printerFound = bool;
+
+        const printerIcon = document.getElementById('printerIconNav');
+
+        if (printerFound) {
+            printerIcon.classList.add('text-success');
+            printerIcon.classList.remove('text-danger');
+            printerIcon.classList.remove('text-warning');
+        } else {
+            printerIcon.classList.add('text-danger');
+            printerIcon.classList.remove('text-success');
+            printerIcon.classList.remove('text-warning');
+        }
+    });
+
+    // when a pc with printer connects or disconnects, update status
+    socket.on('remotePrinterFound', (bool) => {
+        console.info('Remote PC with printer is now available!');
+        printerFound = bool; // if true then it connected, if false it disconnected
+
+        const printerIcon = document.getElementById('printerIconNav');
+        if (printerFound) {
+            printerIcon.classList.add('text-success');
+            printerIcon.classList.remove('text-danger');
+            printerIcon.classList.remove('text-warning');
+        } else {
+            printerIcon.classList.add('text-danger');
+            printerIcon.classList.remove('text-success');
+            printerIcon.classList.remove('text-warning');
+        }
+    })
+
+    // when a pc with printer disconnects, update status
+    socket.on('remotePrinterLost', () => {
+
+    });
+
     // initialize socket.io print commands only on the device that has a printer connected
     socket.on('printRestock', products => {
         for (let product of products)
@@ -16,48 +56,44 @@ function attachSockets() {
     });
 }
 
+
 export async function printerSetup() {
     if (!loggedInUser) return;
 
-    printerClass = 'text-warning'; // yellow means loading
-
     //Get the default device from the application as a first step. Discovery takes longer to complete.
-    BrowserPrint.getDefaultDevice("printer", function (device) {
+    await BrowserPrint.getDefaultDevice("printer", async function (device) {
         //Add device to list of devices
         selectedPrinter = device;
-        printerClass = 'text-success'; // set color to green
         availablePrinters.push(device);
 
         //Discover any other devices available to the application
-        BrowserPrint.getLocalDevices(function (device_list) {
+        await BrowserPrint.getLocalDevices(function (device_list) {
             for (var i = 0; i < device_list.length; i++) {
                 //Add device to list of devices
-                if (!selectedPrinter || device.uid != selectedPrinter.uid)
-                    availablePrinters.push(device);
-                if (!selectedPrinter)
-                    selectedPrinter = device;
+                availablePrinters.push(device);
 
-                attachSockets();
+                // set as default if none found
+                if (!selectedPrinter) selectedPrinter = device;
             }
 
-        }, function () { alert("Грешка в намирането на принтери") }, "printer")
-
-        const printerModalDiv = document.getElementById('selectPrinterModalDiv');
-
-        try {
-            if (printerModalDiv)
-                render(printerModal(availablePrinters), printerModalDiv);
-        } catch (error) {
+            // if local printer found, emit to all other devices
+            socket.emit('printerConnected');
+        }, function (error) {
+            socket.emit('remotePrinterCheck');
             console.error(error);
-        }
+        });
     }, function (error) {
-        console.error("Error finding printer or no printer was found", error);
-        // alert('Не успяхме да намерим принтер!')
-        printerClass = 'text-danger'; // set color to red
+        socket.emit('remotePrinterCheck');
+        console.error(error);
     });
+    const printerModalDiv = document.getElementById('selectPrinterModalDiv');
+    render(printerModal(), printerModalDiv);
+
+    //TODO DELETE FAKE TEST
+    socket.emit('printerConnected');
 }
 
-export const printerModal = (availablePrinters) => html`
+export const printerModal = () => html`
     <div class="modal fade" id="selectPrinterModal" tabindex="-1" aria-labelledby="selectPrinterModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">

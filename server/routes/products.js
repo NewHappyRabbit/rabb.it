@@ -12,7 +12,24 @@ import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURL
 import { uploadImg } from "./common.js";
 
 export function productSockets(socket) {
+    socket.on('remotePrinterCheck', () => {
+        // check if pc with printer is connected
+        socket.emit('remotePrinterCheck', io.in('printer').length > 0);
+    });
+
+    socket.on('printerConnected', () => {
+        // When a PC with a printer connects, add it to a room called "printer" and send print commands only to that room
+        socket.join('printer');
+
+        io.emit('remotePrinterFound'); // send emit command to all clients that are currently connected to change printer status icon
+    })
+
+    socket.on('printerDisconnected', () => {
+        io.emit('remotePrinterLost');
+    });
+
     socket.on('send-print', (product, quantity) => {
+        if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
         if (!product || !product.name || !product.code || !product.barcode || !product.wholesalePrice || !quantity) return;
         const minifiedProduct = {
             name: product.name,
@@ -24,8 +41,8 @@ export function productSockets(socket) {
         if (product.sizes.length)
             minifiedProduct.sizes = product.sizes;
 
-        io.emit('print', minifiedProduct, quantity);
-    })
+        io.in('printer').emit('print', minifiedProduct, quantity);
+    });
 }
 
 function checkDigitEAN13(barcode) {
@@ -249,7 +266,8 @@ export function productsRoutes() {
                     product.quantity = found.quantity;
                 }
 
-                io.emit('printRestock', productsToPrint);
+                if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
+                io.in('printer').emit('printRestock', productsToPrint);
             }
 
             WooUpdateQuantityProducts(doneProducts);
@@ -341,8 +359,10 @@ export function productsRoutes() {
             if (data.hidden !== true)// product should be hidden from website
                 WooCreateProduct(savedProduct);
 
-            if (data.printLabel)
-                io.emit('print', { name: savedProduct.name, code: savedProduct.code, barcode: savedProduct.barcode, wholesalePrice: savedProduct.wholesalePrice, sizes: savedProduct.sizes }, savedProduct.quantity);
+            if (data.printLabel) {
+                if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
+                io.in('printer').emit('print', { name: savedProduct.name, code: savedProduct.code, barcode: savedProduct.barcode, wholesalePrice: savedProduct.wholesalePrice, sizes: savedProduct.sizes }, savedProduct.quantity);
+            }
 
             res.status(201).send();
         } catch (error) {

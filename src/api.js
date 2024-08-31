@@ -2,6 +2,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { html } from 'lit/html.js';
 import { loggedInUser } from '@/views/login';
+import { printerSockets } from '@/printer';
 export let serverURL = 'https://localhost:8443'; // used for requests
 export let publicURL = 'https://localhost:8443'; // used for resources like img, etc.
 
@@ -39,6 +40,8 @@ export function initSocket() {
             context: err.context
         })
     });
+
+    printerSockets();
 }
 
 const currency = "лв.";
