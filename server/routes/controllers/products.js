@@ -1,6 +1,5 @@
 import { AutoIncrement } from "../../models/autoincrement.js";
 import { Category } from "../../models/category.js";
-import { slugify } from "../../models/functions/global.js";
 import { Order } from "../../models/order.js";
 import { Product } from "../../models/product.js";
 import { uploadImg } from "./common.js";
@@ -56,7 +55,7 @@ export const ProductController = {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
-        if (page && page === 'orders') {
+        if (page && page === 'orders' || page === 'references') {
             const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty');
             return { products, status: 200 };
         }

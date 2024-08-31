@@ -185,11 +185,12 @@ async function loadReferences() {
         const prevCursor = req.data.prevCursor;
         const nextCursor = req.data.nextCursor;
 
+        //TODO When all controlers done, do a one route to get all params
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers/all')).data;
         const companies = (await axios.get('/companies')).data;
         const users = (await axios.get('/users')).data;
-        const products = (await axios.get('/products/all')).data;
+        const products = (await axios.get('/products', { params: { page: 'references' } })).data;
 
         return html`
         ${filters(customers, companies, users, products, params)}
@@ -209,6 +210,7 @@ export function referencesOrdersPage(ctx, next) {
     temp = undefined;
 
     // check if filters are applied
+    //TODO Use this way to get params from filters everywhere
     if (ctx.querystring)
         selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
     else

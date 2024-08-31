@@ -4,7 +4,6 @@ import axios from "axios";
 import { nav } from "@/views/nav.js";
 import { markValid, markInvalid } from "@/api.js";
 import { toggleSubmitBtn, submitBtn } from "@/views/components";
-import { loggedInUser } from "@/views/login";
 
 var user = '', userRoles;
 
@@ -95,7 +94,7 @@ async function createEditUser(e) {
 
 export async function createEditUserPage(ctx, next) {
     const id = ctx.params.id;
-    userRoles = await axios.get('/users/roles').then(res => res.data);
+    userRoles = (await axios.get('/users/roles')).data;
     if (id) {
         try {
             const req = await axios.get(`/users/${id}`);

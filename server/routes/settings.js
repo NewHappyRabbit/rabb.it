@@ -1,19 +1,7 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Setting } from "../models/setting.js";
-
-async function createDefaultSettings() {
-    // Check if the settings exist in the database to prevent errors on new deploys
-    var exist = await Setting.findOne({ key: 'wholesaleMarkup' });
-    if (!exist) await Setting.create({ key: 'wholesaleMarkup', value: '20' });
-
-    exist = await Setting.findOne({ key: 'retailMarkup' });
-    if (!exist) await Setting.create({ key: 'retailMarkup', value: '50' });
-    else return; // on last setting
-
-    console.log('Default settings created');
-}
+import { SettingsController, createDefaultSettings } from "./controllers/settings.js";
 
 export function settingsRoutes() {
     createDefaultSettings();
@@ -21,10 +9,7 @@ export function settingsRoutes() {
 
     settingsRouter.get('/settings', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const keys = req.query.keys || '';
-            const query = keys ? { key: { $in: keys } } : {};
-
-            const settings = await Setting.find(query);
+            const settings = await SettingsController.get(req.query);
 
             res.json(settings);
         } catch (error) {
@@ -37,18 +22,7 @@ export function settingsRoutes() {
         try {
             const data = { ...req.body };
 
-            for (const [key, value] of Object.entries(data)) {
-                const setting = await Setting.findOne({ key });
-
-                if (!setting && value)
-                    await Setting.create({ key, value });
-                else if (setting && value) {
-                    setting.value = value;
-                    await setting.save();
-                } else if (setting && !value && !['wholesaleMarkup', 'retailMarkup'].includes(key)) {
-                    await Setting.deleteOne(setting);
-                }
-            }
+            await SettingsController.put(data);
 
             res.status(201).send();
         } catch (error) {
