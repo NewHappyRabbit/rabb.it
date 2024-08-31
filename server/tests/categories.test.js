@@ -17,6 +17,7 @@ afterAll(async () => {
 })
 
 let categories = [];
+let imgPath;
 describe('POST /categories', async () => {
     describe('Create category', async () => {
         const data = {
@@ -117,6 +118,7 @@ describe('POST /categories', async () => {
         const category = result.category;
         categories.push(category);
         const imgExists = fs.existsSync(category.image.path)
+        imgPath = category.image.path;
 
 
         test('Name is correct', () => {
@@ -177,10 +179,9 @@ describe('PUT /categories/:id', async () => {
             expect(category.path).toEqual(`,test,test-2,`);
         });
 
-        //TODO Try to get it to work
-        /* test('Image was not deleted', () => {
+        test('Image was not deleted', () => {
             expect(category.image.path).toEqual(imgPath);
-        }); */
+        });
     });
 });
 
