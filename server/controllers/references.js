@@ -1,8 +1,8 @@
-import { Company } from "../../models/company.js";
-import { Customer } from "../../models/customer.js";
-import { Order } from "../../models/order.js";
-import { Product } from "../../models/product.js";
-import { User } from "../../models/user.js";
+import { Company } from "../models/company.js";
+import { Customer } from "../models/customer.js";
+import { Order } from "../models/order.js";
+import { Product } from "../models/product.js";
+import { User } from "../models/user.js";
 
 export const ReferencesController = {
     get: async (query) => {

@@ -1,7 +1,7 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { createDefaultUsers, UserController } from "./controllers/users.js";
+import { createDefaultUsers, UserController } from "../controllers/users.js";
 
 
 export function usersRoutes() {

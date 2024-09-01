@@ -1,6 +1,6 @@
-import { Category } from "../../models/category.js"
-import { slugify } from "../../models/functions/global.js";
-import { Product } from "../../models/product.js";
+import { Category } from "../models/category.js"
+import { slugify } from "../models/functions/global.js";
+import { Product } from "../models/product.js";
 import { uploadImg } from "./common.js";
 import fs from 'fs';
 

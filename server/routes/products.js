@@ -4,8 +4,8 @@ import express from 'express';
 import { Product } from "../models/product.js";
 import fs from 'fs';
 import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURLS, WooUpdateQuantityProducts } from "../woocommerce/products.js";
-import { imageUploader } from "./controllers/common.js";
-import { ProductController } from "./controllers/products.js";
+import { imageUploader } from "../controllers/common.js";
+import { ProductController } from "../controllers/products.js";
 
 export function productSockets(socket) {
     socket.on('disconnect', () => {
@@ -53,9 +53,6 @@ export function productsRoutes() {
             const { products, prevCursor, nextCursor, status, message } = await ProductController.get({ page, cursor, search });
             if (status !== 200)
                 return res.status(status).send(message);
-
-            // This is used because /products page that shows the products wants the prevCursor and nextCursor, but the other pages dont
-            if (page) return res.json(products)
 
             res.json({ products, prevCursor, nextCursor });
         } catch (error) {

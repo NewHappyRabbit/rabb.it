@@ -2,8 +2,8 @@ import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooCreateCategory, WooEditCategory, WooDeleteCategory } from "../woocommerce/categories.js";
-import { CategoryController } from "./controllers/categories.js";
-import { imageUploader } from "./controllers/common.js";
+import { CategoryController } from "../controllers/categories.js";
+import { imageUploader } from "../controllers/common.js";
 
 export function categoriesRoutes() {
     const categoriesRouter = express.Router();

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { User, userRoles } from "../../models/user.js";
-import { Order } from "../../models/order.js";
+import { User, userRoles } from "../models/user.js";
+import { Order } from "../models/order.js";
 import jwt from 'jsonwebtoken';
 
 export async function createDefaultUsers() {

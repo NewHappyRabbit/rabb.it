@@ -235,8 +235,7 @@ async function restockProducts() {
 
 export async function restockPage() {
     try {
-        const res = await axios.get('/products', { params: { page: 'restock' } });
-        products = res.data;
+        products = (await axios.get('/products', { params: { page: 'restock' } })).data.products;
         addedProducts = [];
         addedProductsIndex = 0;
     } catch (error) {

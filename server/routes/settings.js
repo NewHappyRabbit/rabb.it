@@ -1,7 +1,7 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { SettingsController, createDefaultSettings } from "./controllers/settings.js";
+import { SettingsController, createDefaultSettings } from "../controllers/settings.js";
 
 export function settingsRoutes() {
     createDefaultSettings();

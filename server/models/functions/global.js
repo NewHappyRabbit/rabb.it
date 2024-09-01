@@ -41,11 +41,11 @@ export function sparseFix(schema, field) {
 
     schema.pre('updateOne', function (next) {
         const modifiedField = this._update[field];
-
         if (modifiedField !== '')
             return next();
 
         try {
+            // Buggy, currently if there was an old value and now we want to set it to an empty string, it doesnt update it and skips over it
             this._update[field] = undefined;
             next();
         } catch (error) {

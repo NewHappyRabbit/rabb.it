@@ -26,10 +26,6 @@ const customerSchema = new Schema({
     taxvat: { // example: BG123123123
         type: String,
         required: false,
-        index: {
-            unique: true,
-            sparse: true
-        },
     },
     address: {
         type: String,
@@ -47,8 +43,6 @@ const customerSchema = new Schema({
         default: false,
     }
 });
-
-sparseFix(customerSchema, 'taxvat');
 
 const Customer = mongoose.model('Customer', customerSchema);
 

@@ -36,10 +36,6 @@ const companySchema = new Schema({
     taxvat: { // example: BG123123123
         type: String,
         required: false,
-        index: {
-            unique: true,
-            sparse: true
-        },
     },
     tax: {
         type: Number,
@@ -56,8 +52,6 @@ const companySchema = new Schema({
         default: false,
     },
 });
-
-sparseFix(companySchema, 'taxvat');
 
 const Company = mongoose.model('Company', companySchema);
 

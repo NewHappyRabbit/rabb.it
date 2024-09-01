@@ -1,7 +1,7 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { ReferencesController } from "./controllers/references.js";
+import { ReferencesController } from "../controllers/references.js";
 
 export function referencesSalesRoutes() {
     const salesRouter = express.Router();

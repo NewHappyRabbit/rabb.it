@@ -1,4 +1,4 @@
-import { Setting } from "../../models/setting.js";
+import { Setting } from "../models/setting.js";
 
 export async function createDefaultSettings() {
     // Check if the settings exist in the database to prevent errors on new deploys
