@@ -72,6 +72,9 @@ export function ordersRoutes() {
             const { status, message } = await OrderController.put({ id, data, userId });
             if (status !== 201) return res.status(status).send(message);
 
+            //TODO Do update qty here somehow
+            // WooUpdateQuantityProducts()
+
             res.status(201).send(id);
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
@@ -81,9 +84,11 @@ export function ordersRoutes() {
 
     ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
-            const { status, message } = await OrderController.delete(req.params.id);
+            const { status, message, doneProducts } = await OrderController.delete(req.params.id);
 
             if (status !== 204) return res.status(status).send(message);
+
+            WooUpdateQuantityProducts(doneProducts);
 
             res.status(204).send();
         } catch (error) {

@@ -148,7 +148,7 @@ export const OrderController = {
         if (!order) return { status: 404, message: 'Продажбата не е намерена' };
         return { order, status: 200 };
     },
-    post: async ({ data, userId }) => {
+    OLDpost: async ({ data, userId }) => {
         const validation = await validateOrder(data);
 
         if (validation) return validation;
@@ -237,6 +237,124 @@ export const OrderController = {
 
         if (!seq)
             seq = await AutoIncrement.create({ name: data.type, company, seq: 1 });
+
+        data.number = seq.seq;
+
+        const order = await new Order(data).save();
+
+        return { status: 201, order, doneProducts };
+    },
+    post: async ({ data, userId }) => {
+        const validation = await validateOrder(data);
+
+        if (validation) return validation;
+
+        // Add sender to company
+        const company = await Company.findById(data.company);
+
+        if (!company.senders) company.senders = [data.sender];
+
+        if (!company.senders.includes(data.sender)) company.senders.push(data.sender);
+
+        await company.save();
+
+        // Add receiver to customer
+        const customer = await Customer.findById(data.customer);
+
+        if (!customer.receivers) company.receivers = [data.receiver];
+
+        if (!customer.receivers.includes(data.receiver)) customer.receivers.push(data.receiver);
+
+        await customer.save();
+
+        data.user = userId;
+
+        var total = 0;
+        var doneProducts = [];
+
+        // Calculate total and remove quantity from stock
+        for (let i = 0; i < data.products.length; i++) {
+            const product = data.products[i];
+
+            if (product.product) {
+                const existingProduct = await Product.findById(product.product);
+
+                // Wholesale + Variable product
+                if (data.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
+                    // Remove quantity from each selected size (can be all of them, or just some (sell open package))
+                    for (let size of product.selectedSizes) {
+                        // Check if there is enough quantity of selected size
+                        if (existingProduct.sizes.filter(s => s.size === size)[0].quantity < product.quantity)
+                            return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]` };
+
+                        existingProduct.sizes.filter(s => s.size === size)[0].quantity -= product.quantity;
+                    }
+
+                    // Update package quantity to be the lowest of all selected sizes quantity
+                    existingProduct.qtyInPackage = Math.min(...existingProduct.sizes.map(s => s.quantity));
+
+                    // If no quantity of any size is left, mark as out of stock
+                    if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
+                        existingProduct.outOfStock = true;
+                }
+
+                // Wholesale + Simple product
+                if (data.orderType === 'wholesale' && existingProduct?.sizes?.length === 0) {
+                    // Check if there is enough quantity
+
+                    if (existingProduct.quantity < product.quantity)
+                        return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]` };
+
+                    existingProduct.quantity -= product.quantity;
+
+                    // If no quantity left, mark as out of stock
+                    if (existingProduct.quantity <= 0) existingProduct.outOfStock = true;
+                }
+
+                // Retail + Variable product
+                if (data.orderType === 'retail' && existingProduct.sizes.length > 0) {
+                    // Check if there is enough quantity
+                    if (existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < product.quantity)
+                        return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${product.size}) [${existingProduct.code}]` };
+
+                    existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= product.quantity;
+
+                    // Update package quantity to be the lowest of all selected sizes quantity
+                    existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+
+                    // If no quantity of any size is left, mark as out of stock
+                    if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
+                        existingProduct.outOfStock = true;
+                }
+
+                // Retail + Simple product
+                if (data.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
+                    // Check if there is enough quantity
+                    if (existingProduct.quantity < product.quantity)
+                        return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]` };
+
+                    existingProduct.quantity -= product.quantity;
+
+                    // If no quantity left, mark as out of stock
+                    if (existingProduct.quantity <= 0) existingProduct.outOfStock = true;
+                }
+
+                // Add product to array to save later
+                doneProducts.push(existingProduct);
+            }
+
+            total += (product.quantity * product.price) * (1 - product.discount / 100);
+        }
+
+        // If all goes well, save all products
+        doneProducts.forEach(async product => await product.save());
+        data.total = total.toFixed(2);
+
+        data.unpaid = (data.paidAmount || 0).toFixed(2) < total.toFixed(2);
+
+        var seq = await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { $inc: { seq: 1 } }, { new: true }).select('seq');
+
+        if (!seq) seq = await AutoIncrement.create({ name: data.type, company, seq: 1 });
 
         data.number = seq.seq;
 
@@ -441,6 +559,7 @@ export const OrderController = {
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
+        const doneProducts = [];
         // Return quantity to products
         order.products.forEach(async product => {
             if (order.orderType === 'wholesale' && product.product) {
@@ -457,7 +576,7 @@ export const OrderController = {
 
 
                 existingProduct.outOfStock = false;
-                await existingProduct.save();
+                doneProducts.push(existingProduct);
             } else if (order.orderType === 'retail' && product.product) {
                 const existingProduct = await Product.findById(product.product);
 
@@ -471,13 +590,16 @@ export const OrderController = {
 
 
                 existingProduct.outOfStock = false;
-                await existingProduct.save();
+                doneProducts.push(existingProduct);
             }
         });
+
+        // if all goes well, save all products
+        doneProducts.forEach(async product => await product.save());
 
         order.deleted = true;
         await order.save();
 
-        return { status: 204 };
+        return { status: 204, doneProducts };
     }
 }

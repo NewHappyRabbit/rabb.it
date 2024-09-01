@@ -12,6 +12,7 @@ import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
 
 var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
 const defaultDocumentType = 'stokova';
+const defaultOrderType = 'wholesale';
 
 function changeOrderType(e) {
     orderType = e.target.value;
@@ -450,100 +451,111 @@ function stopBarcode() {
 function addProduct(e) {
     e.preventDefault();
 
-    if (e.target.value === '')
-        return;
+    if (e.target.value === '') return;
 
-    // check if copy-pasted or enter was pressed
-    if ((e.ctrlKey && e.key === 'v' || e.code === 'MetaLeft') || e.code === 'Enter' || e.code === 'NumpadEnter') {
-        var product, quantity = 1;
+    // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
+    if ((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
-        if (orderType === 'wholesale') {
-            // check if quantity was entered
-            if (e.target.value.split('*').length === 1)
-                product = e.target.value;
-            else {
-                quantity = +e.target.value.split('*')[0];
-                quantity = quantity > 0 ? quantity : 1;
-                product = e.target.value.split('*')[1];
+    var product, quantity = 1;
+
+    //TODO DO SAME AS IN ORDERS CONTROLLER
+    // and also add the new logic for product.selectedSizes
+
+    // Wholesale + variable
+
+    // Wholesale + simple
+
+    // Retail + variable
+
+    // Retail + simple
+
+
+    if (orderType === 'wholesale') {
+        // check if quantity was entered
+        if (e.target.value.split('*').length === 1)
+            product = e.target.value;
+        else {
+            quantity = +e.target.value.split('*')[0];
+            quantity = quantity > 0 ? quantity : 1;
+            product = e.target.value.split('*')[1];
+        }
+
+        // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
+        const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
+
+        if (productInDB) {
+            // check if product already in table and increase quantity
+            if (addedProducts.find(p => p.product && p.product._id === productInDB._id)) {
+                const index = addedProducts.findIndex(p => p.product && p.product._id === productInDB._id);
+
+                addedProducts[index].quantity = +addedProducts[index].quantity + quantity;
+
+                // check if product quantity has been exceeded and set to max
+                if (addedProducts[index].quantity > productInDB.quantity)
+                    addedProducts[index].quantity = productInDB.quantity;
             }
-
-            // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-            const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
-
-            if (productInDB) {
-                // check if product already in table and increase quantity
-                if (addedProducts.find(p => p.product && p.product._id === productInDB._id)) {
-                    const index = addedProducts.findIndex(p => p.product && p.product._id === productInDB._id);
-
-                    addedProducts[index].quantity = +addedProducts[index].quantity + quantity;
-
-                    // check if product quantity has been exceeded and set to max
-                    if (addedProducts[index].quantity > productInDB.quantity)
-                        addedProducts[index].quantity = productInDB.quantity;
-                }
-                else
-                    addedProducts.push({
-                        index: addedProductsIndex++,
-                        product: productInDB,
-                        unitOfMeasure: productInDB.unitOfMeasure,
-                        quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
-                        price: orderType === 'wholesale' ? productInDB.wholesalePrice : productInDB.retailPrice,
-                        discount: selectedCustomer?.discount || 0
-                    });
-            } else
+            else
                 addedProducts.push({
                     index: addedProductsIndex++,
-                    name: product,
-                    quantity,
-                    price: 0,
-                    qtyInPackage: 0,
-                    unitOfMeasure: 'пакет',
+                    product: productInDB,
+                    unitOfMeasure: productInDB.unitOfMeasure,
+                    quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
+                    price: orderType === 'wholesale' ? productInDB.wholesalePrice : productInDB.retailPrice,
                     discount: selectedCustomer?.discount || 0
                 });
-        } else if (orderType === 'retail') {
-            product = e.target.value;
-            // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-            const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
+        } else
+            addedProducts.push({
+                index: addedProductsIndex++,
+                name: product,
+                quantity,
+                price: 0,
+                qtyInPackage: 0,
+                unitOfMeasure: 'пакет',
+                discount: selectedCustomer?.discount || 0
+            });
+    } else if (orderType === 'retail') {
+        product = e.target.value;
+        // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
+        const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
 
-            if (productInDB) {
-                // Check if product already in table and increase quantity
-                if (addedProducts.find(p => p.product && p.product._id === productInDB._id)) {
-                    const index = addedProducts.findIndex(p => p.product && p.product._id === productInDB._id);
+        if (productInDB) {
+            // Check if product already in table and increase quantity
+            if (addedProducts.find(p => p.product && p.product._id === productInDB._id)) {
+                const index = addedProducts.findIndex(p => p.product && p.product._id === productInDB._id);
 
-                    addedProducts[index].quantity = +addedProducts[index].quantity + 1;
+                addedProducts[index].quantity = +addedProducts[index].quantity + 1;
 
-                    // check if product size qty has been exceeded and set to max
-                    if (addedProducts[index].size && addedProducts[index].quantity > productInDB.sizes.find(size => size.size === addedProducts[index].size).quantity)
-                        addedProducts[index].quantity = productInDB.sizes.find(size => size.size === addedProducts[index].size).quantity;
-                }
-                else
-                    addedProducts.push({
-                        index: addedProductsIndex++,
-                        product: productInDB,
-                        quantity: 1,
-                        price: productInDB.retailPrice,
-                        unitOfMeasure: 'бр.',
-                        discount: selectedCustomer?.discount || 0
-                    });
+                // check if product size qty has been exceeded and set to max
+                if (addedProducts[index].size && addedProducts[index].quantity > productInDB.sizes.find(size => size.size === addedProducts[index].size).quantity)
+                    addedProducts[index].quantity = productInDB.sizes.find(size => size.size === addedProducts[index].size).quantity;
             }
-            else {
+            else
                 addedProducts.push({
                     index: addedProductsIndex++,
-                    name: product,
-                    quantity,
-                    price: 0,
+                    product: productInDB,
+                    quantity: 1,
+                    price: productInDB.retailPrice,
                     unitOfMeasure: 'бр.',
                     discount: selectedCustomer?.discount || 0
                 });
-            }
         }
-
-        successScan(e.target);
-        rerenderTable();
-
-        e.target.value = '';
-        e.target.focus();
+        else {
+            addedProducts.push({
+                index: addedProductsIndex++,
+                name: product,
+                quantity,
+                price: 0,
+                unitOfMeasure: 'бр.',
+                discount: selectedCustomer?.discount || 0
+            });
+        }
     }
+
+    successScan(e.target);
+    rerenderTable();
+
+    e.target.value = '';
+    e.target.focus();
 }
 
 function validateOrder(data) {
@@ -970,10 +982,10 @@ export async function createEditOrderPage(ctx, next) {
             }
         } else {
             order = undefined;
-            orderType = 'wholesale';
-            addedProducts = [];
+            orderType = defaultOrderType;
             selectedCompany = companies[0];
             selectedCustomer = undefined;
+            addedProducts = [];
         }
         // reset form
         const form = document.querySelector('form');
