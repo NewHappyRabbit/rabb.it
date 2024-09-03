@@ -363,6 +363,9 @@ export const OrderController = {
         return { status: 201, order, doneProducts };
     },
     put: async ({ id, data, userId }) => {
+        //TODO Remake this function to be more simple
+        // Instead of comparing old and new data, restore all previous data qty and save new data
+        // Keep track of old & new products and update qty in woocommerce
         const validation = await validateOrder(data);
 
         if (validation) return validation;

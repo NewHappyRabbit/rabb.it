@@ -6,8 +6,8 @@ import { uploadImg } from "./common.js";
 import fs from 'fs';
 
 async function validateProduct(data) {
-    const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice } = data;
-    if (!category || !name || !quantity || !deliveryPrice || !wholesalePrice || !retailPrice)
+    const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure } = data;
+    if (!category || !name || !quantity || !deliveryPrice || !wholesalePrice || !retailPrice || !unitOfMeasure)
         return { status: 400, message: 'Липсват задължителни полета' };
 
     const categoryExists = await Category.findOne({ _id: category });
@@ -121,6 +121,12 @@ export const ProductController = {
         if (data.sizes)
             data.sizes = JSON.parse(data.sizes);
 
+        if (!data.unitOfMeasure && data.sizes?.length > 0)
+            data.unitOfMeasure = 'пакет';
+
+        if (!data.unitOfMeasure && data.sizes?.length === 0)
+            data.unitOfMeasure = 'бр.';
+
         const validationError = (await validateProduct(data));
 
         if (validationError) return validationError;
@@ -223,6 +229,12 @@ export const ProductController = {
         if (data.sizes)
             data.sizes = JSON.parse(data.sizes);
 
+        if (!data.unitOfMeasure && data.sizes?.length > 0)
+            data.unitOfMeasure = 'пакет';
+
+        if (!data.unitOfMeasure && data.sizes?.length === 0)
+            data.unitOfMeasure = 'бр.';
+
         const validationError = (await validateProduct(data));
 
         if (validationError) return validationError;
@@ -276,6 +288,12 @@ export const ProductController = {
 
             const barcodeExists = await Product.findOne({ barcode: data.barcode });
             if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод' };
+        }
+
+        // If new product code was entered and barcode is empty, set barcode
+        if (data.barcode === "" && data.code) {
+            const newCode = data.code.toString().padStart(12, '0'); // pad code with 0s to 12 digits
+            data.barcode = `${newCode}${checkDigitEAN13(newCode.toString())}`;
         }
 
         await product.updateOne(data, { new: true });
