@@ -1,11 +1,6 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Order, documentTypes, paymentTypes, orderTypes } from "../models/order.js";
-import { Product } from "../models/product.js";
-import { Company } from "../models/company.js";
-import { Customer } from "../models/customer.js";
-import { AutoIncrement } from "../models/autoincrement.js";
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
 
@@ -50,15 +45,16 @@ export function ordersRoutes() {
     ordersRouter.post('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const userId = JSON.parse(req.cookies.user).id;
-            const { status, message, order, doneProducts } = await OrderController.post({ data: { ...req.body }, userId });
+            const { status, message, order, savedProducts } = await OrderController.post({ data: { ...req.body }, userId });
 
             if (status !== 201) return res.status(status).send(message);
 
-            WooUpdateQuantityProducts(doneProducts);
+            WooUpdateQuantityProducts(savedProducts);
 
             res.status(201).send(order._id.toString());
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            console.error(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
@@ -69,26 +65,29 @@ export function ordersRoutes() {
             const id = req.params.id;
             const userId = JSON.parse(req.cookies.user).id;
 
-            const { status, message } = await OrderController.put({ id, data, userId });
+            const { status, message, returnedProducts, savedProducts } = await OrderController.put({ id, data, userId });
             if (status !== 201) return res.status(status).send(message);
 
             //TODO Do update qty here somehow
+            // Get all product ids from returnedProducts and savedProducts, remove duplicates and send quantities to WooCommerce
             // WooUpdateQuantityProducts()
 
             res.status(201).send(id);
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            console.log(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
     ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
-            const { status, message, doneProducts } = await OrderController.delete(req.params.id);
+            const { status, message, returnedProducts } = await OrderController.delete(req.params.id);
 
             if (status !== 204) return res.status(status).send(message);
 
-            WooUpdateQuantityProducts(doneProducts);
+            //TODO Test if woo works because i've changed the logic
+            WooUpdateQuantityProducts(returnedProducts);
 
             res.status(204).send();
         } catch (error) {

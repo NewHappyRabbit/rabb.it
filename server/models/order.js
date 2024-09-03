@@ -56,9 +56,8 @@ const orderSchema = new Schema({
                 ref: 'Product'
             },
             name: String, // if product doesnt exist in db and is created on the fly in orders
-            quantity: { // quantity or packages
+            quantity: { // quantity or packages or when existing variable its used as quantity for each size
                 type: Number,
-                required: true,
                 min: 1
             },
             qtyInPackage: { // quantity in package (used when product doesnt exist in DB and is created on the fly in orders)
@@ -68,6 +67,7 @@ const orderSchema = new Schema({
                 type: String,
                 required: true
             },
+            selectedSizes: [String], // This is used when a variable existing product is used, stores each seleted size name
             size: {// if retail order, size must be selected
                 type: String,
                 required: function () {

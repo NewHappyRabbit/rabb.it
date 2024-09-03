@@ -285,6 +285,33 @@ const addProductRow = () => html`
 </tr>
 `;
 
+function updateSelectedSizes(e) {
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+
+    if (!e.target.checked) addedProducts[arrayIndex].selectedSizes = addedProducts[arrayIndex].selectedSizes.filter(size => size !== e.target.value);
+    else addedProducts[arrayIndex].selectedSizes.push(e.target.value);
+
+    // Update price based on selected sizes length
+    if (addedProducts[arrayIndex].selectedSizes.length > 0) {
+        const unitPrice = addedProducts[arrayIndex].product.wholesalePrice / addedProducts[arrayIndex].product.sizes.length;
+        addedProducts[arrayIndex].price = (unitPrice * addedProducts[arrayIndex].selectedSizes.length).toFixed(2);
+    } else addedProducts[arrayIndex].price = 0;
+
+    rerenderTable();
+}
+
+const checkboxSizes = (product) => html`
+    ${product?.product?.sizes?.map(size => html`
+        <div class="form-check">
+            <input class="form-check-input" @change=${updateSelectedSizes} name="size" type="checkbox" value=${size.size} ?checked=${product?.selectedSizes?.includes(size.size)} id="${product.index}-${size.size}">
+            <label class="form-check-label" for="flexCheckDefault">
+                ${size.size}
+            </label>
+        </div>`)
+    }`;
+
 const wholesaleProductsTable = (products) => html`
     <table id="orders" class="table mt-3 table-striped">
         <thead>
@@ -304,8 +331,9 @@ const wholesaleProductsTable = (products) => html`
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
-                    ${product.product ? html`<td>${product.product.sizes.length ? product.product.sizes.length + ' бр.' : ''}</td>` :
-        html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
+                    ${product.product ?
+        html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
+        : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
                     <td>${product?.product?.sizes?.length ? formatPrice(product.price / product.product.sizes.length) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
 
@@ -458,47 +486,45 @@ function addProduct(e) {
 
     var product, quantity = 1;
 
-    //TODO DO SAME AS IN ORDERS CONTROLLER
-    // and also add the new logic for product.selectedSizes
-
-    // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-
     // check if quantity was entered in input field
     if (e.target.value.split('*').length === 1)
         product = e.target.value;
     else {
-        quantity = +e.target.value.split('*')[0];
-        quantity = quantity > 0 ? quantity : 1;
+        quantity = parseInt(e.target.value.split('*')[0]);
+        quantity = !isNaN(quantity) && quantity > 0 ? quantity : 1;
         product = e.target.value.split('*')[1];
     }
 
     // TODO Send request to server to get product instead of getting all products on page load
+    // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
     const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
 
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
-        if (addedProducts.find(p => p.product === productInDB) && addedProducts.find(p => p.selectedSizes === productInDB.sizes)) {
-            addedProducts.find(p => p.product === productInDB).quantity += quantity;
-        } else
+        const inArray = addedProducts.find(p => p.product === productInDB && p.selectedSizes.length === p.sizes.length);
+
+        if (inArray) inArray.quantity += quantity;
+        else
             addedProducts.push({
                 index: addedProductsIndex++,
                 product: productInDB,
-                selectedSizes: productInDB.sizes,
+                selectedSizes: productInDB.sizes.map(s => s.size), // selected (checked) sizes
+                sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
                 price: productInDB.wholesalePrice,
                 discount: selectedCustomer?.discount || 0
             });
     }
-
     // Wholesale + IN DB + simple
     else if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length === 0) {
+        const inArray = addedProducts.find(p => p.product === productInDB);
         // Check if product is already in addedProducts
-        if (addedProducts.find(p => p.product === productInDB)) {
-            addedProducts.find(p => p.product === productInDB).quantity += quantity;
+        if (inArray) {
+            inArray.quantity += quantity;
             // if qty is more than in db, set it as max
-            if (addedProducts.find(p => p.product === productInDB).quantity > productInDB.quantity)
-                addedProducts.find(p => p.product === productInDB).quantity = productInDB.quantity;
+            if (inArray.quantity > productInDB.quantity)
+                inArray.quantity = productInDB.quantity;
         }
         else
             addedProducts.push({
@@ -513,9 +539,10 @@ function addProduct(e) {
 
     // Retail + IN DB + variable
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length > 0) {
-        // Check if already in addedProducts and no size is selected
-        if (addedProducts.find(p => p.product === productInDB) && !addedProducts.find(p => p.selectedSizes)) {
-            addedProducts.find(p => p.product === productInDB).quantity += quantity;
+        const inArray = addedProducts.find(p => p.product === productInDB && !p.size);
+        // Check if already in addedProducts and NO size is selected
+        if (inArray) {
+            inArray.quantity += quantity;
         } else
             addedProducts.push({
                 index: addedProductsIndex++,
@@ -529,12 +556,13 @@ function addProduct(e) {
 
     // Retail + IN DB + simple
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length === 0) {
+        const inArray = addedProducts.find(p => p.product === productInDB);
         // Check if already in addedProducts
-        if (addedProducts.find(p => p.product === productInDB)) {
-            addedProducts.find(p => p.product === productInDB).quantity += quantity;
+        if (inArray) {
+            inArray.quantity += quantity;
             // if qty is more than qty in db, set it as max
-            if (addedProducts.find(p => p.product === productInDB).quantity > productInDB.quantity)
-                addedProducts.find(p => p.product === productInDB).quantity = productInDB.quantity;
+            if (inArray.quantity > productInDB.quantity)
+                inArray.quantity = productInDB.quantity;
         }
         else
             addedProducts.push({
@@ -641,6 +669,20 @@ function validateOrder(data) {
             } else markValidEl(row.querySelector('input[name="qtyInPackage"]'));
         }
 
+        // Variable existing product
+        if (orderType === 'wholesale' && product.product && product.selectedSizes?.length === 0) {
+            // atleast 1 size must be selected
+            row.querySelectorAll('input[name="size"]').forEach(el => {
+                markInvalidEl(el);
+            });
+
+            invalidFlag = true;
+        } else {
+            row.querySelectorAll('select[name="size"]').forEach(el => {
+                markValidEl(el);
+            });
+        }
+
         if (product.product && orderType === 'retail') {
             const sizeEl = row.querySelector('select[name="size"]');
 
@@ -650,12 +692,10 @@ function validateOrder(data) {
             } else if (sizeEl && product.size) markValidEl(sizeEl);
         }
 
-        if (product.name && orderType === 'retail') {
-            if (!product.quantity || product.quantity < 1) {
-                markInvalidEl(row.querySelector('input[name="quantity"]'));
-                invalidFlag = true;
-            } else markValidEl(row.querySelector('input[name="quantity"]'));
-        }
+        if (!product.quantity || product.quantity < 1) {
+            markInvalidEl(row.querySelector('input[name="quantity"]'));
+            invalidFlag = true;
+        } else markValidEl(row.querySelector('input[name="quantity"]'));
 
         const discountRegex = /^\d{1,}(\.\d{1})?$/; // good: 0.1, 2; bad: 0.01
 
@@ -669,10 +709,13 @@ function validateOrder(data) {
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="price"]'));
 
-        if (!product.quantity || product.quantity < 1) {
-            markInvalidEl(row.querySelector('input[name="quantity"]'));
-            invalidFlag = true;
-        } else markValidEl(row.querySelector('input[name="quantity"]'));
+        // Only check if quantity exists on retail or wholesale but product is simple
+        if (orderType === 'retail' || (orderType === 'wholesale' && !row.querySelector('input[name="size"]'))) {
+            if (!product.quantity || product.quantity < 1) {
+                markInvalidEl(row.querySelector('input[name="quantity"]'));
+                invalidFlag = true;
+            } else markValidEl(row.querySelector('input[name="quantity"]'));
+        }
 
         if (!product.unitOfMeasure) {
             markInvalidEl(row.querySelector('input[name="unitOfMeasure"]'));
@@ -693,18 +736,35 @@ async function createEditOrder() {
     const formData = new FormData(form);
     var filteredProducts = [];
 
+
     // transform addedProducts to the type used in backend
     if (orderType === 'wholesale') {
         addedProducts.forEach(product => {
-            if (product.product)
-                filteredProducts.push({
-                    index: product.index,
-                    product: product.product._id,
-                    quantity: product.quantity,
-                    price: product.price,
-                    discount: product.discount,
-                    unitOfMeasure: product.product.unitOfMeasure
-                });
+            if (product.product) {
+                // Variable Product
+                if (product.selectedSizes?.length > 0) {
+                    filteredProducts.push({
+                        index: product.index,
+                        product: product.product._id,
+                        quantity: product.quantity,
+                        price: product.price,
+                        discount: product.discount,
+                        selectedSizes: product.selectedSizes,
+                        unitOfMeasure: product.product.unitOfMeasure
+                    });
+                }
+
+                // Simple product
+                if (!product.selectedSizes?.length)
+                    filteredProducts.push({
+                        index: product.index,
+                        product: product.product._id,
+                        quantity: product.quantity,
+                        price: product.price,
+                        discount: product.discount,
+                        unitOfMeasure: product.product.unitOfMeasure
+                    });
+            }
             else
                 filteredProducts.push({
                     index: product.index,
@@ -910,9 +970,9 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
 
                     <td class="text-nowrap">${product.quantity}</td>
 
-                    <td>${product?.product?.sizes?.length || product.qtyInPackage}</td>
+                    <td>${product?.selectedSizes?.length || product.qtyInPackage}</td>
 
-                    <td>${product.qtyInPackage || product?.product?.sizes.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.product?.sizes?.length || product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.product?.sizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
+                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
 
