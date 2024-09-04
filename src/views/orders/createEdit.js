@@ -890,58 +890,65 @@ async function printSale(data) {
 // invoice should have deducted tax in product price and shown as sum at the end
 // stokova should have all products with tax included in price and shown as sum at the end
 const printContainer = ({ data, param, flags }) => html`
-    <div style="break-after:page;">
+    <div style="break-after:page; padding: 1rem">
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
         <div class="d-flex justify-content-between">
             ${param?.stokova ? '' : html`<div>Документ №: <span class="fw-bold">${data.number}</span></div>`}
             <div>Дата: <span class="fw-bold">${new Date(data.date).toLocaleDateString('bg')}</span></div>
         </div>
+
         <div class="row gap-3 p-3">
-            <div class="col border rounded">
-                <div>Получател: ${data.customer.name}</div>
-                ${data.customer?.taxvat ? html`<div>ДДС №: ${data.customer.taxvat}</div>` : ''}
-                <div>Идент. №: ${data.customer.vat}</div>
-                <div>Адрес: ${data.customer.address}</div>
-                <div>МОЛ: ${data.customer.mol}</div>
-                <div>Телефон: ${data.customer?.phone || ''}</div>
-            </div>
-            <div class="col border rounded">
-                <div>Доставчик: ${data.company.name}</div>
-                ${data.company?.taxvat ? html`<div>ДДС №: ${data.company.taxvat}</div>` : ''}
-                <div>Идент. № ${data.company.vat}</div>
-                <div>Адрес: ${data.company.address}</div>
-                <div>МОЛ: ${data.company.mol}</div>
-                <div>Телефон: ${data.company?.phone || ''}</div>
-            </div>
+            <table id="customerInfoTable" class="col border rounded">
+                <tbody>
+                    <tr><td>Получател</td> <td>${data.customer.name}</td></tr>
+                    <tr>${data.customer?.taxvat ? html`<td>ДДС №</td> <td>${data.customer.taxvat}</td>` : ''}</tr>
+                    <tr><td>Идент. № <td>${data.customer.vat}</td></tr>
+                    <tr><td>Адрес</td> <td>${data.customer.address}</td></tr>
+                    <tr><td>МОЛ</td> <td>${data.customer.mol}</td></tr>
+                    ${data.customer?.phone ? html`<tr><td>Телефон</td> <td>${data.customer.phone}</td></tr>` : ''}
+                </tbody>
+            </table>
 
-            ${data.orderType === 'wholesale' ? printTableWholesale({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags }) : printTableRetail({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags })}
-            <div style="font-size: 1rem">
-                Словом: ${numberToBGText(data.total)}
-            </div>
+            <table id="companyInfoTable" class="col border rounded">
+                <tbody>
+                    <tr><td>Доставчик</td> <td>${data.company.name}</td></tr>
+                    <tr>${data.company?.taxvat ? html`<td>ДДС №</td> <td>${data.company.taxvat}</td>` : ''}</tr>
+                    <tr><td>Идент. № <td>${data.company.vat}</td></tr>
+                    <tr><td>Адрес</td> <td>${data.company.address}</td></tr>
+                    <tr><td>МОЛ</td> <td>${data.company.mol}</td></tr>
+                    ${data.company?.phone ? html`<tr><td>Телефон</td> <td>${data.company.phone}</td></tr>` : ''}
+                </tbody>
+            </table>
+        </div>
 
-            <div class="d-flex flex-column text-end">
-                ${param?.stokova || data.type === 'stokova' ? '' : html`<div>Данъчна основа ${data.company.tax}%: ${formatPrice(deductVat(data.total, data.company.tax))}</div>`}
-                ${param?.stokova || data.type === 'stokova' ? '' : html`<div>ДДС ${data.company.tax}%: ${formatPrice(data.total - deductVat(data.total, data.company.tax))}</div>`}
-                <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)}</div>
-            </div>
+        ${data.orderType === 'wholesale' ? printTableWholesale({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags }) : printTableRetail({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags })}
+        <div style="font-size: 1rem">
+            Словом: ${numberToBGText(data.total)}
+        </div>
 
-            <div>
-                <div>Плащане: ${params.paymentTypes[data.paymentType]}</div>
-                ${data.paymentType === 'bank' ? html`
-                    <div>IBAN: ${data.company.bank.iban}</div>
-                    <div>Банка: ${data.company.bank.name}</div>
-                    <div>Банков код: ${data.company.bank.code}</div>` : ''}
-            </div>
-            <div class="d-flex justify-content-between">
-                <div>Получил: ${data.receiver}</div>
-                <div>Съставил: ${data.sender}</div>
-            </div>
+        <div class="d-flex flex-column text-end">
+            ${param?.stokova || data.type === 'stokova' ? '' : html`<div>Данъчна основа ${data.company.tax}%: ${formatPrice(deductVat(data.total, data.company.tax))}</div>`}
+            ${param?.stokova || data.type === 'stokova' ? '' : html`<div>ДДС ${data.company.tax}%: ${formatPrice(data.total - deductVat(data.total, data.company.tax))}</div>`}
+            <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)}</div>
+        </div>
+
+        <div>
+            <div>Плащане: ${params.paymentTypes[data.paymentType]}</div>
+            ${data.paymentType === 'bank' ? html`
+                <div>IBAN: ${data.company.bank.iban}</div>
+                <div>Банка: ${data.company.bank.name}</div>
+                <div>Банков код: ${data.company.bank.code}</div>` : ''}
+        </div>
+        <div class="d-flex justify-content-between">
+            <div>Получил: ${data.receiver}</div>
+            <div>Съставил: ${data.sender}</div>
+        </div>
     </div>
 `;
 
 const printTableWholesale = ({ tax, products, type, flags }) => html`
-    <table class="table table-bordered">
+    <table id="printProductWholesaleTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
                 <td>№</td>
@@ -957,7 +964,7 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
                 <td>Сума</td>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="table-group-divider">
             ${products.map((product, index) => html`
                 <tr class="text-center">
                     <td>${++index}</td>
@@ -987,8 +994,9 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
     </table>
 `;
 
+// Add same styling as wholesale table
 const printTableRetail = ({ tax, products, type, flags }) => html`
-<table class="table table-bordered">
+<table id="printProductTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
                 <td>№</td>
@@ -1003,7 +1011,7 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
                 <td>Сума</td>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="table-group-divider">
             ${products.map((product, index) => html`
                 <tr class="text-center">
                     <td>${++index}</td>
@@ -1016,7 +1024,7 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
                     ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), tax)) : ''}</td>` : ''}
-                    
+
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
                 </tr>
             `)}

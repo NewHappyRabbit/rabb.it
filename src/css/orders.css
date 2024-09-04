@@ -3,3 +3,22 @@
 		min-width: 25vw !important;
 	}
 }
+
+#printContainer * {
+	color: black !important;
+	border-color: black !important;
+}
+
+#printContainer table#printProductWholesaleTable thead {
+	font-size: 0.7rem !important;
+}
+
+#printContainer table#printProductWholesaleTable tbody {
+	font-size: 0.8rem !important;
+}
+
+#printContainer table#customerInfoTable tr td:nth-child(1),
+#printContainer table#companyInfoTable tr td:nth-child(1) {
+	padding-left: 0.5rem;
+	width: 30%;
+}
