@@ -17,7 +17,9 @@ const productAttribute = new Schema({
         required: true,
         default: 'name_num'
     },
-    wooId: String
+    woocommerce: {
+        id: String,
+    }
 });
 
 

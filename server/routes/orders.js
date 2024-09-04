@@ -3,6 +3,7 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
+import { Product } from "../models/product.js";
 
 export function ordersRoutes() {
     const ordersRouter = express.Router();
@@ -70,12 +71,26 @@ export function ordersRoutes() {
 
             //TODO Do update qty here somehow
             // Get all product ids from returnedProducts and savedProducts, remove duplicates and send quantities to WooCommerce
-            // WooUpdateQuantityProducts()
+
+            let filteredProducts = [];
+
+            for (const product of returnedProducts) {
+                if (product?.woocommerce?.id)
+                    if (!filteredProducts.find(p => p.woocommerce.id == product.woocommerce.id))
+                        filteredProducts.push(await Product.findById(product.id));
+            }
+
+            for (const product of savedProducts) {
+                if (product?.woocommerce?.id)
+                    if (!filteredProducts.find(p => p.woocommerce.id == product.woocommerce.id))
+                        filteredProducts.push(await Product.findById(product.id));
+            }
+
+            WooUpdateQuantityProducts(filteredProducts)
 
             res.status(201).send(id);
         } catch (error) {
-            console.log(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
@@ -86,7 +101,6 @@ export function ordersRoutes() {
 
             if (status !== 204) return res.status(status).send(message);
 
-            //TODO Test if woo works because i've changed the logic
             WooUpdateQuantityProducts(returnedProducts);
 
             res.status(204).send();

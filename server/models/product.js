@@ -121,8 +121,10 @@ const productSchema = new Schema({
         type: Boolean,
         default: false,
     },
-    wooId: String,
-    wooPermalink: String,
+    woocommerce: {
+        id: String,
+        permalink: String,
+    }
 
     //TODO Implement in the future
     //sale_price

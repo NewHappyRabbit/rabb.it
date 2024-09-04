@@ -22,7 +22,9 @@ const categorySchema = new Schema({
         default: 0
     },
     image: imageSchema,
-    wooId: String
+    woocommerce: {
+        id: String,
+    }
 });
 
 

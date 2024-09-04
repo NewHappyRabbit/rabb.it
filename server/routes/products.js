@@ -110,7 +110,7 @@ export function productsRoutes() {
             if (status !== 201)
                 return res.status(status).send(message);
 
-            if (data.hidden !== true)// product should be hidden from website
+            if (data.hidden !== true)// if product should be hidden from website
                 WooCreateProduct(product);
 
             if (data.printLabel) {

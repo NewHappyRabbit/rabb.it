@@ -25,7 +25,7 @@ export async function WooCreateCategory(category) {
     if (category.path) {
         const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
         const parent = await Category.findOne({ slug: parentSlug });
-        if (parent) data.parent = parent.wooId;
+        if (parent) data.parent = parent.woocommerce.id;
     }
 
     if (process.env.ENV !== 'dev' && category.image) {
@@ -38,7 +38,7 @@ export async function WooCreateCategory(category) {
         // Success
         console.log("Category successfully created in WooCommerce!")
         // add woo id to category
-        category.wooId = response.data.id;
+        category.woocommerce.id = response.data.id;
         category.save();
     }).catch((error) => {
         // Invalid request, for 4xx and 5xx statuses
@@ -60,7 +60,7 @@ export async function WooEditCategory(category) {
     if (category.path) {
         const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
         const parent = await Category.findOne({ slug: parentSlug });
-        if (parent) data.parent = parent.wooId;
+        if (parent) data.parent = parent.woocommerce.id;
     }
 
     if (process.env.ENV !== 'dev' && category.image) {
@@ -71,7 +71,7 @@ export async function WooEditCategory(category) {
         data.image = { src: `${process.env.URL}${category.image}` };
     }
 
-    WooCommerce.put(`products/categories/${category.wooId}`, data).then(() => {
+    WooCommerce.put(`products/categories/${category.woocommerce.id}`, data).then(() => {
         // Success
         console.log('Category successfully edited in WooCommerce!')
     }).catch((error) => {

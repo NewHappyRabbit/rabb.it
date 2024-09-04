@@ -105,7 +105,7 @@ export const CategoryController = {
 
         return { category, status: 201 };
     },
-    delete: async ({ id }) => {
+    delete: async (id) => {
         const category = await Category.findById(id);
         if (!category) return { status: 404, message: 'Category not found' };
 
@@ -122,7 +122,7 @@ export const CategoryController = {
         if (categories.length > 0)
             return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.' };
 
-        const wooId = category.wooId;
+        const wooId = category.woocommerce.id;
 
         // delete original image if it exists
         if (category.image) {

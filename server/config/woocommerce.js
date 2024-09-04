@@ -9,5 +9,4 @@ export const WooCommerce = process.env.WOO_URL && process.env.WOO_KEY && process
     version: "wc/v3",
 }) : undefined;
 
-if (process.env.WOO_URL)
-    console.log('WooCommerce instantiated');
+if (WooCommerce) console.log('WooCommerce instantiated');
