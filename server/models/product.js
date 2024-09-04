@@ -95,6 +95,15 @@ const productSchema = new Schema({
     retailPrice: {
         type: Number,
         match: [/^\d{1,}(\.\d{1,2})?$/, 'Цената трябва да е: пример 5.0, 3, 1.20!'],
+        validate: {
+            validator: function (v) {
+                if (this.sizes.length === 0)
+                    return v > this.deliveryPrice;
+
+                return v > (this.deliveryPrice / this.sizes.length).toFixed(2);
+            },
+            message: 'Цената на дребно трябва да е по-голяма от доставната цена!'
+        },
         required: true,
     },
     hidden: {

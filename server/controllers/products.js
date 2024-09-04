@@ -27,19 +27,22 @@ async function validateProduct(data) {
     if (!regex.test(retailPrice))
         return { status: 400, message: 'Грешна цена на дребно' };
 
-    console.log({ wholesalePrice, retailPrice, deliveryPrice, sizes });
-    if (wholesalePrice < retailPrice || sizes.length && retailPrice < (deliveryPrice / sizes.length).toFixed(2))
-        return { status: 400, message: 'Продажните цени трябва да са по-големи от доставната' };
+    if (wholesalePrice < deliveryPrice)
+        return { status: 400, message: 'Цената на едро трябва да е по-голяма от цената на дребно' };
 
-    if (sizes.length !== 0) {
-        for (const size of sizes) {
-            if (!size.size || !size.quantity)
-                return { status: 400, message: 'Липсва размер или количество' };
+    if (sizes.length === 0 && retailPrice < deliveryPrice)
+        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от цената на едро' };
+    else if (sizes.length !== 0 && retailPrice < (deliveryPrice / sizes.length).toFixed(2))
 
-            if (!regex.test(size.quantity))
-                return { status: 400, message: 'Невалидно количество за размер' };
+        if (sizes.length !== 0) {
+            for (const size of sizes) {
+                if (!size.size || !size.quantity)
+                    return { status: 400, message: 'Липсва размер или количество' };
+
+                if (!regex.test(size.quantity))
+                    return { status: 400, message: 'Невалидно количество за размер' };
+            }
         }
-    }
 }
 
 function checkDigitEAN13(barcode) {
