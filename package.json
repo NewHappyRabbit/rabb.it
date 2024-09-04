@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"test": "vitest run",
+		"test-users": "vitest run users",
 		"server-dev": "nodemon server/app.js",
 		"server-start": "node server/app.js",
 		"web-dev": "webpack --config webpack.dev.config.cjs --mode=development",

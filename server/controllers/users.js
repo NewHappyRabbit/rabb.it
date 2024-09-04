@@ -100,7 +100,7 @@ export const UserController = {
 
         const user = await User.findOne({ username });
 
-        if (!user) return { status: 401, message: "Потребителят не е намерен" }
+        if (!user) return { status: 404, message: "Потребителят не е намерен" }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
