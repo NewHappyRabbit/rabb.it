@@ -77,11 +77,15 @@ export function usersRoutes() {
 
     usersRouter.post('/login', async (req, res) => {
         try {
-            const { token, maxAge, username, id, role } = await UserController.login(req.body);
+            const { token, maxAge, username, id, role, status, message } = await UserController.login(req.body);
+
+            if (status !== 200) return res.status(status).send(message);
 
             res.cookie("jwt", token, {
                 httpOnly: true,
                 maxAge: maxAge * 1000, // in milliseconds
+                sameSite: 'none', // this and the below line fixes cookie not being set on frontend
+                secure: true
             });
 
             res.status(200).json({

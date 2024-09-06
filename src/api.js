@@ -3,19 +3,13 @@ import { io } from 'socket.io-client';
 import { html } from 'lit/html.js';
 import { loggedInUser } from '@/views/login';
 import { printerSockets } from '@/printer';
-export let serverURL = 'https://localhost:8443'; // used for requests
-export let publicURL = 'https://localhost:8443'; // used for resources like img, etc.
 
-let socketPath = '/socket.io';
-
-if (!["localhost", "127.0.0.1"].includes(location.hostname)) {
-    serverURL = `https://${location.hostname}/server`;
-    publicURL = `https://${location.hostname}`;
-    socketPath = '/server/socket.io';
-}
+export const serverURL = `https://${location.hostname}/server`;
+export const publicURL = `https://${location.hostname}`;
+const socketPath = '/server/socket.io';
 
 axios.defaults.baseURL = serverURL;
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = true; // used for SSL
 
 export var socket;
 export function initSocket() {
@@ -28,8 +22,8 @@ export function initSocket() {
         transports: ['polling'],
     });
 
-    socket.on('connected', (id) => {
-        console.log('connected to socket id', id);
+    socket.on('connected', () => {
+        console.log('Socket connection successful!');
     })
 
     socket.on("connect_error", (err) => {

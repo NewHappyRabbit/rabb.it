@@ -1,0 +1,2 @@
+Restart nginx (cd to c:\nginx first):
+nginx -s reload

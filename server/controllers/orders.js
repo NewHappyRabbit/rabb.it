@@ -422,8 +422,6 @@ export const OrderController = {
 
         data.total = total;
 
-        console.log(total);
-
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
         var seq = await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { $inc: { seq: 1 } }, { new: true }).select('seq');
