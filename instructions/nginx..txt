@@ -1,0 +1,63 @@
+Place the below code in the conf/nginx.conf file. Delete all previous http and servers in the file.
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    keepalive_timeout  65;
+    gzip  on;
+
+    server {
+        # Redirect HTTP to HTTPS
+        listen 80;
+        server_name _;
+        return 301 https://$host$request_uri;
+    }
+
+    # Use one or the other depending on server_name
+    map $host $certfile {
+        local.emo-sklad.bg "C:/nginx/ssl/live-cert.pem";
+        localhost "C:/nginx/ssl/localhost-cert.pem";
+    }
+
+    map $host $keyfile {
+        local.emo-sklad.bg "C:/nginx/ssl/live-key.key";
+        localhost "C:/nginx/ssl/localhost-key.key";
+    }
+
+    server {
+        # HTTPS
+        listen 443 ssl;
+
+        # Change server_name to localhost if using locally
+        server_name local.emo-sklad.bg;
+
+        # Path to SSL certificates
+        # If testing on localhost, instructions on how to generate certificate is in /instructions/SSL certificates.txt
+        ssl_certificate $certfile;
+        ssl_certificate_key $keyfile;
+        # ssl_certificate "C:/nginx/ssl/localhost-cert.pem";
+        # ssl_certificate_key "C:/nginx/ssl/localhost-key.key";
+
+        # Frontend application
+        location / {
+            # Where to look for files
+            root html/rabb.it/public;
+            # Used for SPA
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Node server
+        # All requests to /server/.....
+        location /server/ {
+            # Remove the "/server/" from the url when redirecting request
+            rewrite /server/(.*) /$1 break;
+            proxy_pass http://127.0.0.1:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+}
