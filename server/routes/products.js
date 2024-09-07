@@ -27,7 +27,7 @@ export function productSockets(socket) {
     })
 
     socket.on('send-print', (product, quantity) => {
-        if (io.sockets.adapter.rooms.printer.length === 0) return; // if no pc with printer connected, do nothing
+        if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
         if (!product || !product.name || !product.code || !product.barcode || !product.wholesalePrice || !quantity) return;
         const minifiedProduct = {
             name: product.name,
