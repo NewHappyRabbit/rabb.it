@@ -170,13 +170,15 @@ To run tests, you will need to add all of the following environment variables to
 
 ## Run Locally
 
-Clone the project
+You have to have Nginx installed on your system. Instructions on how-to are in `instructions\nginx.txt`
+
+Clone the project in your `nginx\html` directory.
 
 ```bash
   git clone https://github.com/NewHappyRabbit/rabb.it
 ```
 
-Go to the project directory
+Open the folder in terminal.
 
 ```bash
   cd rabb.it
@@ -188,7 +190,7 @@ Install dependencies
   npm install
 ```
 
-Create an SSL certificate and key and place them inside the folder `/server/ssl-certificates/`. Instructions for how-to on Windows/Mac are in the `/server/ssl-certificates/readme.txt` file.
+Create an SSL certificate. Instructions on how-to in `/instructions/ssl.txt`
 
 Start the server
 
@@ -216,23 +218,13 @@ To run tests, run the following command
 
 ## Deployment
 
-Currently, the project has to be uploaded to a GitHub repository and used in your hosting provider.
+Take a look at the `instructions\nginx.txt` to see how to setup the config and SSL for your domain.
 
-Before pushing to git, we have to run Webpack once in production mode to generate minified files and optimize the code. To do so, run:
+Run webpack in production mode to optimize the output.
 
 ```bash
   npm run web-prod
 ```
-
-Test the backend before deployment
-
-```bash
-  npm run test
-```
-
-Grab the SSL certificate from the hosting provider and place them in the `/server/ssl-certificates/` folder. Instruction on how-to for CPanel are in the `/server/ssl-certificates/readme.txt` file.
-
-After all that is done, push to your repository and pull the changes from your hosting provider. You must restart the Node server if you made any changes to it.
 
 ---
 

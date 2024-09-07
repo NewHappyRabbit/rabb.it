@@ -1,0 +1,37 @@
+To generate localhost SSL certificate do this:
+Following tutorial: https://gist.github.com/joshlawton/3e365673a09262b6604873f6cbc99bad
+
+On MAC:
+1. Run:
+brew install mkcert
+2. Continue from Step 3.
+
+On Windows:
+1. Install Scoop: https://scoop.sh/
+2. Run in PowerShell:
+scoop bucket add extras
+scoop install mkcert
+3. cd to the nginx/server/ssl folder
+4. Type in: mkcert -key-file localhost-key.key -cert-file localhost-cert.pem -install localhost 127.0.0.1
+5. Set the servername in nginx/conf/nginx.conf to "localhost"
+
+If you are using VSCode "Live Server" extension, create a .vscode folder in the root of the project. Inside, create a settings.json and paste following code:
+{
+    "liveServer.settings.https": {
+        "enable": true, //set it true to enable the feature.
+        "cert": "C:\\nginx\\ssl\\localhost-cert.pem", // full path of the certificate
+        "key": "C:\\nginx\\ssl-certificates\\localhost-key.key", // full path of the private key
+        "passphrase": ""
+    }
+}
+
+
+To get live server certificates (when hosting):
+1. Go to your hosting provider and open the CPanel.
+2. Click "SSL/TLS Status"
+3. Find the domain and select "View SSL certificate"
+4. Scroll down and you shall find the CRT, KEY and CABUNDLE fields.
+5. Create a file for each and place them inside nginx/ssl/.
+File names must be:
+live-cert.pem - Certificate (CRT)
+live-key.key - Private key (KEY)

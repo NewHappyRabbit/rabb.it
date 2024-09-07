@@ -1,4 +1,9 @@
-Place the below code in the conf/nginx.conf file. Delete all previous http and servers in the file.
+Instructions for Windows:
+1. Download and extract nginx to "c:\nginx";
+
+2. Open the file "nginx.conf" in the "conf" folder and delete the whole http block.
+
+3. Place the below code at the bottom of the file:
 
 http {
     include       mime.types;
@@ -30,14 +35,13 @@ http {
         listen 443 ssl;
 
         # Change server_name to localhost if using locally
-        server_name local.emo-sklad.bg;
+        # server_name yourdomain.com; # replace "yourdomain" with your actual domain
+        server_name localhost; # used on local dev
 
         # Path to SSL certificates
         # If testing on localhost, instructions on how to generate certificate is in /instructions/SSL certificates.txt
         ssl_certificate $certfile;
         ssl_certificate_key $keyfile;
-        # ssl_certificate "C:/nginx/ssl/localhost-cert.pem";
-        # ssl_certificate_key "C:/nginx/ssl/localhost-key.key";
 
         # Frontend application
         location / {
@@ -61,3 +65,29 @@ http {
         }
     }
 }
+
+4. When developing locally, setup port-forwarding in your router for ports 80 and 443 to your local ip (ex 192.168.0.50)
+
+5. Done! If you are using Live Server extension, add the SSL certificate as instructed in instructions\ssl.txt file.
+
+If you want nginx to start with your PC automatically, follow these steps:
+
+1. Download WINSW: https://github.com/winsw/winsw/releases
+2. Rename file to nginx-service.exe and move it to C:\nginx
+3. Create a file named "nginx-service.xml" in the same folder with the following content:
+<service>
+ <id>nginx</id>
+ <executable>c:\nginx\nginx.exe</executable>
+ <name>nginx</name>
+ <description>nxing web server</description>
+ <workingdirectory>c:\nginx</workingdirectory>
+ <priority>Normal</priority>
+ <stoptimeout>15</stoptimeout>
+ <stopexecutable>c:\nginx\nginx.exe</stopexecutable>
+ <stoparguments>-s stop</stoparguments>
+ <startmode>Automatic</startmode>
+</service>
+4. Open command prompt with admin privileges, run:
+cd c:\nginx
+nginx-service.exe install
+5. Start for the first time from services.msc and change startup to Automatic.

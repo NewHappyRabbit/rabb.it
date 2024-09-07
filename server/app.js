@@ -25,7 +25,8 @@ if (missingWooVariables.length === 1 || missingWooVariables === 2) throw new Err
 export const app = express();
 
 // Set base path for all routes
-export const basePath = process.env.ENV == 'dev' ? '/' : '/server';
+export const basePath = '/';
+// export const basePath = process.env.ENV == 'dev' ? '/' : '/server';
 
 await mongoConfig();
 expressConfig();
