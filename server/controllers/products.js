@@ -27,12 +27,12 @@ async function validateProduct(data) {
     if (!regex.test(retailPrice))
         return { status: 400, message: 'Грешна цена на дребно' };
 
-    if (wholesalePrice < deliveryPrice)
-        return { status: 400, message: 'Цената на едро трябва да е по-голяма от цената на дребно' };
+    if (Number(wholesalePrice) <= Number(deliveryPrice))
+        return { status: 400, message: 'Цената на едро трябва да е по-голяма от доставната' };
 
-    if (sizes.length === 0 && retailPrice < deliveryPrice)
-        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от цената на едро' };
-    else if (sizes.length !== 0 && retailPrice < (deliveryPrice / sizes.length).toFixed(2))
+    if (sizes.length === 0 && Number(retailPrice) <= Number(deliveryPrice))
+        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от доставната' };
+    else if (sizes.length !== 0 && Number(retailPrice) <= Number(deliveryPrice / sizes.length))
 
         if (sizes.length !== 0) {
             for (const size of sizes) {
@@ -134,9 +134,9 @@ export const ProductController = {
         if (!data.unitOfMeasure && data.sizes?.length === 0)
             data.unitOfMeasure = 'бр.';
 
-        const validationError = (await validateProduct(data));
+        const validation = await validateProduct(data);
 
-        if (validationError) return validationError;
+        if (validation) return validation;
 
         if (files.image) {
             const mainImage = files.image[0].buffer;

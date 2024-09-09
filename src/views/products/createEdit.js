@@ -10,11 +10,7 @@ import { submitBtn, toggleSubmitBtn } from '@/views/components';
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 
-var selectedSizes;
-var wholesaleMarkup;
-var retailMarkup;
-var product;
-var editPage = false;
+var selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
 
 async function loadCategories() {
     const req = await axios.get('/categories');
@@ -32,9 +28,10 @@ async function loadCategories() {
 
 
 function calculateUnitPrice() {
-    if (selectedSizes.length === 0) return; // if no sizes added, do nothing
+    // if (selectedSizes.length === 0) return; // if no sizes added, do nothing
     const deliveryEl = document.getElementById('deliveryPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
+    const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
 
@@ -45,18 +42,20 @@ function calculateUnitPrice() {
     if (unitPriceEl.value === '') {
         deliveryEl.value = '';
         wholesalePrice.value = '';
+        wholesaleUnitPrice.value = '';
         retailPrice.value = '';
         return unitPriceEl.value = '';
     }
 
     const deliveryPriceEl = document.getElementById('deliveryPrice');
-    deliveryPriceEl.value = roundPrice(unitPrice * selectedSizes.length);
+    deliveryPriceEl.value = roundPrice(unitPrice * (selectedSizes.length || 1));
 
     calculateProductPrices();
 }
 
 function calculateProductPrices(e) {
     const deliveryPriceEl = document.getElementById('deliveryPrice');
+    const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
@@ -66,6 +65,7 @@ function calculateProductPrices(e) {
     const deliveryPrice = deliveryPriceEl.value;
 
     if (deliveryPriceEl.value === '') {
+        wholesaleUnitPrice.value = '';
         deliveryPriceEl.value = '';
         wholesalePrice.value = '';
         retailPrice.value = '';
@@ -73,8 +73,8 @@ function calculateProductPrices(e) {
     }
 
     // Update price per unit if coming from event (changing this price directly and not from the unitPrice funciton) and sizes are selected
-    if (e && selectedSizes.length > 0)
-        unitPriceEl.value = (deliveryPrice / selectedSizes.length).toFixed(2);
+    if (e)
+        unitPriceEl.value = (deliveryPrice / (selectedSizes.length || 1)).toFixed(2);
 
     const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
 
@@ -83,7 +83,27 @@ function calculateProductPrices(e) {
     const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
 
     wholesalePrice.value = roundPrice(wholesale);
+    wholesaleUnitPrice.value = (wholesale / sizesLength).toFixed(2);
     retailPrice.value = roundPrice(retail);
+}
+
+function calculatePriceWholesale() {
+    const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
+    const wholesalePrice = document.getElementById('wholesalePrice');
+
+    fixInputPrice(wholesaleUnitPrice, true);
+
+    wholesalePrice.value = roundPrice(wholesaleUnitPrice.value * (selectedSizes.length || 1));
+}
+
+function calculateUnitPriceWholesale() {
+    const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
+    const wholesalePrice = document.getElementById('wholesalePrice');
+
+
+    fixInputPrice(wholesalePrice, true);
+
+    wholesaleUnitPrice.value = (wholesalePrice.value / (selectedSizes.length || 1)).toFixed(2);
 }
 
 function updateQuantity() {
@@ -102,7 +122,6 @@ function updateQuantity() {
     // Update prices, because retail price uses quantity to calculate
     calculateProductPrices();
 }
-
 
 function addSize(e) {
     e.preventDefault();
@@ -183,25 +202,30 @@ const quantityTemplate = () => html`
 
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
-            <div class="col">
+            <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" disabled .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
             </div>
 
-            <div class="col">
+            <div class="col ${!['both', 'whole'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPrice" class="form-label">Доставна цена за пакет</label>
                 <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="text" inputmode="decimal" name="deliveryPrice" id="deliveryPrice" required .value=${product && product.deliveryPrice} autocomplete="off">
             </div>
 
-
-            <div class="col pe-0">
-                <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
-                <input class="form-control border-primary" type="text" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
+            <div class="col pe-0 ${!['both', 'unit'].includes(wholesalePriceFields) ? 'd-none' : ''}"">
+                <label for="unitPrice" class="form-label">Цена на едро за брой <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
+                <input class="form-control border-primary" @keyup=${calculatePriceWholesale} type="text" name="wholesaleUnitPrice" id="wholesaleUnitPrice" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.wholesalePrice / product.sizes.length)} autocomplete="off">
             </div>
 
-            <div class="col d-none">
-                <label for="retailPrice" class="form-label">Цена на дребно <span class="text-primary">(+${retailMarkup}%)</span></label>
-                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+
+            <div class="col pe-0 ${!['both', 'whole'].includes(wholesalePriceFields) ? 'd-none' : ''}"">
+                <label for="wholesalePrice" class="form-label">Цена на едро <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
+                <input class="form-control border-primary" @keyup=${calculateUnitPriceWholesale} type="text" name="wholesalePrice" id="wholesalePrice" inputmode="decimal" required .value=${product && product.wholesalePrice} autocomplete="off">
+            </div>
+
+            <div class="col ${retailPriceField === 'true' ? '' : 'd-none'}">
+            <label for="retailPrice" class= "form-label" > Цена на дребно <span class="text-primary"> (+${retailMarkup}%)</span></label >
+            <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
             </div>
         </div>
     `;
@@ -209,8 +233,9 @@ const pricesTemplate = () => html`
 const sizesTemplate = () => html`
         ${selectedSizes.map(size => html`
             ${editPage ? html`<div class="btn bg-primary text-white">${size}</div>` : html`<button @click=${removeSize} class="btn bg-primary bgDangerHover">${size}</button>`}
-        `)}
-    `;
+        `)
+    }
+`;
 
 
 function removeImage(e) {
@@ -229,11 +254,11 @@ function removeImage(e) {
 };
 
 const imgTemplate = (img, fileName) => html`
-        <div class="uploadImgContainer m-1">
-            <img src="${img}" class="img-thumbnail" alt="">
+    <div class="uploadImgContainer m-1">
+        <img src="${img}" class="img-thumbnail" alt="">
             ${fileName ? html`<button @click=${removeImage} fileName=${fileName} class="btn btn-danger">X</button>` : ''}
         </div>
-    `;
+`;
 
 function validateProduct(data) {
     var invalidFlag = false;
@@ -252,19 +277,23 @@ function validateProduct(data) {
         invalidFlag = markInvalid('quantity');
     else markValid('quantity');
 
-    if (!data.deliveryPrice || data.deliveryPrice < 0 || !priceRegex.test(data.deliveryPrice))
+    if (!data.deliveryPrice || data.deliveryPrice < 0 || !priceRegex.test(data.deliveryPrice)) {
         invalidFlag = markInvalid('deliveryPrice');
-    else markValid('deliveryPrice');
+        markInvalid('deliveryPricePerUnit');
+    } else {
+        markValid('deliveryPrice');
+        markValid('deliveryPricePerUnit');
+    }
 
-    if (selectedSizes.length && (!data.deliveryPricePerUnit || data.deliveryPricePerUnit < 0 || !priceRegex.test(data.deliveryPricePerUnit)))
-        invalidFlag = markInvalid('deliveryPricePerUnit');
-    else markValid('deliveryPricePerUnit');
-
-    if (!data.wholesalePrice || data.wholesalePrice < 0 || !priceRegex.test(data.wholesalePrice))
+    if (!data.wholesalePrice || data.wholesalePrice < 0 || !priceRegex.test(data.wholesalePrice) || Number(data.deliveryPrice) >= Number(data.wholesalePrice)) {
         invalidFlag = markInvalid('wholesalePrice');
-    else markValid('wholesalePrice');
+        markInvalid('wholesaleUnitPrice');
+    } else {
+        markValid('wholesalePrice');
+        markValid('wholesaleUnitPrice');
+    }
 
-    if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice))
+    if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice) || Number(data.deliveryPrice / (selectedSizes.length || 1)) >= Number(data.retailPrice))
         invalidFlag = markInvalid('retailPrice');
     else markValid('retailPrice');
 
@@ -319,7 +348,7 @@ async function updateProduct(e) {
         }
     } catch (err) {
         toggleSubmitBtn();
-        if (err.response.status === 400) {
+        if (err.response.status === 400 || err.response.status === 404) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = err.response.data;
@@ -426,7 +455,6 @@ export async function createEditProductPage(ctx, next) {
         if (ctx.params.id) {
             editPage = true;
             const req = await axios.get(`/products/${ctx.params.id}`);
-            console.log(req)
             product = req.data;
             selectedSizes = product.sizes.map(s => s.size);
         } else {
@@ -435,10 +463,13 @@ export async function createEditProductPage(ctx, next) {
             selectedSizes = [];
         }
 
-        const keys = ['wholesaleMarkup', 'retailMarkup'];
+        const keys = ['wholesaleMarkup', 'retailMarkup', 'deliveryPriceFields', 'wholesalePriceFields', 'retailPriceField'];
         const req = await axios.get('/settings', { params: { keys } });
         wholesaleMarkup = req.data.filter(s => s.key === 'wholesaleMarkup')[0].value;
         retailMarkup = req.data.filter(s => s.key === 'retailMarkup')[0].value;
+        deliveryPriceFields = req.data.filter(s => s.key === 'deliveryPriceFields')[0].value;
+        wholesalePriceFields = req.data.filter(s => s.key === 'wholesalePriceFields')[0].value;
+        retailPriceField = req.data.filter(s => s.key === 'retailPriceField')[0].value;
     } catch (err) {
         console.error(err);
         alert('Възникна грешка')
@@ -446,36 +477,36 @@ export async function createEditProductPage(ctx, next) {
 
     const template = () => html`
         ${nav()}
-        <div class="container-fluid">
-            <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
-                <div class="row mb-3">
-                    <label for="image" class="form-label">Главна снимка</label>
-                    <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
-                    <img id="imagePreview" class="${product?.image?.url ? '' : 'd-none'} img-thumbnail w-25" .src=${product?.image?.url} alt="">
-                </div>
+<div class="container-fluid">
+    <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
+    <div class="row mb-3">
+        <label for="image" class="form-label">Главна снимка</label>
+        <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
+        <img id="imagePreview" class="${product?.image?.url ? '' : 'd-none'} img-thumbnail w-25" .src=${product?.image?.url} alt="">
+    </div>
 
-                <div class="row mb-3">
-                    <label for="additionalImages" class="form-label">Допълнителни снимка</label>
-                    <input @change=${loadPreviewImages} class="form-control" type="file" name="additionalImages" id="additionalImages" accept="image/*" multiple>
-                    <div id="additionalImagesPreview" class="d-flex flex-wrap"></div>
-                </div>
+    <div class="row mb-3">
+        <label for="additionalImages" class="form-label">Допълнителни снимка</label>
+        <input @change=${loadPreviewImages} class="form-control" type="file" name="additionalImages" id="additionalImages" accept="image/*" multiple>
+        <div id="additionalImagesPreview" class="d-flex flex-wrap"></div>
+    </div>
 
-                <div class="row mb-3">
-                    <label for="category" class="form-label">Категория</label>
-                    <select class="form-select border-primary" name="category" id="category" required>
-                        ${until(loadCategories(), html`<option>Зареждане...</option>`)}
-                    </select>
-                </div>
+    <div class="row mb-3">
+        <label for="category" class="form-label">Категория</label>
+        <select class="form-select border-primary" name="category" id="category" required>
+            ${until(loadCategories(), html`<option>Зареждане...</option>`)}
+        </select>
+    </div>
 
-                <div class="row mb-3">
-                    <label for="name" class="form-label">Име</label>
-                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
-                </div>
+    <div class="row mb-3">
+        <label for="name" class="form-label">Име</label>
+        <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
+    </div>
 
-                <div class="row mb-3">
-                    <label for="description" class="form-label">Описание</label>
-                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
-                </div>
+    <div class="row mb-3">
+        <label for="description" class="form-label">Описание</label>
+        <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
+</div>
 
                 ${quantityTemplate()}
 
@@ -493,8 +524,8 @@ export async function createEditProductPage(ctx, next) {
                         <input class="form-control" type="text" name="barcode" id="barcode" .value=${product && product.barcode || ''} autocomplete="off">
                         <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
                         <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
-                    </div>
-                </div>
+                    </div >
+                </div >
 
                 <h3>Опции</h3>
                 <div class="mb-3">
@@ -519,7 +550,7 @@ export async function createEditProductPage(ctx, next) {
                         </label>
                     </div>`}
 
-                <div id="alert" class="d-none alert" role="alert"></div>
+<div id="alert" class="d-none alert" role="alert"></div>
                 ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'submit', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3' }) : ''}
             </form >
         </div >

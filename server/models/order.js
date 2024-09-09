@@ -60,9 +60,7 @@ const orderSchema = new Schema({
                 type: Number,
                 min: 1
             },
-            qtyInPackage: { // quantity in package (used when product doesnt exist in DB and is created on the fly in orders)
-                type: Number,
-            },
+            qtyInPackage: Number, // quantity in package (used when product doesnt exist in DB and is created on the fly in orders),
             unitOfMeasure: {
                 type: String,
                 required: true
@@ -74,7 +72,7 @@ const orderSchema = new Schema({
                     return this.orderType === 'retail';
                 }
             },
-            price: { // price per package/quantity without discount
+            price: { // price without discount
                 type: Number,
                 required: true,
                 min: 0.1

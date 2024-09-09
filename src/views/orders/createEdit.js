@@ -10,9 +10,7 @@ import Quagga from 'quagga';
 import page from 'page';
 import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
 
-var order, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
-const defaultDocumentType = 'stokova';
-const defaultOrderType = 'wholesale';
+var order, defaultValues, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
 
 function changeOrderType(e) {
     orderType = e.target.value;
@@ -84,7 +82,7 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="type" class="form-label">Тип на документ:</label>
             <select name="type" @change=${selectDocumentType} id="type" class="form-control" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>
-                ${Object.entries(params.documentTypes).map(type => html`<option ?selected=${(order && type[0] == order.type) || (!order && type[0] === defaultDocumentType)} value=${type[0]}>${type[1]}</option>`)}
+                ${Object.entries(params.documentTypes).map(type => html`<option ?selected=${(order && type[0] == order.type) || (!order && type[0] === documentType)} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
         <div class="col-6 col-sm">
@@ -98,7 +96,7 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="orderType" class="form-label">Тип на продажба:</label>
             <select ?disabled=${order} @change=${changeOrderType} name="orderType" id="orderType" class="form-control" required>
-                ${Object.entries(params.orderTypes).map(type => html`<option ?selected=${order && type[0] == order.orderType} value=${type[0]}>${type[1]}</option>`)}
+                ${Object.entries(params.orderTypes).map(type => html`<option ?selected=${(order && type[0] == order.orderType) || (!order && type[0] === defaultValues.find(d => d.key === 'orderType').value)} value=${type[0]}>${type[1]}</option>`)}
             </select>
         </div>
         <div class="col-6 col-sm">
@@ -138,7 +136,7 @@ const bottomRow = (params, companies) => html`
     <div class="col-6 col-sm">
         <label for="paymentType" class="form-label">Начин на плащане:</label>
         <select name="paymentType" id="paymentType" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
-            ${Object.entries(params.paymentTypes).map(type => html`<option ?selected=${order && type[0] == order.paymentType} value=${type[0]}>${type[1]}</option>`)}
+            ${Object.entries(params.paymentTypes).map(type => html`<option ?selected=${(order && type[0] == order.paymentType) || (!order && type[0] === defaultValues.find(d => d.key === 'paymentType').value)} value=${type[0]}>${type[1]}</option>`)}
         </select>
     </div>
 
@@ -150,14 +148,14 @@ const bottomRow = (params, companies) => html`
     ${documentType === 'invoice' ? html`
         <div class="col-12 col-sm">
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="printCopy" checked>
+            <input class="form-check-input" type="checkbox" id="printCopy" ?checked=${['originalCopy', 'originalCopyStokova'].includes(defaultValues.find(d => d.key === 'orderPrint').value)}>
             <label class="form-check-label" for="printCopy">
                 Копие на фактура
             </label>
         </div>
 
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="printStokova" checked>
+            <input class="form-check-input" type="checkbox" id="printStokova" ?checked=${'originalCopyStokova' === defaultValues.find(d => d.key === 'orderPrint').value}>
             <label class="form-check-label" for="printStokova">
                 Стокова разписка
             </label>
@@ -608,8 +606,6 @@ function addProduct(e) {
 
     successScan(e.target);
     rerenderTable();
-
-    console.log(addedProducts)
 
     e.target.value = '';
     e.target.focus();
@@ -1065,6 +1061,7 @@ export async function createEditOrderPage(ctx, next) {
         companies = (await axios.get('/companies')).data;
         customers = (await axios.get('/customers', { params: { page: 'createOrder' } })).data.customers;
         products = (await axios.get('/products', { params: { page: 'orders' } })).data.products;
+        defaultValues = (await axios.get('/settings', { params: { keys: ['orderType', 'paymentType', 'documentType', 'orderPrint'], } })).data;
         addedProductsIndex = 0;
 
         if (ctx.params.id) {
@@ -1083,7 +1080,8 @@ export async function createEditOrderPage(ctx, next) {
             }
         } else {
             order = undefined;
-            orderType = defaultOrderType;
+            documentType = defaultValues.find(o => o.key === 'documentType').value;
+            orderType = defaultValues.find(o => o.key === 'orderType').value;
             selectedCompany = companies[0];
             selectedCustomer = undefined;
             addedProducts = [];

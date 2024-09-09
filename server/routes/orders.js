@@ -3,9 +3,11 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
-import { Product } from "../models/product.js";
+import { testWooOrderGet } from "../woocommerce/orders.js";
 
 export function ordersRoutes() {
+    testWooOrderGet();
+
     const ordersRouter = express.Router();
 
     ordersRouter.get('/orders/params', permit('user', 'manager', 'admin'), async (req, res) => {
