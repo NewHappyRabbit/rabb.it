@@ -33,6 +33,8 @@ function rerenderTable() {
 
     render(bottomRow(params, companies), document.getElementById('bottomRow'));
 
+    render(woocommerceTemplate(), document.getElementById('woocommerce'));
+
     // update total in bottom row
     const total = addedProducts.reduce((acc, product) => acc + (product.price * product.quantity) * (1 - product.discount / 100), 0);
     document.getElementById('total').textContent = formatPrice(total);
@@ -166,6 +168,48 @@ const bottomRow = (params, companies) => html`
         <div >Общо: <span id="total"></span></div>
         ${submitBtn({ func: createEditOrder, text: "Запази и принтирай", type: "button" })}
     </div>
+`;
+
+const speedyTemplate = () => html`
+    <div>Доставка до: ${order.woocommerce.speedy.office ? "Офис" : "Адрес"}</div>
+    <div>Държава: ${order.woocommerce.speedy.country}</div>
+    <div>Град: ${order.woocommerce.speedy.locality}</div>
+    ${order.woocommerce.speedy.office ? html`<div>Офис: ${order.woocommerce.speedy.office}</div>` : ''}
+    ${order.woocommerce.speedy.street ? html`
+        <div>Улица: ${order.woocommerce.speedy.street} ${order.woocommerce.speedy.number ? `№ ${order.woocommerce.speedy.number}` : ''} ${order.woocommerce.speedy.entrance ? `вх. ${order.woocommerce.speedy.entrance}` : ''} ${order.woocommerce.speedy.floor ? `ет. ${order.woocommerce.speedy.floor}` : ''} ${order.woocommerce.speedy.apartment ? `ап. ${order.woocommerce.speedy.apartment}` : ''}</div>
+        ${order.woocommerce.speedy.note ? html`<div>Бележка: ${order.woocommerce.speedy.note}</div>` : ''}
+` : ''}
+    <div>Сума: ${formatPrice(order.woocommerce.speedy.total)}</div>
+`;
+
+const econtTemplate = () => html`
+    <div>Доставка до: ${order.woocommerce.econt.ship_to}</div>
+    <div>Град: ${order.woocommerce.econt.city}</div>
+    <div>Пощенски код: ${order.woocommerce.econt.postal_code}</div>
+    ${order.woocommerce.econt.office ? html`<div>${order.woocommerce.econt.office}</div>` : html`Адрес: ${order.woocommerce.econt.street} ${order.woocommerce.econt.number ? '№ ' + order.woocommerce.econt.number : ''} ${order.woocommerce.econt.entrance ? 'вх. ' + order.woocommerce.econt.entrance : ''} ${order.woocommerce.econt.floor ? 'ет. ' + order.woocommerce.econt.floor : ''} ${order.woocommerce.econt.apartment ? 'ап. ' + order.woocommerce.econt.apartment : ''}</div>`}
+    <div>Сума: ${formatPrice(order.woocommerce.econt.total)}</div>
+    ${order.woocommerce.econt.note ? html`<div>Бележка: ${order.woocommerce.econt.note}</div>` : ''}
+`;
+
+const shippingTemplate = () => html``;
+
+const woocommerceTemplate = () => html`
+    <!-- ID -->
+     <div class="col-3">
+        <div>WooCommerce ID: ${order && order.woocommerce.id}</div>
+     </div>
+    <!-- Status -->
+    <div class="col-3">
+        <label for="status" class="form-label">Статус:</label>
+        <select name="status" id="status" class="form-control" required>
+            ${Object.entries(params.woocommerce.status).map(type => html`<option ?selected=${order && type[0] == order.status} value=${type[0]}>${type[1]}</option>`)}
+        </select>
+    </div>
+    <div class="col-3">
+        <div>Куриер: ${order && (order.woocommerce.speedy ? 'Speedy' : order.woocommerce.econt ? 'Еконт' : order.shipping.title)}</div>
+        ${order && order.woocommerce.speedy ? speedyTemplate() : order && order.woocommerce.econt ? econtTemplate() : shippingTemplate()}
+    </div>
+        <!-- Note -->
 `;
 
 function updateQuantity(e) {
@@ -1049,6 +1093,7 @@ const template = (params, customers) => html`
             ${topRow(params, customers)}
             <div id="table" class="table-responsive"></div>
             <div id="bottomRow" class="row g-3 align-items-end"></div>
+            <div id="woocommerce" class="row g-3 align-items-end mt-1"></div>
         </form>
         <div id="alert" class="alert d-none"></div>
     </div>

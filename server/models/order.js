@@ -9,6 +9,16 @@ export const documentTypes = {
     credit: 'Кредитно известие'
 }
 
+export const woocommerce = {
+    status: {
+        pending: 'Получена',
+        processing: "В обработка",
+        completed: 'Приключена',
+        cancelled: 'Отказана',
+        refunded: 'Върната',
+    }
+}
+
 export const paymentTypes = {
     cash: 'В брой',
     bank: 'По сметка',
@@ -121,6 +131,54 @@ const orderSchema = new Schema({
     deleted: {
         type: Boolean,
         default: false
+    },
+    woocommerce: {
+        id: String,
+        shipping: String,
+        status: {
+            type: String,
+            required: function () {
+                return this.woocommerce.id;
+            },
+        },
+        payment_method: {
+            type: String,
+            required: function () {
+                return this.woocommerce.id;
+            },
+        },
+        payment_method_title: {
+            type: String,
+            required: function () {
+                return this.woocommerce.id;
+            },
+        },
+        speedy: {
+            country: String,
+            locality: String,
+            postal_code: String,
+            total: Number,
+            office: String,
+            street: String,
+            number: String,
+            entrance: String,
+            floor: String,
+            apartment: String,
+            note: String
+        },
+        econt: {
+            ship_to: String,
+            city: String,
+            postal_code: String,
+            total: Number,
+            office: String,
+            street: String,
+            number: String,
+            entrance: String,
+            floor: String,
+            apartment: String,
+            note: String
+        }
     }
 }, {
     timestamps: true

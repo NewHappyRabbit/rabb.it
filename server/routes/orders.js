@@ -5,8 +5,9 @@ import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
 import { testWooOrderGet } from "../woocommerce/orders.js";
 
-export function ordersRoutes() {
-    testWooOrderGet();
+export async function ordersRoutes() {
+    // const { status, message } = await testWooOrderGet();
+    // console.log({ status, message });
 
     const ordersRouter = express.Router();
 
@@ -24,6 +25,8 @@ export function ordersRoutes() {
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { orders, prevCursor, nextCursor } = await OrderController.get({ ...req.query });
+
+            console.log(orders);
 
             res.json({ orders, prevCursor, nextCursor });
         } catch (error) {
@@ -56,8 +59,7 @@ export function ordersRoutes() {
 
             res.status(201).send(order._id.toString());
         } catch (error) {
-            console.error(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
@@ -75,8 +77,7 @@ export function ordersRoutes() {
 
             res.status(201).send(id);
         } catch (error) {
-            console.log(error)
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });

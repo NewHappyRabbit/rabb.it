@@ -87,9 +87,9 @@ export const CustomerController = {
         // Add MOL to receivers so it autofills of first order
         data.receivers = [data.mol];
 
-        await new Customer(data).save();
+        const customer = await new Customer(data).save();
 
-        return { status: 201 };
+        return { status: 201, customer };
     },
     put: async (id, data) => {
         const validation = validateCustomer(data);

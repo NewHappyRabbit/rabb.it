@@ -164,6 +164,7 @@ async function loadSales() {
         const prevCursor = req.data.prevCursor;
         const nextCursor = req.data.nextCursor;
 
+
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers', { params: { page: 'orders' } })).data.customers;
         const companies = (await axios.get('/companies')).data;

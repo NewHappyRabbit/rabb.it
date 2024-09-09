@@ -47,7 +47,7 @@ const userSchema = new Schema({
     },
     role: {
         type: String,
-        enum: Object.keys(userRoles),
+        enum: [...Object.keys(userRoles), 'woocommerce'],
         default: Object.keys(userRoles)[0],
         required: true
     },

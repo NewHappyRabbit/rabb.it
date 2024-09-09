@@ -1,4 +1,4 @@
-import { Order, documentTypes, paymentTypes, orderTypes } from "../models/order.js";
+import { Order, documentTypes, paymentTypes, orderTypes, woocommerce, } from "../models/order.js";
 import { Customer } from "../models/customer.js";
 import { Product } from "../models/product.js";
 import { Company } from "../models/company.js";
@@ -284,7 +284,8 @@ export const OrderController = {
         var data = {
             orderTypes,
             paymentTypes,
-            documentTypes
+            documentTypes,
+            woocommerce
         };
 
         return data;

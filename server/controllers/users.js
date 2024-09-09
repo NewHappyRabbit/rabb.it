@@ -4,13 +4,25 @@ import { Order } from "../models/order.js";
 import jwt from 'jsonwebtoken';
 
 export async function createDefaultUsers() {
+    // Create WooCommerce user (used for orders)
+
+    if (process.env.WOO_URL) {
+        const user = await User.findOne({ username: 'woocommerce' });
+
+        if (!user) {
+            const pass = await bcrypt.hash((Math.random() * 1000000).toString(), 10);
+            await User.create({ username: 'woocommerce', password: pass, role: 'woocommerce' });
+            console.log('Created default for WooCommerce');
+        };
+    }
+
+
     // Check if any users exists to prevent errors on new deploys
     const exist = await User.findOne();
-
     if (exist) return;
     const pass = await bcrypt.hash('123456', 10);
     await User.create({ username: 'admin', password: pass, role: 'admin' });
-    console.log('Created default user "admin" with password "123456"')
+    console.log('Created default user "admin" with password "123456"');
 }
 
 const jwtSecret = process.env.JWT_SECRET;

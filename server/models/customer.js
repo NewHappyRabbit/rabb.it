@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { sparseFix } from "./functions/global.js";
 
 const { Schema } = mongoose;
 
@@ -23,13 +22,10 @@ const customerSchema = new Schema({
         unique: true,
         match: /^[0-9]{9,10}$/,
     },
-    taxvat: { // example: BG123123123
-        type: String,
-        required: false,
-    },
+    taxvat: String, // example: BG123123123
     address: {
         type: String,
-        required: true
+        required: true,
     },
     deliveryAddress: String,
     discount: {
@@ -41,6 +37,9 @@ const customerSchema = new Schema({
     deleted: { // used for soft delete
         type: Boolean,
         default: false,
+    },
+    woocommerce: {
+        id: String,
     }
 });
 

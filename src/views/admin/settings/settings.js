@@ -167,6 +167,16 @@ export async function settingsPage() {
                     </div>
                 </div>
 
+                <h3 class="mt-5">WooCommerce</h3>
+                <div class="row gap-5">
+                    <div class="col-sm-3">
+                        <label for="documentType" class="form-label">Тип на продажба при прехвърляне от WooCommerce в приложението</label>
+                        <select class="form-select" id="wooDocumentType" name="wooDocumentType" required>
+                            ${Object.entries(orderParams.documentTypes).map(([key, value]) => html`<option value=${key} ?selected=${settings.find(k => k.key == "wooDocumentType")?.value == key}>${value}</option>`)}
+                        </select>
+                    </div>
+                </div>
+
                 <div id="alert" class="d-none alert mb-2" role="alert"></div>
                 ${submitBtn({ text: "Запази всички настройки", icon: "bi-check-lg", classes: "d-block m-auto mt-3 col-sm-3" })}
             </form>
