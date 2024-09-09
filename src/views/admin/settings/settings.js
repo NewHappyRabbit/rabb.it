@@ -88,25 +88,25 @@ export async function settingsPage() {
         ${nav()}
         <div class="container-fluid">
             <form novalidate @submit=${saveSettings} class="needs-validation" autocomplete="off">
-                <h3>Продукти</h3>
-                <div class="row">
-                    <div class="col-6 col-sm-3">
+                <h3 class="mb-3">Продукти</h3>
+                <div class="row align-items-end g-3">
+                    <div class="col-6 col-sm-6">
                         <label for="wholesaleMarkup" class="form-label">Надценка на едро</label>
-                        <div class="input-group mb-3">
+                        <div class="input-group ">
                             <input type="number" min="0" inputmode="numeric" class="form-control" .value=${settings.find(k => k.key == "wholesaleMarkup").value} id="wholesaleMarkup" name="wholesaleMarkup" required>
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-6 col-sm-6">
                         <label for="wholesaleMarkup" class="form-label">Надценка на дребно</label>
-                        <div class="input-group mb-3">
+                        <div class="input-group ">
                             <input type="number" min="0" inputmode="numeric" class="form-control" .value=${settings.find(k => k.key == "retailMarkup").value} id="retailMarkup" name="retailMarkup" required>
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-4">
                         <label for="deliveryPriceFields" class="form-label">При създаване на артикул ще са видими следните полета за доставна цена</label>
                         <select class="form-select" id="deliveryPriceFields" name="deliveryPriceFields" required>
                             <option ?selected=${settings.find(k => k.key == "deliveryPriceFields").value == "whole"} value="whole">Доставна цена</option>
@@ -115,7 +115,7 @@ export async function settingsPage() {
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-4">
                         <label for="wholesalePriceFields" class="form-label">При създаване на артикул ще са видими следните полета за цена на едро</label>
                         <select class="form-select" id="wholesalePriceFields" name="wholesalePriceFields" required>
                             <option ?selected=${settings.find(k => k.key == "wholesalePriceFields").value == "whole"} value="whole">Цена на едро</option>
@@ -124,7 +124,7 @@ export async function settingsPage() {
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-4">
                         <label for="deliveryPriceFields" class="form-label">При създаване на артикул, ще бъде ли видимо полето за цена на дребно?</label>
                         <select class="form-select" id="retailPriceField" name="retailPriceField" required>
                             <option ?selected=${settings.find(k => k.key === "retailPriceField").value === "true"} value="true">Да</option>
@@ -135,42 +135,35 @@ export async function settingsPage() {
 
 
                 <h3 class="mt-5">Продажби</h3>
-                <div class="row">
-                    <div class="col-6 col-sm-3">
+                <div class="row align-items-end">
+                    <div class="col-sm-3 g-3">
                         <label for="orderType" class="form-label">Тип на продажба по подразбиране</label>
                         <select class="form-select" id="orderType" name="orderType" required>
                             ${Object.entries(orderParams.orderTypes).map(([key, value]) => html`<option value=${key} ?selected=${settings.find(k => k.key == "orderType").value == key}>${value}</option>`)}
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-3">
                         <label for="paymentType" class="form-label">Начин на плащане по подразбиране</label>
                         <select class="form-select" id="paymentType" name="paymentType" required>
                             ${Object.entries(orderParams.paymentTypes).map(([key, value]) => html`<option value=${key} ?selected=${settings.find(k => k.key == "paymentType").value == key}>${value}</option>`)}
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-3">
                         <label for="documentType" class="form-label">Тип на документ по подразбиране</label>
                         <select class="form-select" id="documentType" name="documentType" required>
                             ${Object.entries(orderParams.documentTypes).map(([key, value]) => html`<option value=${key} ?selected=${settings.find(k => k.key == "documentType").value == key}>${value}</option>`)}
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3">
+                    <div class="col-sm-3">
                         <label for="orderPrint" class="form-label">Принтиране на документ при продажба</label>
                         <select class="form-select" id="orderPrint" name="orderPrint" required>
                             <option value="original">Само оригинал</option>
                             <option value="originalCopy">Оригинал + Копие</option>
                             <option value="originalCopyStokova">Оригинал + Копие + Стокова</option>
                         </select>
-                    </div>
-                </div>
-
-                <h3>WooCommerce</h3>
-                <div class="row">
-                    <div class="col-6 col-sm-3">
-
                     </div>
                 </div>
 
