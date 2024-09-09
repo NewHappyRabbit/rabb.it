@@ -305,8 +305,8 @@ function updateSelectedSizes(e) {
 const checkboxSizes = (product) => html`
     ${product?.product?.sizes?.map(size => html`
         <div class="form-check">
-            <input class="form-check-input" @change=${updateSelectedSizes} name="size" type="checkbox" value=${size.size} ?checked=${product?.selectedSizes?.includes(size.size)} id="${product.index}-${size.size}">
-            <label class="form-check-label" for="flexCheckDefault">
+            <input class="form-check-input" @change=${updateSelectedSizes} name="${product.index}-${size.size}" type="checkbox" value=${size.size} ?checked=${product?.selectedSizes?.includes(size.size)} ?disabled=${!order && product.product.sizes.find(s => s.size === size.size).quantity === 0} id="${product.index}-${size.size}">
+            <label class="form-check-label" for="${product.index}-${size.size}">
                 ${size.size}
             </label>
         </div>`)
@@ -335,13 +335,13 @@ const wholesaleProductsTable = (products) => html`
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
-                    <td>${product?.product?.sizes?.length ? formatPrice(product.price / product.product.sizes.length) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+                    <td>${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / product.product.sizes.length) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
 
                     <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
 
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} @keyup=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product?.product?.quantity} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} @keyup=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             ${product?.product?.quantity ? html`<span class="input-group-text">/${product?.product?.quantity}</span>` : ''}
                         </div>
                     </td>
@@ -495,7 +495,6 @@ function addProduct(e) {
         product = e.target.value.split('*')[1];
     }
 
-    // TODO Send request to server to get product instead of getting all products on page load
     // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
     const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
 
@@ -505,16 +504,25 @@ function addProduct(e) {
         const inArray = addedProducts.find(p => p.product === productInDB && p.selectedSizes.length === p.sizes.length);
 
         if (inArray) inArray.quantity += quantity;
-        else
-            addedProducts.push({
+        else {
+            const temp = {
                 index: addedProductsIndex++,
                 product: productInDB,
-                selectedSizes: productInDB.sizes.map(s => s.size), // selected (checked) sizes
+                selectedSizes: productInDB.sizes.filter(s => s.quantity > 0).map(s => s.size), // selected (checked) sizes
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
-                quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
+                quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
                 price: productInDB.wholesalePrice,
+                unitPrice: productInDB.wholesalePrice / productInDB.sizes.length, // only used to display the price per unit in column
                 discount: selectedCustomer?.discount || 0
-            });
+            };
+
+            if (temp.selectedSizes.length !== productInDB.sizes.length) {
+                const unitPrice = productInDB.wholesalePrice / productInDB.sizes.length;
+                temp.price = (unitPrice * temp.selectedSizes.length).toFixed(2);
+            }
+
+            addedProducts.push(temp);
+        }
     }
     // Wholesale + IN DB + simple
     else if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length === 0) {
@@ -600,6 +608,8 @@ function addProduct(e) {
 
     successScan(e.target);
     rerenderTable();
+
+    console.log(addedProducts)
 
     e.target.value = '';
     e.target.focus();
@@ -868,11 +878,15 @@ async function printSale(data) {
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
     let flags = {};
+
     // Check if any product has discount, if none - dont show column
     flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
 
     // Check if any product has qtyInPackage, if none - dont show column
     flags.tableShowQtyInPackage = data.products.some(product => product.qtyInPackage > 0);
+
+    // Check if any product has size, if none - dont show column
+    flags.tableShowSizes = data.products.some(product => product.size);
 
     // should print something like this: invoice original, invoice copy, etc etc depending on whats selected as type
     const printPages = [];
@@ -996,14 +1010,14 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
 
 // Add same styling as wholesale table
 const printTableRetail = ({ tax, products, type, flags }) => html`
-<table id="printProductTable" class="table table-bordered table-striped">
+<table id="printProductRetailTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
                 <td>№</td>
                 <td>Код</td>
                 <td>Стока</td>
                 <td>Мярка</td>
-                <td>Размер</td>
+                ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
                 <td>Цена</td>
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
@@ -1019,7 +1033,7 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
                     <td>${product?.product?.name || product.name}</td>
                     <!-- if product with sizes, its probably "брой", else its "пакет" -->
                     <td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
-                    <td>${product?.size}</td>
+                    ${flags.tableShowSizes ? html`<td>${product?.size}</td>` : ''}
                     <td class="text-nowrap">${product.quantity}</td>
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
