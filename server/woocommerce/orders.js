@@ -13,7 +13,7 @@ import { CustomerController } from "../controllers/customers.js";
 // pass: %d54x#)BJ@T01DXh(zegbhhJ
 
 //TODO DO the normal orders with normal address (not econt or speedy)
-// Normal order with customer address: #51532
+// Normal order with customer address: #51553 | DONE
 // Normal order with customer address + 10% discount coupon used: #51534
 // Normal order with customer address + 1 product on sale and 1 normal product: #51539
 // Order with Econt office: #51543 | DONE
@@ -24,7 +24,7 @@ import { CustomerController } from "../controllers/customers.js";
 export async function testWooOrderGet() {
     if (!WooCommerce) return;
 
-    const response = await WooCommerce.get('orders/51542');
+    const response = await WooCommerce.get('orders/51553');
     const data = response.data;
 
     // Get default data
@@ -133,11 +133,10 @@ export async function testWooOrderGet() {
     }
 
     if (!wooData.woocommerce.speedy && !wooData.woocommerce.econt)
-        wooData.shipping = data.shipping_lines.method_title;
+        wooData.woocommerce.shipping = data.shipping_lines[0].method_title;
 
     if (data.coupon_lines.length > 0)
         wooData.coupons = data.coupon_lines;
-
 
     // Products
     for (let product of data.line_items) {
@@ -163,21 +162,16 @@ export async function testWooOrderGet() {
     var customer = await Customer.findOne({ vat: wooData.customer.vat });
 
     if (customer && !customer.woocommerce) { // Add woo id to existing customer
-        customer.woocommerce = {
-            id: wooData.customer.id
-        }
-
+        customer.woocommerce.id = wooData.customer.id;
         await customer.save();
     } else if (!customer) {  // Create new customer
-        const { status, message, customerInDb } = await CustomerController.post(wooData.customer);
+        const { status, message, customer: customerInDb } = await CustomerController.post(wooData.customer);
         customer = customerInDb;
         if (status !== 201) return { status, message };
     }
 
     wooData.customer = customer._id;
     wooData.receiver = customer.receivers.pop();
-
-    wooData.customer = customer._id;
 
     // Get default company
     const defaultCompany = await Company.findOne({ default: true });
