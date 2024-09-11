@@ -29,7 +29,7 @@ function switchPage(cursor) {
 
 const table = (orders, prevCursor, nextCursor) => html`
     <div class="table-responsive">
-        <table class="mt-3 table table-striped table-hover text-center">
+        <table class="mt-3 table table-striped table-hover text-center align-middle">
             <thead>
                 <tr>
                     <th scope="col">Тип</th>
@@ -46,8 +46,8 @@ const table = (orders, prevCursor, nextCursor) => html`
             </thead>
             <tbody>
                 ${orders?.map(order => html`
-                    <tr class=${order.unpaid === true ? "table-danger" : ""}>
-                        <td>${params.documentTypes[order.type]}</td>
+                    <tr class="${order.unpaid === true ? "table-danger" : ""}">
+                        <td class="text-start">${params.documentTypes[order.type]}${order?.woocommerce ? html`<i class="bi bi-globe text-primary ms-2 fs-5"></i>` : ''}</td>
                         <td>${order.number}</td>
                         <td>${order.customer.name}</td>
                         <td>${order.company.name}</td>
@@ -99,6 +99,7 @@ async function applyFilters(e) {
     }
 }
 
+// TODO Add filter for only woocommerce or only app orderes
 const filters = (customers, companies, params) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
             <div class="col-6 col-sm">

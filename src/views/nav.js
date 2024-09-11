@@ -30,7 +30,7 @@ export const nav = () => html`
     <nav class="navbar sticky-top navbar-expand-md bg-body-tertiary mb-2 d-print-none">
         <div class="container-fluid gap-4">
             <a class="navbar-brand" href="/">
-                <img src="favicon/favicon-32x32.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top d-none">Rabb.it <span class="fw-light fs-6">(${loggedInUser && loggedInUser.username})</span> <i id="printerIconNav" data-bs-toggle="modal" data-bs-target="#selectPrinterModal" class="bi bi-printer ${printerFound === undefined ? 'text-warning' : printerFound ? 'text-success' : 'text-danger'}"></i> <i class="bi bi-wordpress"></i></a>
+                <img src="favicon/favicon-32x32.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top d-none">Rabb.it <span class="fw-light fs-6">(${loggedInUser && loggedInUser.username})</span> <i id="printerIconNav" data-bs-toggle="modal" data-bs-target="#selectPrinterModal" class="bi bi-printer ${printerFound === undefined ? 'text-warning' : printerFound ? 'text-success' : 'text-danger'}"></i></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

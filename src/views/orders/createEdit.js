@@ -195,10 +195,6 @@ const econtTemplate = () => html`
 const shippingTemplate = () => html``;
 
 const woocommerceTemplate = () => html`
-    <!-- ID -->
-     <div class="col-3">
-        <div>WooCommerce ID: ${order && order.woocommerce.id}</div>
-     </div>
     <!-- Status -->
     <div class="col-3">
         <label for="status" class="form-label">Статус:</label>
@@ -206,11 +202,15 @@ const woocommerceTemplate = () => html`
             ${Object.entries(params.woocommerce.status).map(type => html`<option ?selected=${order && type[0] == order.status} value=${type[0]}>${type[1]}</option>`)}
         </select>
     </div>
+
     <div class="col-3">
         <div>Доставка: ${order && (order.woocommerce.speedy ? 'Speedy' : order.woocommerce.econt ? 'Еконт' : order.woocommerce.shipping)}</div>
         ${order && order.woocommerce.speedy ? speedyTemplate() : order && order.woocommerce.econt ? econtTemplate() : shippingTemplate()}
     </div>
-        <!-- Note -->
+    <!-- TODO Add customer Note -->
+
+    <!-- Alert -->
+    <div class="${addedProducts.filter(p => !p?.product?.woocommerce).length ? '' : 'd-none'} alert alert-warning">Внимание! Въвели сте артикул, който не съществува в базата данни. Този артикул няма да се покаже в поръчката в онлайн магазина и сумата ще бъде различна от реалната. Предупредете клиента си за това.</div>
 `;
 
 function updateQuantity(e) {
