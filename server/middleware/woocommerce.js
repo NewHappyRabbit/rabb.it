@@ -5,14 +5,13 @@ export function WooHookAuth(req, res, next) {
         return res.status(500).send('WooCommerce not instantiated');
 
     const incomingSignature = req.headers['x-wc-webhook-signature'];
-    const payload = JSON.stringify(req.body);
+    // const payload = new Buffer(JSON.stringify(req.body), 'utf8');
+    const payload = req.rawBody;
 
     const calculatedSignature = crypto
         .createHmac("sha256", process.env.WOO_HOOKS_SECRET)
         .update(payload)
         .digest("base64");
-
-    console.log({ incomingSignature, calculatedSignature })
 
     if (incomingSignature === calculatedSignature) {
         next();

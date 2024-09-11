@@ -150,13 +150,23 @@ To run this project, you will need to add all of the following environment varia
 
 ## WooCommerce environment variables
 
-This variables are **NOT** required to run the web application! If you wish your app to synchronize products, categories, attributes and orders to your WooCommerce website, add the below variables to your .env file
+These variables are **NOT** required to run the app! If you wish your app to synchronize products, categories, attributes and orders to your WooCommerce website, add the below variables to your .env file
 
 | Variable     | Value                            | Decsription                    |
 | ------------ | -------------------------------- | ------------------------------ |
 | `WOO_URL`    | string (ex. https://website.com) | URL to the WooCommerce website |
 | `WOO_KEY`    | string (ex. ck_gh234123...)      | WooCommerce REST API Key       |
 | `WOO_SECRET` | string (ex. cs_354123...)        | WooCommerce REST API Secret    |
+
+## WooCommerce Hooks
+
+This is **NOT** required if you are not using the WooCommerce! Setup the following WooCommerce hooks needed for the app to function correctly. Go to WooCommerce > Settings > Advanced > Webhooks and add the following hooks, replacing example.com with your app domain name. For `Secret`, use the `WOO_HOOKS_SECRET` from your `.env` file.
+
+| Topic         | Delivery URL                                       | Notes                                             |
+| ------------- | -------------------------------------------------- | ------------------------------------------------- |
+| Order created | https://example.com/server/woocommerce/hooks/order | On new order in WooCommerce, create it in the app |
+
+---
 
 ## Testing environment variables
 
@@ -165,6 +175,7 @@ To run tests, you will need to add all of the following environment variables to
 | - | - | - |
 | `MONGO_TEST_USER` | string (ex. "testuser") | Username for MongoDB connection
 | `MONGO_TEST_PASSWORD` | string (ex. "testpass") | Password for MongoDB connection
+| `WOO_HOOKS_SECRET` | string | Secret used for the WooCommerce hooks requests. Generate by running `node -e "console.log(require('crypto').randomBytes(256).toString('base64'));"` |
 
 ---
 

@@ -37,7 +37,7 @@ function scanBarcode() {
     };
 
     Quagga.init(config, function (err) {
-        if (err) return console.log(err);
+        if (err) return console.error(err);
         Quagga.start();
 
         Quagga.onDetected(data => {

@@ -110,9 +110,6 @@ export function printLabel(product = { barcode, name, sizes, code, wholesalePric
     // 4. Save the file and then edit with notepad
     // 5. First line is some thrash, so skip it and copy everything else. Done!
 
-    console.log('printlabel function:')
-    console.log(product, quantity);
-
     const zplCommand = `^XA
 ~TA024
 ~JSN

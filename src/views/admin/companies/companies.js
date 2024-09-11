@@ -75,7 +75,6 @@ async function loadCompanies() {
 
         setTimeout(() => {
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-            console.log(tooltipTriggerList)
             if (tooltipTriggerList.length)
                 [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
         }, 300);

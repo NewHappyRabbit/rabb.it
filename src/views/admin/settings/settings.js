@@ -78,7 +78,6 @@ export async function settingsPage() {
     try {
         settings = (await axios.get('/settings')).data;
         orderParams = (await axios.get('/orders/params')).data;
-        console.log(orderParams)
     } catch (error) {
         console.error(error);
         alert('Възникна грешка')

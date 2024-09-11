@@ -3,6 +3,7 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
+import { WooUpdateOrder } from "../woocommerce/orders.js";
 
 export async function ordersRoutes() {
     const ordersRouter = express.Router();
@@ -21,8 +22,6 @@ export async function ordersRoutes() {
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { orders, prevCursor, nextCursor } = await OrderController.get({ ...req.query });
-
-            console.log(orders);
 
             res.json({ orders, prevCursor, nextCursor });
         } catch (error) {
@@ -69,7 +68,8 @@ export async function ordersRoutes() {
             const { status, message, updatedProducts } = await OrderController.put({ id, data, userId });
             if (status !== 201) return res.status(status).send(message);
 
-            WooUpdateQuantityProducts(updatedProducts)
+            WooUpdateQuantityProducts(updatedProducts);
+            WooUpdateOrder(id, data);
 
             res.status(201).send(id);
         } catch (error) {

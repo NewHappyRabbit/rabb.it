@@ -6,11 +6,7 @@ import { Product } from "../models/product.js";
 import { User } from "../models/user.js";
 import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
-// On start, check if import all orders from WOO to MONGO (non existing only)
-
-// Test user in woo:
-// user: test
-// pass: %d54x#)BJ@T01DXh(zegbhhJ
+// TODO On start, check if import all orders from WOO to MONGO (non existing only)
 
 // DONE
 // Normal order with customer address: #51553
@@ -22,15 +18,9 @@ import { CustomerController } from "../controllers/customers.js";
 // Normal order with customer address + 1 product + 10% discount coupon used: #51562
 // Normal order with customer address + 1 product on sale + 10% discount coupon used: #51563
 
-export async function WooCreateOrder(data) {
+export async function WooHookCreateOrder(data) {
     if (!WooCommerce) return;
     // This functions creates a new order in the app from a WooCommerce order. It's activated by a hook in Woocommerce
-
-
-    return console.log(data);
-
-    const response = await WooCommerce.get('orders/51563');
-    const data = response.data;
 
     // Get default data
     const defaultData = await SettingsController.get({
@@ -202,4 +192,8 @@ export async function WooCreateOrder(data) {
     const { status, message, order, updatedProducts } = await OrderController.post({ data: wooData, userId: user._id });
 
     return { status, message, order, updatedProducts }
+}
+
+export async function WooUpdateOrder(orderId, data) {
+
 }

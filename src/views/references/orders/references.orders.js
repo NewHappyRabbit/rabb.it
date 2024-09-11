@@ -60,7 +60,6 @@ const table = (orders, prevCursor, nextCursor) => html`
                         <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
                         <td>${formatPrice(product.price)}</td>
                         <td>${product.quantity}</td>
-                        ${console.log(product)}
                         <td>${product?.qtyInPackage || product?.selectedSizes?.length || ''}</td>
                         <td>${product?.discount}</td>
                         <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
