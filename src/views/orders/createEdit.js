@@ -206,7 +206,7 @@ const woocommerceTemplate = () => html`
         </select>
     </div>
     <div class="col-3">
-        <div>Куриер: ${order && (order.woocommerce.speedy ? 'Speedy' : order.woocommerce.econt ? 'Еконт' : order.shipping.title)}</div>
+        <div>Доставка: ${order && (order.woocommerce.speedy ? 'Speedy' : order.woocommerce.econt ? 'Еконт' : order.woocommerce.shipping)}</div>
         ${order && order.woocommerce.speedy ? speedyTemplate() : order && order.woocommerce.econt ? econtTemplate() : shippingTemplate()}
     </div>
         <!-- Note -->
@@ -543,7 +543,7 @@ function addProduct(e) {
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
-        const inArray = addedProducts.find(p => p.product === productInDB && p.selectedSizes.length === p.sizes.length);
+        const inArray = addedProducts.find(p => p.product._id === productInDB._id && p.selectedSizes.length === p.sizes.length);
 
         if (inArray) inArray.quantity += quantity;
         else {
@@ -568,7 +568,7 @@ function addProduct(e) {
     }
     // Wholesale + IN DB + simple
     else if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product === productInDB);
+        const inArray = addedProducts.find(p => p.product._id === productInDB._id);
         // Check if product is already in addedProducts
         if (inArray) {
             inArray.quantity += quantity;
@@ -589,7 +589,7 @@ function addProduct(e) {
 
     // Retail + IN DB + variable
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length > 0) {
-        const inArray = addedProducts.find(p => p.product === productInDB && !p.size);
+        const inArray = addedProducts.find(p => p.product._id === productInDB._id && !p.size);
         // Check if already in addedProducts and NO size is selected
         if (inArray) {
             inArray.quantity += quantity;
@@ -606,7 +606,7 @@ function addProduct(e) {
 
     // Retail + IN DB + simple
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product === productInDB);
+        const inArray = addedProducts.find(p => p.product._id === productInDB._id);
         // Check if already in addedProducts
         if (inArray) {
             inArray.quantity += quantity;
@@ -1131,6 +1131,8 @@ export async function createEditOrderPage(ctx, next) {
             selectedCustomer = undefined;
             addedProducts = [];
         }
+
+        console.log(order)
         // reset form
         const form = document.querySelector('form');
         const alertEl = document.getElementById('alert');
