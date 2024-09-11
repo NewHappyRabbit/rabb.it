@@ -4,7 +4,6 @@ Instructions for Windows:
 2. Open the file "nginx.conf" in the "conf" folder and delete the whole http block.
 
 3. Place the below code at the bottom of the file:
-
 http {
     include       mime.types;
     default_type  application/octet-stream;
@@ -19,29 +18,45 @@ http {
         return 301 https://$host$request_uri;
     }
 
-    # Use one or the other depending on server_name
-    map $host $certfile {
-        local.emo-sklad.bg "C:/nginx/ssl/live-cert.pem";
-        localhost "C:/nginx/ssl/localhost-cert.pem";
-    }
-
-    map $host $keyfile {
-        local.emo-sklad.bg "C:/nginx/ssl/live-key.key";
-        localhost "C:/nginx/ssl/localhost-key.key";
-    }
-
-    server {
+    server { # Default server (used for localhost)
         # HTTPS
         listen 443 ssl;
-
-        # Change server_name to localhost if using locally
-        # server_name yourdomain.com; # replace "yourdomain" with your actual domain
-        server_name localhost; # used on local dev
+        server_name "";
 
         # Path to SSL certificates
-        # If testing on localhost, instructions on how to generate certificate is in /instructions/SSL certificates.txt
-        ssl_certificate $certfile;
-        ssl_certificate_key $keyfile;
+        ssl_certificate "C:/nginx/ssl/localhost.pem";
+        ssl_certificate_key "C:/nginx/ssl/localhost.key";
+
+        # Frontend application
+        location / {
+            # Where to look for files
+            root html/rabb.it/public;
+            # Used for SPA
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Node server
+        # All requests to /server/.....
+        location /server/ {
+            # Remove the "/server/" from the url when redirecting request
+            rewrite /server/(.*) /$1 break;
+            proxy_pass http://127.0.0.1:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+
+    server { # Server for local.emo-sklad.bg
+        # HTTPS
+        listen 443 ssl;
+        server_name local.emo-sklad.bg;
+
+        # Path to SSL certificates
+        ssl_certificate "C:/nginx/ssl/local.emo-sklad.bg.pem";
+        ssl_certificate_key "C:/nginx/ssl/local.emo-sklad.bg.key";
 
         # Frontend application
         location / {
@@ -65,6 +80,7 @@ http {
         }
     }
 }
+
 
 4. When developing locally, setup port-forwarding in your router for ports 80 and 443 to your local ip (ex 192.168.0.50)
 
