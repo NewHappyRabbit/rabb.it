@@ -22,8 +22,12 @@ import { CustomerController } from "../controllers/customers.js";
 // Normal order with customer address + 1 product + 10% discount coupon used: #51562
 // Normal order with customer address + 1 product on sale + 10% discount coupon used: #51563
 
-export async function testWooOrderGet() {
+export async function WooCreateOrder(data) {
     if (!WooCommerce) return;
+    // This functions creates a new order in the app from a WooCommerce order. It's activated by a hook in Woocommerce
+
+
+    return console.log(data);
 
     const response = await WooCommerce.get('orders/51563');
     const data = response.data;

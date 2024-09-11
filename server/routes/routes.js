@@ -10,6 +10,7 @@ import { companiesRoutes } from './companies.js';
 import { referencesSalesRoutes } from './references.js';
 import { rateLimit } from 'express-rate-limit'
 import { FirstInitWooCommerce } from '../woocommerce/init.js';
+import { woocommerceRoutes } from './woocommerce.js';
 
 const limiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
@@ -37,6 +38,7 @@ export function loadRoutes() {
     ordersRoutes();
     companiesRoutes();
     referencesSalesRoutes();
+    woocommerceRoutes();
 
     //TODO Run this only the first time when the ecommerce is created to fill with data
     // FirstInitWooCommerce();

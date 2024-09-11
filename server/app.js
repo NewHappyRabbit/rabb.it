@@ -16,7 +16,7 @@ if (missingVariables.length) throw new Error(`Missing environment variables: ${m
 
 // Check if all or none of WooCommerce variables are defined
 let missingWooVariables = [];
-['WOO_URL', 'WOO_KEY', 'WOO_SECRET'].forEach((env) => {
+['WOO_URL', 'WOO_KEY', 'WOO_SECRET', 'WOO_HOOKS_SECRET'].forEach((env) => {
     if (!process.env[env]) missingWooVariables.push(env);
 })
 if (missingWooVariables.length === 1 || missingWooVariables === 2) throw new Error(`Missing environment variables: ${missingWooVariables.join(',')}`);

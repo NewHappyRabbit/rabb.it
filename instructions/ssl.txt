@@ -30,9 +30,10 @@ To get live server certificates (when hosting):
 2. Click "SSL/TLS Status"
 3. Find the domain and select "View SSL certificate"
 4. Scroll down and you shall find the CRT, KEY and CABUNDLE fields.
-5. Create a file for each and place them inside nginx/ssl/.
+5. Create the following files and place them inside nginx/ssl/.
+
 File names must be the same as the domain:
-exampledomain.com.pem - Certificate (CRT)
+exampledomain.com.pem - Certificate (CRT) + CA bundle // Copy-Paste the CRT and then on a new line Copy-Paste CA BUNDLE. If the bundle is not added, woocommerce hooks wont recognize the SSL certificate for some reason
 exampledomain.com.key - Private key (KEY)
 
 or subdomain.example.com.pem ....

@@ -3,12 +3,8 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
-import { testWooOrderGet } from "../woocommerce/orders.js";
 
 export async function ordersRoutes() {
-    // const { status, message } = await testWooOrderGet();
-    // console.log({ status, message });
-
     const ordersRouter = express.Router();
 
     ordersRouter.get('/orders/params', permit('user', 'manager', 'admin'), async (req, res) => {

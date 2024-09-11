@@ -19,7 +19,7 @@ function expressConfig() {
     // Enable requests to have file-type/json
     app.use(express.json());
     app.use(cookieParser());
-    app.use(httpLogger)
+    app.use(httpLogger);
 }
 
 export { expressConfig }

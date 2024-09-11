@@ -1,8 +1,6 @@
 import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
-import { Company } from "../models/company.js";
-import { Order } from "../models/order.js";
 import { CompanyController } from "../controllers/companies.js";
 
 export function companiesRoutes() {
