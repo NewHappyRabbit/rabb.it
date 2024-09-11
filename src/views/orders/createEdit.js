@@ -1132,7 +1132,6 @@ export async function createEditOrderPage(ctx, next) {
             addedProducts = [];
         }
 
-        console.log(order)
         // reset form
         const form = document.querySelector('form');
         const alertEl = document.getElementById('alert');

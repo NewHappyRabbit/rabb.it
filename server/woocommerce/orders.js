@@ -12,19 +12,20 @@ import { CustomerController } from "../controllers/customers.js";
 // user: test
 // pass: %d54x#)BJ@T01DXh(zegbhhJ
 
-//TODO DO the normal orders with normal address (not econt or speedy)
-// Normal order with customer address: #51553 | DONE
-// Normal order with customer address + 10% discount coupon used: #51534
-// Normal order with customer address + 1 product on sale and 1 normal product: #51539
-// Order with Econt office: #51543 | DONE
-// Order with Econt customer address: #51542 | DONE
-// Order with Speedy оffice: #51545 | DONE
-// Order with Speedy customer address: #51544 | DONE
+// DONE
+// Normal order with customer address: #51553
+// Normal order with customer address + 1 product on sale and 1 normal product: #51561
+// Order with Econt office: #51543
+// Order with Econt customer address: #51542
+// Order with Speedy оffice: #51545
+// Order with Speedy customer address: #51544
+// Normal order with customer address + 1 product + 10% discount coupon used: #51562
+// Normal order with customer address + 1 product on sale + 10% discount coupon used: #51563
 
 export async function testWooOrderGet() {
     if (!WooCommerce) return;
 
-    const response = await WooCommerce.get('orders/51553');
+    const response = await WooCommerce.get('orders/51563');
     const data = response.data;
 
     // Get default data
@@ -132,6 +133,7 @@ export async function testWooOrderGet() {
         }
     }
 
+    //TODO Implement normal shipping (get customer address instead of this. This is used in emo-sklad only, because they dont offer shipping to address, only econt and speedy)
     if (!wooData.woocommerce.speedy && !wooData.woocommerce.econt)
         wooData.woocommerce.shipping = data.shipping_lines[0].method_title;
 
@@ -146,15 +148,22 @@ export async function testWooOrderGet() {
         // Check quantity
         if (productInDb.quantity < product.quantity) return { status: 400, message: 'Няма достатъчно количество от продукта: ' + productInDb.name + ' (наличност: ' + productInDb.quantity + ')' + `[${productInDb.code}]` };
 
+        let discount = 0, price = product.price;
+        //TODO Edit this when sale price is implemented to check sale price as well
+        // Check if price from woo is different from price in db (either product is on sale or coupon was applied)
+        if (productInDb.wholesalePrice !== product.price) {
+            // Calculate discount percentage based on difference of prices
+            discount = parseFloat(Math.abs(((product.price - productInDb.wholesalePrice) / productInDb.wholesalePrice) * 100).toFixed(2));
+            price = productInDb.wholesalePrice;
+        }
+
         wooData.products.push({
             id: product.product_id,
             product: productInDb._id,
             unitOfMeasure: productInDb.unitOfMeasure,
             quantity: Number(product.quantity),
-            price: Number(product.price), // this value includes coupon discounts and sale price (ex. if price was 10lv originally and 10% coupon was applied, price will be 9lv) (or if product price is 15lv, but on sale for 12lv this will show 12lv)
-            subtotal: Number(product.subtotal), // this value does NOT include coupon discounts
-            discount: 0,
-            total: Number(product.total) // this value INCLUDES coupon discounts
+            price: Number(price),
+            discount,
         })
     }
 
