@@ -3,7 +3,7 @@ import { app, basePath, io } from '../app.js';
 import express from 'express';
 import { Product } from "../models/product.js";
 import fs from 'fs';
-import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooGetAllProductURLS, WooUpdateQuantityProducts } from "../woocommerce/products.js";
+import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
 
@@ -63,7 +63,9 @@ export function productsRoutes() {
 
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            const urls = await WooGetAllProductURLS();
+            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true } }).select('woocommerce.permalink -_id').lean();
+
+            const urls = productsURLS.map(p => p.woocommerce.permalink);
 
             //TODO Add test for this in wooCommerce tests instead to productController
 

@@ -6,6 +6,7 @@ import { Product } from "../models/product.js";
 import { User } from "../models/user.js";
 import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
+import { Order, woocommerce } from "../models/order.js";
 // TODO On start, check if import all orders from WOO to MONGO (non existing only)
 
 // DONE
@@ -194,6 +195,61 @@ export async function WooHookCreateOrder(data) {
     return { status, message, order, updatedProducts }
 }
 
-export async function WooUpdateOrder(orderId, data) {
+export async function WooUpdateOrder(id) {
+    if (!WooCommerce) return;
 
+    const order = await Order.findById(id).populate('products.product');
+
+    if (!order) return { status: 404, message: 'Продажбата не е намерен' };
+
+    if (!order?.woocommerce?.id) return { status: 404, message: 'Продажбата не е направена през WooCommerce' };
+
+    //TODO Modify data to WooCommerce format
+
+    if (!Object.keys(woocommerce.status).includes(order.woocommerce.status)) return { status: 400, message: 'Невалиден статус за поръчка' };
+
+    if (!Object.keys(woocommerce.payment_method).includes(order.woocommerce.payment_method)) return { status: 400, message: 'Невалиден тип на плащане за поръчка' };
+
+    // Get Woo Order
+    const req = await WooCommerce.get(`orders/${order.woocommerce.id}`);
+    const wooOrder = req.data;
+
+    const wooData = {
+        status: order.woocommerce.status,
+        line_items: []
+    }
+
+    // Remove all previous products from order
+    for (let product of wooOrder.line_items) {
+        wooData.line_items.push({
+            id: product.id,
+            quantity: 0,
+        })
+    }
+
+    // Add products to order
+    for (let product of order.products) {
+        if (!product.product) continue; // Skip if product doesnt exist in WooCommerce
+
+        // Check if product in Woo
+        if (!product.product?.woocommerce?.id) continue; // Skip if product doesnt exist in WooCommerce
+
+        wooData.line_items.push({
+            product_id: product.product.woocommerce.id,
+            quantity: product.quantity,
+            price: product.product.wholesalePrice,
+            subtotal: (product.price * product.quantity).toFixed(2),
+            total: ((product.price * product.quantity) * (100 - product.discount) / 100).toFixed(2),
+        });
+    }
+
+    WooCommerce.put(`orders/${order.woocommerce.id}`, wooData).then(() => {
+        // Success
+        console.log('Order successfully edited in WooCommerce!')
+    }).catch((error) => {
+        // Invalid request, for 4xx and 5xx statuses
+        console.error("Response Status:", error.response.status);
+        console.error("Response Headers:", error.response.headers);
+        console.error("Response Data:", error.response.data);
+    });
 }

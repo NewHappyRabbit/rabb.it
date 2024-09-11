@@ -393,6 +393,13 @@ export const OrderController = {
             data.number = seq.seq;
         }
 
+        if (order.woocommerce) {
+            // Update woo status
+            const newStatus = data.woocommerce;
+            data.woocommerce = order.woocommerce;
+            data.woocommerce.status = newStatus.status;
+        }
+
         await Order.findByIdAndUpdate(id, data);
 
         return { status: 201, updatedProducts };

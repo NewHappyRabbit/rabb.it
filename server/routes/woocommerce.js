@@ -22,7 +22,7 @@ export function woocommerceRoutes() {
 
             console.log('Order from Woo transfered to app!')
 
-            // TODO socket
+            // TODO Create socket event and notification on frontend or something
 
             res.status(200).send();
         } catch (error) {

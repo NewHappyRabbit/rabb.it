@@ -33,7 +33,8 @@ function rerenderTable() {
 
     render(bottomRow(params, companies), document.getElementById('bottomRow'));
 
-    render(woocommerceTemplate(), document.getElementById('woocommerce'));
+    if (order?.woocommerce)
+        render(woocommerceTemplate(), document.getElementById('woocommerce'));
 
     // update total in bottom row
     const total = addedProducts.reduce((acc, product) => acc + (product.price * product.quantity) * (1 - product.discount / 100), 0);
@@ -543,7 +544,8 @@ function addProduct(e) {
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
-        const inArray = addedProducts.find(p => p.product._id === productInDB._id && p.selectedSizes.length === p.sizes.length);
+        console.log(addedProducts)
+        const inArray = addedProducts.find(p => p.product?._id === productInDB._id && p?.selectedSizes.length === p?.product?.sizes.length);
 
         if (inArray) inArray.quantity += quantity;
         else {
@@ -787,6 +789,7 @@ async function createEditOrder() {
     var filteredProducts = [];
 
 
+
     // transform addedProducts to the type used in backend
     if (orderType === 'wholesale') {
         addedProducts.forEach(product => {
@@ -861,7 +864,14 @@ async function createEditOrder() {
         paidAmount: +(formData.get('paidAmount').replace(',', '.')),
         company: document.getElementById('company').value,
         receiver: document.getElementById('receiver').value,
-        sender: document.getElementById('sender').value
+        sender: document.getElementById('sender').value,
+    };
+
+    if (order && order.woocommerce) {
+        const wooStatus = document.getElementById('status');
+        data.woocommerce = {
+            status: wooStatus.value,
+        }
     }
 
     const invalidData = validateOrder(data);
@@ -1093,7 +1103,7 @@ const template = (params, customers) => html`
             ${topRow(params, customers)}
             <div id="table" class="table-responsive"></div>
             <div id="bottomRow" class="row g-3 align-items-end"></div>
-            <div id="woocommerce" class="row g-3 align-items-end mt-1"></div>
+            <div id="woocommerce" class="row g-3 align-items-end mt-1 ${order && order.woocommerce ? '' : 'd-none'}"></div>
         </form>
         <div id="alert" class="alert d-none"></div>
     </div>

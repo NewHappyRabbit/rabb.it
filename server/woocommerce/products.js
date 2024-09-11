@@ -100,34 +100,26 @@ export async function WooCreateProductsINIT() {
     }
 }
 
-export async function WooGetAllProductURLS() {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+//TODO Add this to README.md and make a section woocommerce setup
+/* NOTE this is a custom filter, must be added to snippets or functions.php file:
+add_filter( 'woocommerce_rest_prepare_product_object', 'my_woocommerce_rest_prepare_product_object', 10, 3 );
 
-    //TODO Add this to README.md and make a section woocommerce setup
-    /* NOTE this is a custom filter, must be added to snippets or functions.php file:
-    add_filter( 'woocommerce_rest_prepare_product_object', 'my_woocommerce_rest_prepare_product_object', 10, 3 );
+function my_woocommerce_rest_prepare_product_object( $response, $object, $request ) {
+    $data = $response->get_data();
+    $newdata = [];
 
-    function my_woocommerce_rest_prepare_product_object( $response, $object, $request ) {
-        $data = $response->get_data();
-        $newdata = [];
+    if ($request['fields'] != null)
+    {
+        foreach ( explode ( ",", $request['fields'] ) as $field )
+            $newdata[$field] = $data[$field];
 
-        if ($request['fields'] != null)
-        {
-            foreach ( explode ( ",", $request['fields'] ) as $field )
-                $newdata[$field] = $data[$field];
-
-            $response->set_data( $newdata );
-        }
-
-        return $response;
+        $response->set_data( $newdata );
     }
-    */
 
-    // Find all products with permalinks
-    const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true } }).select('woocommerce.permalink -_id').lean();
-
-    return productsURLS.map(p => p.woocommerce.permalink);
+    return $response;
 }
+*/
+
 
 export async function WooUpdateQuantityProducts(products) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used

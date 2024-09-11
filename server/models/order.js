@@ -16,6 +16,10 @@ export const woocommerce = {
         completed: 'Приключена',
         cancelled: 'Отказана',
         refunded: 'Върната',
+    },
+    payment_method: {
+        // Woo : App
+        cod: 'cash',
     }
 }
 

@@ -69,7 +69,7 @@ export async function ordersRoutes() {
             if (status !== 201) return res.status(status).send(message);
 
             WooUpdateQuantityProducts(updatedProducts);
-            WooUpdateOrder(id, data);
+            WooUpdateOrder(id);
 
             res.status(201).send(id);
         } catch (error) {
