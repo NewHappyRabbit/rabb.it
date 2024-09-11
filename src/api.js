@@ -317,7 +317,6 @@ export function unslugify(word) {
 }
 
 export function successScan(target) {
-    //TODO Uncomment
     const beep = new Audio('/audio/beep.mp3');
     beep.play();
 

@@ -408,7 +408,7 @@ function scanBarcode() {
             Quagga.stop();
             const barcode = data.codeResult.code;
             document.getElementById('barcode').value = barcode;
-            successScan(document.getElementById('barcode')); // TODO Check if it works fine
+            successScan(document.getElementById('barcode'));
             videoEl.innerHTML = ''
             scanBarcodeBtn.classList.remove('d-none');
             cancelBarcodeBtn.classList.add('d-none');

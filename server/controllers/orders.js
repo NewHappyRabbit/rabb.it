@@ -3,7 +3,6 @@ import { Customer } from "../models/customer.js";
 import { Product } from "../models/product.js";
 import { Company } from "../models/company.js";
 import { AutoIncrement } from "../models/autoincrement.js";
-
 async function validateOrder(data) {
     if (!data.date)
         return { status: 400, message: 'Въведете дата' };
