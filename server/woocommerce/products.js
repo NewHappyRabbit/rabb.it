@@ -132,7 +132,7 @@ export async function WooUpdateQuantityProducts(products) {
 
     WooCommerce.post('products/batch', data).then(() => {
         // Success
-        console.log('Products quantity successfully updated in WooCommerce after order creation!')
+        console.log('Products quantity successfully updated in WooCommerce!')
     }).catch((error) => {
         // Invalid request, for 4xx and 5xx statuses
         console.error("Response Status:", error.response.status);
@@ -231,21 +231,6 @@ export async function WooEditProduct(oldProductData, newProductData) {
     }
     const category = await Category.findById(newProductData.category);
     if (category) data.categories = [{ id: category.woocommerce.id }];
-    /*const data = {};
-     if (oldProductData.name !== newProductData.name) data.name = newProductData.name;
-
-    if (oldProductData.description !== newProductData.description) data.description = newProductData.description;
-
-    if (oldProductData.code !== newProductData.code) data.sku = newProductData.code;
-
-    if (oldProductData.wholesalePrice.toString() !== newProductData.wholesalePrice.toString()) data.regular_price = newProductData.wholesalePrice.toString();
-
-    if (oldProductData.category !== newProductData.category) {
-        const category = await Category.findById(newProductData.category);
-
-        data.categories = [{ id: category.woocommerce.id }];
-    }
-    if (oldProductData.quantity.toString() !== newProductData.quantity.toString()) data.stock_quantity = newProductData.quantity; */
 
     //TODO TEST IF IMAGES WORK ON LIVE SERVER
     //TODO I think if no image is passed it will delete the images in the product, test to see. If not, check if the img is different

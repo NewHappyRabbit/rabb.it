@@ -544,7 +544,6 @@ function addProduct(e) {
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
-        console.log(addedProducts)
         const inArray = addedProducts.find(p => p.product?._id === productInDB._id && p?.selectedSizes.length === p?.product?.sizes.length);
 
         if (inArray) inArray.quantity += quantity;

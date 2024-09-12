@@ -82,44 +82,47 @@ function stopBarcode() {
 function addProduct(e) {
     e.preventDefault();
 
-    if (e.target.value === '')
-        return;
+    if (e.target.value === '') return;
+
+    console.log((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter')
 
     // check if copy-pasted or enter was pressed
-    if ((e.ctrlKey && e.key === 'v' || e.code === 'MetaLeft') || e.code === 'Enter' || e.code === 'NumpadEnter') {
-        var product, quantity = 1;
+    if ((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
-        // check if quantity was entered
-        if (e.target.value.split('*').length === 1)
-            product = e.target.value;
-        else {
-            quantity = +e.target.value.split('*')[0];
-            quantity = quantity > 0 ? quantity : 1;
-            product = e.target.value.split('*')[1];
-        }
+    var product, quantity = 1;
 
-        // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-        const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
-
-        if (productInDB) {
-            // check if product already in table and increase quantity
-            addedProducts.push({
-                _id: productInDB._id,
-                index: addedProductsIndex++,
-                code: productInDB.code,
-                name: productInDB.name,
-                ...(productInDB.barcode && { barcode: productInDB.barcode }),
-                quantity,
-                sizes: productInDB?.sizes.map(size => size.size),
-                selectedSizes: productInDB?.sizes.map(size => size.size)
-            });
-
-            rerenderTable();
-            successScan(e.target);
-        }
-        e.target.value = '';
-        e.target.focus();
+    // check if quantity was entered in input field
+    if (e.target.value.split('*').length === 1)
+        product = e.target.value;
+    else {
+        quantity = parseInt(e.target.value.split('*')[0]);
+        quantity = !isNaN(quantity) && quantity > 0 ? quantity : 1;
+        product = e.target.value.split('*')[1];
     }
+
+    // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
+    const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
+
+    console.log(productInDB)
+
+    if (productInDB) {
+        // check if product already in table and increase quantity
+        addedProducts.push({
+            _id: productInDB._id,
+            index: addedProductsIndex++,
+            code: productInDB.code,
+            name: productInDB.name,
+            ...(productInDB.barcode && { barcode: productInDB.barcode }),
+            quantity,
+            sizes: productInDB?.sizes.map(size => size.size),
+            selectedSizes: productInDB?.sizes.map(size => size.size)
+        });
+
+        rerenderTable();
+        successScan(e.target);
+    }
+    e.target.value = '';
+    e.target.focus();
 }
 
 function updateQuantity(e) {
@@ -260,4 +263,23 @@ export async function restockPage() {
 
     render(template(), container);
     render(table(addedProducts), document.getElementById('table'));
+
+    // Add listener for barcode scanner
+    const barcodeInput = document.getElementById('product');
+    barcodeInput.addEventListener('textInput', function (e) {
+        if (e.data.length >= 10) {
+            e.preventDefault();
+            // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
+            // simulate Enter key pressed on input field to activate addProduct function
+            const event = new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                which: 13,
+                keyCode: 13,
+            });
+
+            barcodeInput.value += e.data;
+            barcodeInput.dispatchEvent(event);
+        }
+    });
 }

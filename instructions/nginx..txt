@@ -81,10 +81,7 @@ http {
     }
 }
 
-
-4. When developing locally, setup port-forwarding in your router for ports 80 and 443 to your local ip (ex 192.168.0.50)
-
-5. Done! If you are using Live Server extension, add the SSL certificate as instructed in instructions\ssl.txt file.
+4. Done! If you are using Live Server extension, add the SSL certificate as instructed in instructions\ssl.txt file.
 
 If you want nginx to start with your PC automatically, follow these steps:
 

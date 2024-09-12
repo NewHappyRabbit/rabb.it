@@ -124,6 +124,11 @@ input[readonly] {
 	border-color: var(--bs-form-valid-border-color) !important;
 }
 
+/* Logo CSS */
+html[data-bs-theme="dark"] .logo {
+	filter: invert(1);
+}
+
 /*!************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./src/css/products.css ***!
   \************************************************************************/

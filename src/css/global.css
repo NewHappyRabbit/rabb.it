@@ -120,3 +120,8 @@ input[readonly] {
 .was-validated .form-select:valid {
 	border-color: var(--bs-form-valid-border-color) !important;
 }
+
+/* Logo CSS */
+html[data-bs-theme="dark"] .logo {
+	filter: invert(1);
+}
