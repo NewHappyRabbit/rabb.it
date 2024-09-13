@@ -3,14 +3,18 @@ import { Order } from "../models/order.js";
 
 function validateCompany(data) {
     const { name, bank, mol, vat, address, tax } = data;
-    if (!name || !bank || !mol || !vat || !address || (vat && vat.length !== 9))
-        return { status: 400, message: 'Липсват задължителни полета' };
+    if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
+
+    if (!bank || !bank?.name || !bank?.code || !bank?.iban) return { status: 400, message: 'Въведете банкови данни', property: 'bank' };
+
+    if (!mol) return { status: 400, message: 'Въведете мол', property: 'mol' };
+
+    if (!address) return { status: 400, message: 'Въведете адрес', property: 'address' };
+
+    if (!vat || vat?.length < 9 || vat?.length > 9) return { status: 400, message: 'Невалиден ЕИК', property: 'vat' };
 
     if (tax < 0 || tax > 100)
-        return { status: 400, message: 'Невалидна данъчна ставка' };
-
-    if (!bank.name || !bank.code || !bank.iban || bank.iban.length > 34)
-        return { status: 400, message: 'Невалидни банкови данни' };
+        return { status: 400, message: 'Невалидна данъчна ставка', property: 'tax' };
 }
 
 export const CompanyController = {
@@ -37,10 +41,10 @@ export const CompanyController = {
         if (validation) return validation;
 
         const existingVat = await Company.findOne({ vat: data.vat });
-        if (existingVat) return { status: 400, message: 'Фирма с този ЕИК вече съществува' };
+        if (existingVat) return { status: 400, message: 'Фирма с този ЕИК вече съществува', property: 'vat' };
 
         const existingTaxVat = data.taxvat ? await Company.findOne({ taxvat: data.taxvat }) : null;
-        if (existingTaxVat) return { status: 400, message: 'Фирма с този ДДС ЕИК вече съществува' };
+        if (existingTaxVat) return { status: 400, message: 'Фирма с този ДДС ЕИК вече съществува', property: 'taxvat' };
 
         // check if no companies exist and set as default
         const companies = await Company.find();
@@ -49,8 +53,8 @@ export const CompanyController = {
         // Add MOL to senders so it autofills on first order
         data.senders = [data.mol];
 
-        await new Company(data).save();
-        return { status: 201 };
+        const company = await new Company(data).save();
+        return { status: 201, company };
     },
     put: async (id, data) => {
         const validation = validateCompany(data);
@@ -59,11 +63,11 @@ export const CompanyController = {
 
         const existingVat = await Company.findOne({ vat: data.vat });
         if (existingVat && existingVat._id.toString() !== id)
-            return { status: 400, message: 'Фирма с този ЕИК вече съществува' };
+            return { status: 400, message: 'Фирма с този ЕИК вече съществува', property: 'vat' };
 
         const existingTaxVat = data.taxvat ? await Company.findOne({ taxvat: data.taxvat }) : null;
         if (existingTaxVat && existingTaxVat._id.toString() !== id)
-            return { status: 400, message: 'Фирма с този ДДС ЕИК вече съществува' };
+            return { status: 400, message: 'Фирма с този ДДС ЕИК вече съществува', property: 'taxvat' };
 
         // Add new MOL to receivers array
         const companyOld = await Company.findById(id);
@@ -80,7 +84,7 @@ export const CompanyController = {
 
         const hasDocuments = (await Order.find({ company: company }).limit(1)).length > 0;
 
-        if (hasDocuments) return { status: 400, message: 'Тази фирма има издадени документи и не може да бъде изтрита!' };
+        if (hasDocuments) return { status: 400, message: 'Тази фирма има издадени документи и не може да бъде изтрита!', property: 'orders' };
 
         if (company.default === true) {
             // set another company as default

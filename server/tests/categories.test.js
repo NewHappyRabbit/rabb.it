@@ -1,18 +1,20 @@
+import 'dotenv/config';
 import { afterAll, describe, expect, test } from 'vitest'
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { CategoryController } from '../routes/controllers/categories'
+import { CategoryController } from '../controllers/categories'
 import { Category } from '../models/category';
 import { mongoConfig } from '../config/database'
-import 'dotenv/config';
 import { setEnvVariables } from './common';
+import { Product } from '../models/product';
 
 setEnvVariables();
 await mongoConfig();
 
 afterAll(async () => {
     await Category.deleteMany({});
+    await Product.deleteMany({});
     categories = [];
 })
 
@@ -121,6 +123,7 @@ describe('POST /categories', async () => {
         imgPath = category.image.path;
 
 
+
         test('Name is correct', () => {
             expect(category.name).toEqual(data.name);
         });
@@ -142,6 +145,8 @@ describe('POST /categories', async () => {
             expect(imgExists).toEqual(true); // saved to public/images/ folder
         });
     });
+
+    // TODO Add validation tests
 
 });
 
@@ -186,7 +191,7 @@ describe('PUT /categories/:id', async () => {
 });
 
 describe('DELETE /categories/:id', async () => {
-    const result = await CategoryController.delete({ id: categories[3]._id });
+    const result = await CategoryController.delete(categories[3]._id);
 
     test('Category was deleted', () => {
         expect(result.status).toEqual(204);
@@ -195,6 +200,26 @@ describe('DELETE /categories/:id', async () => {
     test('Image was deleted', () => {
         expect(fs.existsSync(categories[3].image.path)).toEqual(false);
     });
+
+    test('Cant delete category with subcategories', async () => {
+        const { status, property } = await CategoryController.delete(categories[0]._id);
+
+        expect(status).toEqual(400);
+        expect(property).toEqual('subcategories');
+    });
+
+    test('Cant delete category with products', async () => {
+        // Create fake product
+        new Product({
+            _id: '62bcb4db3f7991ea4fc6830e', // fake id
+            category: categories[1]._id,
+        }, { bypassDocumentValidation: true }).save(); // bypass the required fields in the model
+
+        const { status, property } = await CategoryController.delete(categories[1]._id);
+        expect(status).toEqual(400);
+        expect(property).toEqual('products');
+    });
 });
 
 await Category.deleteMany({})
+await Product.deleteMany({})

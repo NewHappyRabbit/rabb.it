@@ -11,7 +11,7 @@ On Windows:
 2. Run in PowerShell:
 scoop bucket add extras
 scoop install mkcert
-3. cd to the nginx/server/ssl folder
+3. cd to the nginx/ssl folder
 4. Type in: mkcert -key-file localhost.key -cert-file localhost.pem -install localhost 127.0.0.1
 
 If you are using VSCode "Live Server" extension, create a .vscode folder in the root of the project. Inside, create a settings.json and paste following code:

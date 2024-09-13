@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { sparseFix } from "./functions/global.js";
 
 const { Schema } = mongoose;
 

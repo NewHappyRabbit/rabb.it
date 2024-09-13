@@ -107,20 +107,20 @@ export const CategoryController = {
     },
     delete: async (id) => {
         const category = await Category.findById(id);
-        if (!category) return { status: 404, message: 'Category not found' };
+        if (!category) return { status: 404, message: 'Категорията не е намерена', property: 'category' };
 
         // Check if products assigned
-        const hasProducts = (await Product.find({ category: id }).limit(1)).length > 0;
+        const hasProducts = await Product.find({ category: id }).limit(1);
 
-        if (hasProducts)
-            return { status: 400, message: 'Категорията има продукти. Моля, първо изтрийте или изместете продуктите.' };
+        if (hasProducts.length > 0)
+            return { status: 400, message: 'Категорията има продукти. Моля, първо изтрийте или изместете продуктите.', property: 'products' };
 
         // Check if subcategories
         const path = category.path ? `${category.path}${category.slug},` : `,${category.slug},`
         const categories = await Category.find({ path: { $regex: path } }).limit(1);
 
         if (categories.length > 0)
-            return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.' };
+            return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.', property: 'subcategories' };
 
         const wooId = category.woocommerce.id;
 
