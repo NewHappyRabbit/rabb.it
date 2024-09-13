@@ -21,14 +21,14 @@ export const CompanyController = {
     get: async (query) => {
         const companies = await Company.find().sort({ default: -1 }).lean(); // lean returns normal js object that we can modify
 
-        if (query.canBeDeleted == 'true') {
+        if (query?.canBeDeleted == 'true') {
             for (let company of companies) {
                 const bool = await Order.findOne({ company });
                 company.canBeDeleted = bool;
             }
         }
 
-        return companies;
+        return { companies, status: 200 };
     },
     getById: async (id) => {
         const company = await Company.findById(id);

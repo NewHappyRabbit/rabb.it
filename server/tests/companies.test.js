@@ -163,9 +163,11 @@ describe('POST /companies', async () => {
     })
 });
 
-/* describe('GET /companies', async () => {
-    //TODO Test queries, pages, etc
-}); */
+test('GET /companies', async () => {
+    const { status, companies } = await CompanyController.get();
+    expect(status).toBe(200);
+    expect(companies.length).toBeGreaterThan(0);
+});
 
 describe('GET /companies/:id', async () => {
     test('Company exists', async () => {

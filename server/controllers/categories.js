@@ -8,7 +8,7 @@ export const CategoryController = {
     get: async () => await Category.find().sort({ path: 1, order: 1 }),
     post: async ({ data, img }) => {
         if (!data.name)
-            return { status: 400, message: 'Name is required' };
+            return { status: 400, message: 'Въведете име', property: 'name' };
 
         data.order === '' ? data.order = 0 : data.order = parseInt(data.order);
 
@@ -16,7 +16,7 @@ export const CategoryController = {
         if (data.parent) {
             const parent = await Category.findById(data.parent);
             if (!parent)
-                return { status: 400, message: 'Parent category does not exist' };
+                return { status: 400, message: 'Родителската категория не съществува', property: 'parent' };
 
             parent.path ? data.path = `${parent.path}${parent.slug},` : data.path = `,${parent.slug},`
         }
@@ -44,11 +44,11 @@ export const CategoryController = {
         return { category, status: 201 };
     },
     put: async ({ id, data, img }) => {
-        if (!data.name) return { status: 400, message: 'Name is required' };
+        if (!data.name) return { status: 400, message: 'Въведете име', property: 'name' };
 
         const currentCategory = await Category.findById(id);
 
-        if (!currentCategory) return { status: 404, message: 'Category not found' };
+        if (!currentCategory) return { status: 404, message: 'Категорията не е намерена' };
 
         data.order === '' ? data.order = 0 : data.order = parseInt(data.order);
 
@@ -56,7 +56,7 @@ export const CategoryController = {
         // data.parent is parentId
         if (data.parent) {
             const parent = await Category.findById(data.parent);
-            if (!parent) return { status: 400, message: 'Parent category does not exist' };
+            if (!parent) return { status: 400, message: 'Родителската категория не съществува', property: 'parent' };
 
             parent.path ? data.path = `${parent.path}${parent.slug},` : data.path = `,${parent.slug},`;
         }
@@ -107,7 +107,7 @@ export const CategoryController = {
     },
     delete: async (id) => {
         const category = await Category.findById(id);
-        if (!category) return { status: 404, message: 'Категорията не е намерена', property: 'category' };
+        if (!category) return { status: 404, message: 'Категорията не е намерена' };
 
         // Check if products assigned
         const hasProducts = await Product.find({ category: id }).limit(1);

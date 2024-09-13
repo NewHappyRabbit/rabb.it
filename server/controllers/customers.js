@@ -3,12 +3,17 @@ import { Order } from "../models/order.js";
 
 function validateCustomer(data) {
     const { name, mol, vat, address, discount } = data;
-    if (!name || !mol || !vat || !address || (vat && vat.length < 9 || vat.length > 10))
-        return { status: 400, message: 'Липсват задължителните полета' };
+    if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
+
+    if (!mol) return { status: 400, message: 'Въведете мол', property: 'mol' };
+
+    if (!address) return { status: 400, message: 'Въведете адрес', property: 'address' };
+
+    if (!vat || vat?.length < 9 || vat?.length > 10) return { status: 400, message: 'Невалиден ЕИК', property: 'vat' };
 
     // if discount entered, check if format is X or X.Y (ex. 1 or 1.5 or 1.55)
-    if (discount && discount >= 0 && discount.match(/^(\d)+(\.\d{0,2}){0,1}$/) === null)
-        return { status: 400, message: 'Невалидна отстъпка' };
+    if (discount && (discount < 0 || discount > 100 || discount.toString().match(/^(\d)+(\.\d{0,2}){0,1}$/) === null))
+        return { status: 400, message: 'Невалидна отстъпка', property: 'discount' };
 }
 
 export const CustomerController = {
@@ -79,10 +84,10 @@ export const CustomerController = {
         if (validation) return validation;
 
         const existingVat = await Customer.findOne({ vat: data.vat });
-        if (existingVat) return { status: 400, message: 'Клиент с този ЕИК вече съществува' };
+        if (existingVat) return { status: 400, message: 'Клиент с този ЕИК вече съществува', property: 'vat' };
 
         const existingTaxVat = data.taxvat ? await Customer.findOne({ taxvat: data.taxvat }) : null;
-        if (existingTaxVat) return { status: 400, message: 'Клиент с този ДДС ЕИК вече съществува' };
+        if (existingTaxVat) return { status: 400, message: 'Клиент с този ДДС ЕИК вече съществува', property: 'taxvat' };
 
         // Add MOL to receivers so it autofills of first order
         data.receivers = [data.mol];
@@ -97,12 +102,13 @@ export const CustomerController = {
         if (validation) return validation;
 
         const existingVat = await Customer.findOne({ vat: data.vat });
+
         if (existingVat && existingVat._id.toString() !== id)
-            return { status: 400, message: 'Клиент с този ЕИК вече съществува' };
+            return { status: 400, message: 'Клиент с този ЕИК вече съществува', property: 'vat' };
 
         const existingTaxVat = data.taxvat ? await Customer.findOne({ taxvat: data.taxvat }) : null;
         if (existingTaxVat && existingTaxVat._id.toString() !== id)
-            return { status: 400, message: 'Клиент с този ДДС ЕИК вече съществува' };
+            return { status: 400, message: 'Клиент с този ДДС ЕИК вече съществува', property: 'taxvat' };
 
         // Add new MOL to receivers array
         const customerOld = await Customer.findById(id);
