@@ -14,7 +14,33 @@ afterAll(async () => {
     await Order.deleteMany({});
 });
 
-describe('POST /companies', async () => {
+describe('GET /customers/:id', async () => {
+    test('Get customer by id', async () => {
+        const data = await new Customer({
+            name: 'Фирма',
+            mol: 'Иван Иванов',
+            phone: '0891231233',
+            email: 'test@gmail.com',
+            vat: '000000000',
+            taxvat: 'BG000000000',
+            address: 'гр. София ул. Димов №3',
+            deliveryAddress: 'asd',
+            discount: 30,
+        }).save();
+
+        const { status, customer } = await CustomerController.findById(data._id);
+
+        expect(status).toBe(200);
+        expect(customer.name).toEqual(data.name);
+    });
+
+    test('Get non-existing customer by id', async () => {
+        const { status } = await CustomerController.findById('62bcb4db3f7991ea4fc6830e');
+        expect(status).toBe(404);
+    });
+});
+
+describe('POST /customers', async () => {
     describe('Create customer', async () => {
         const data = {
             name: 'Фирма',
@@ -168,7 +194,16 @@ describe('POST /companies', async () => {
     })
 });
 
-describe('PUT /companies/:id', async () => {
+describe('GET /customers', () => {
+    test('Get customers', async () => {
+        const { status, customers } = await CustomerController.get({});
+        expect(status).toBe(200);
+        expect(customers.length).toBeGreaterThan(0);
+    });
+    //TODO Add more tests
+})
+
+describe('PUT /customers/:id', async () => {
     const customerData = {
         name: 'Фирма',
         mol: 'Иван Иванов',
@@ -271,6 +306,62 @@ describe('PUT /companies/:id', async () => {
             expect(status).toBe(400);
             expect(property).toBe('taxvat');
         })
+    });
+});
+
+describe('DELETE /customers/:id', async () => {
+    test('Delete customer', async () => {
+        const customer = await new Customer({
+            _id: '62bcb4db3f7991ea4fc6830e', // fake id
+            vat: "123321123",
+        }, { bypassDocumentValidation: true }).save(); // bypass the required fields in the model
+
+        const { status } = await CustomerController.delete(customer._id.toString());
+        expect(status).toBe(204);
+
+        const deletedCustomer = await Customer.findById(customer._id.toString());
+        expect(deletedCustomer).toBe(null);
+    });
+
+    test('Hide customer with orders', async () => {
+        const customer = await new Customer({
+            _id: '62bcb4db3f7991ea4fc6830e', // fake id
+            vat: "123321123",
+        }, { bypassDocumentValidation: true }).save(); // bypass the required fields in the model
+
+        await new Order({
+            _id: '62bcb4db3f7991ea4fc6830e', // fake id
+            customer: customer._id.toString(),
+            orderNumber: '1234',
+        }, { bypassDocumentValidation: true }).save(); // bypass the required fields in the model
+
+        const { status } = await CustomerController.delete(customer._id.toString());
+        expect(status).toBe(204);
+
+        const deletedCustomer = await Customer.findById(customer._id.toString());
+        expect(deletedCustomer.deleted).toBe(true);
+    });
+
+    test('Customer not found', async () => {
+        const { status } = await CustomerController.delete('6655d803ecf89fa72edaa21c');
+        expect(status).toBe(404);
+    });
+});
+
+describe('UNHIDE /customers/:id', async () => {
+    test('Unhide customer', async () => {
+        const customer = await new Customer({
+            vat: "123321123",
+            address: "asd",
+            mol: "qwe",
+            name: "asd",
+            deleted: true,
+        }).save();
+        const { status } = await CustomerController.unhide(customer._id.toString());
+        expect(status).toBe(201);
+
+        const unhiddenCustomer = await Customer.findById(customer._id.toString());
+        expect(unhiddenCustomer.deleted).toBe(false);
     });
 });
 

@@ -7,42 +7,50 @@ import fs from 'fs';
 
 async function validateProduct(data) {
     const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure } = data;
-    if (!category || !name || !quantity || !deliveryPrice || !wholesalePrice || !retailPrice || !unitOfMeasure)
-        return { status: 400, message: 'Липсват задължителни полета' };
 
-    const categoryExists = await Category.findOne({ _id: category });
+    if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
 
-    if (!categoryExists)
-        return { status: 400, message: 'Категорията не съществува' };
+    if (!quantity) return { status: 400, message: 'Въведете количество', property: 'quantity' };
+
+    if (!deliveryPrice) return { status: 400, message: 'Въведете доставна цена', property: 'deliveryPrice' };
+
+    if (!wholesalePrice) return { status: 400, message: 'Въведете цена на едро', property: 'wholesalePrice' };
+
+    if (!retailPrice) return { status: 400, message: 'Въведете цена на дребно', property: 'retailPrice' };
+
+    if (!unitOfMeasure) return { status: 400, message: 'Въведете мярка', property: 'unitOfMeasure' };
 
     // check prices regex
     const regex = /^\d{1,}(\.\d{1,2})?$/;
 
     if (!regex.test(deliveryPrice))
-        return { status: 400, message: 'Грешна доставна цена' };
+        return { status: 400, message: 'Грешна доставна цена', property: 'deliveryPrice' };
 
     if (!regex.test(wholesalePrice))
-        return { status: 400, message: 'Грешна цена на едро' };
+        return { status: 400, message: 'Грешна цена на едро', property: 'wholesalePrice' };
 
     if (!regex.test(retailPrice))
-        return { status: 400, message: 'Грешна цена на дребно' };
+        return { status: 400, message: 'Грешна цена на дребно', property: 'retailPrice' };
 
     if (Number(wholesalePrice) <= Number(deliveryPrice))
-        return { status: 400, message: 'Цената на едро трябва да е по-голяма от доставната' };
+        return { status: 400, message: 'Цената на едро трябва да е по-голяма от доставната', property: 'wholesalePrice' };
 
-    if (sizes.length === 0 && Number(retailPrice) <= Number(deliveryPrice))
-        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от доставната' };
-    else if (sizes.length !== 0 && Number(retailPrice) <= Number(deliveryPrice / sizes.length))
+    if ((sizes.length === 0 && Number(retailPrice) <= Number(deliveryPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(deliveryPrice / sizes.length))
+        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от доставната', property: 'retailPrice' };
+    else if (sizes.length !== 0) {
+        for (const size of sizes) {
+            if (!size.size || !size.quantity)
+                return { status: 400, message: 'Липсва размер или количество', property: 'sizes' };
 
-        if (sizes.length !== 0) {
-            for (const size of sizes) {
-                if (!size.size || !size.quantity)
-                    return { status: 400, message: 'Липсва размер или количество' };
-
-                if (!regex.test(size.quantity))
-                    return { status: 400, message: 'Невалидно количество за размер' };
-            }
+            if (!regex.test(size.quantity))
+                return { status: 400, message: 'Невалидно количество за размер', property: 'sizes' };
         }
+    }
+
+    if (!category) return { status: 400, message: 'Изберете категория', property: 'category' };
+    const categoryExists = await Category.findOne({ _id: category });
+    if (!categoryExists)
+        return { status: 400, message: 'Категорията не съществува', property: 'category' };
 }
 
 function checkDigitEAN13(barcode) {
@@ -127,6 +135,7 @@ export const ProductController = {
 
         if (data.sizes)
             data.sizes = JSON.parse(data.sizes);
+        else data.sizes = [];
 
         if (!data.unitOfMeasure && data.sizes?.length > 0)
             data.unitOfMeasure = 'пакет';
@@ -138,7 +147,7 @@ export const ProductController = {
 
         if (validation) return validation;
 
-        if (files.image) {
+        if (files?.image) {
             const mainImage = files.image[0].buffer;
             data.image = await uploadImg(mainImage, 'products');
 

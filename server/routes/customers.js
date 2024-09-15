@@ -22,7 +22,7 @@ export function customersRoutes() {
 
     customersRouter.get('/customers/:id', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { customer, status, message } = await CustomerController.getById(req.params.id);
+            const { customer, status, message } = await CustomerController.findById(req.params.id);
             if (status !== 200) return res.status(status).send(message);
 
             res.json(customer);
