@@ -160,15 +160,11 @@ const filters = (customers, companies, params) => html`
 
 async function loadSales() {
     try {
-        const req = await axios.get(path)
-        const orders = req.data.orders;
-        const prevCursor = req.data.prevCursor;
-        const nextCursor = req.data.nextCursor;
-
+        const { orders, prevCursor, nextCursor } = (await axios.get(path)).data;
 
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers', { params: { page: 'orders' } })).data.customers;
-        const companies = (await axios.get('/companies')).data;
+        const companies = (await axios.get('/companies')).data.companies;
 
         return html`
         ${filters(customers, companies, params)}

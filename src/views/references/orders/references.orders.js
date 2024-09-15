@@ -188,7 +188,7 @@ async function loadReferences() {
         //TODO When all controlers done, do a one route to get all params
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers', { params: { page: 'references' } })).data.customers;
-        const companies = (await axios.get('/companies')).data;
+        const companies = (await axios.get('/companies')).data.companies;
         const users = (await axios.get('/users')).data;
         const products = (await axios.get('/products', { params: { page: 'references' } })).data.products;
 

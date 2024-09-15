@@ -1112,7 +1112,7 @@ export async function createEditOrderPage(ctx, next) {
     try {
         //TODO When all routes are converted to controllers, create single routes for this kind of requests. Instead of using 4 seperate requests to get companies, products, etc. do one single request to for example "/ordersInfo" and use the controllers to get all the info.
         params = (await axios.get('/orders/params')).data;
-        companies = (await axios.get('/companies')).data;
+        companies = (await axios.get('/companies')).data.companies;
         customers = (await axios.get('/customers', { params: { page: 'createOrder' } })).data.customers;
         products = (await axios.get('/products', { params: { page: 'orders' } })).data.products;
         defaultValues = (await axios.get('/settings', { params: { keys: ['orderType', 'paymentType', 'documentType', 'orderPrint'], } })).data;

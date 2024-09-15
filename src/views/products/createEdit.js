@@ -320,7 +320,6 @@ async function updateProduct(e) {
 
     const alertEl = document.getElementById('alert');
 
-
     try {
         const req = product ? await axios.put(`/products/${product._id}`, formData) : await axios.post('/products', formData);
         if (req.status === 201) {

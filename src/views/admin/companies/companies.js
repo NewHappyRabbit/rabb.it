@@ -70,8 +70,7 @@ const table = (companies) => html`
 
 async function loadCompanies() {
     try {
-        const req = await axios.get('/companies?canBeDeleted=true')
-        const companies = req.data;
+        const companies = (await axios.get('/companies?canBeDeleted=true')).data.companies;
 
         setTimeout(() => {
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')

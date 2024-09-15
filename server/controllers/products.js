@@ -133,9 +133,9 @@ export const ProductController = {
             data.noInvoice = true;
         else data.noInvoice = false;
 
-        if (data.sizes)
+        if (data.sizes && typeof data.sizes !== 'object')
             data.sizes = JSON.parse(data.sizes);
-        else data.sizes = [];
+        else if (!data.sizes) data.sizes = [];
 
         if (!data.unitOfMeasure && data.sizes?.length > 0)
             data.unitOfMeasure = 'пакет';
@@ -188,41 +188,43 @@ export const ProductController = {
         const doneProducts = [];
 
         for (const product of products) {
-            if (product.quantity < 1) return { status: 400, message: `Продуктът с код ${product.code} трябва да има количество по-голямо от 0` };
+            if (product.quantity < 1) return { status: 400, message: `Продуктът с код ${product.code} трябва да има количество по-голямо от 0`, property: 'quantity', product: product._id };
 
             // Check if product already in doneProducts
-            const found = doneProducts.find(p => p._id == product._id);
+            const found = doneProducts.find(p => p._id.toString() == product._id.toString());
 
             if (found) {
-                if (product.sizes.length > 0) {
+                if (product.sizes?.length > 0) {
                     if (product.selectedSizes.length > 0) {
                         for (const size of product.selectedSizes) {
-                            found.sizes.map(s => {
-                                if (s.size === size)
-                                    s.quantity += +product.quantity;
-                            })
+                            const foundSize = found.sizes.find(s => s.size === size);
+
+                            if (!foundSize) return { status: 400, message: `Грешен размер за продукт с код ${product.code}`, property: 'size', product: product._id }
+
+                            foundSize.quantity += +product.quantity;
                         }
 
                         // set package quantity to smalles size quantity
                         found.quantity = Math.min(...found.sizes.map(s => s.quantity));
-                    } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}` }
+                    } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
                 } else found.quantity += +product.quantity; // simple product
 
                 continue; // start next iteration
             }
 
             const dbProduct = await Product.findById(product._id);
-            if (!dbProduct) return { status: 400, message: `Продуктът с код ${product.code} не беше намерен в базата данни` };
+            if (!dbProduct) return { status: 404, message: `Продуктът с код ${product.code} не беше намерен в базата данни` };
 
             if (dbProduct.sizes.length > 0) {
                 if (product.selectedSizes.length > 0) {
                     for (const size of product.selectedSizes) {
-                        dbProduct.sizes.map(s => {
-                            if (s.size === size)
-                                s.quantity += +product.quantity;
-                        })
+                        const foundSize = dbProduct.sizes.find(s => s.size === size);
+
+                        if (!foundSize) return { status: 400, message: `Грешен размер за продукт с код ${product.code}`, property: 'size', product: product._id }
+
+                        foundSize.quantity += +product.quantity;
                     }
-                } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}` }
+                } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
 
                 // set package quantity to smalles size quantity
                 dbProduct.quantity = Math.min(...dbProduct.sizes.map(s => s.quantity));
@@ -242,8 +244,9 @@ export const ProductController = {
             data.noInvoice = true;
         else data.noInvoice = false;
 
-        if (data.sizes)
+        if (data.sizes && typeof data.sizes !== 'object')
             data.sizes = JSON.parse(data.sizes);
+        else if (!data.sizes) data.sizes = [];
 
         if (!data.unitOfMeasure && data.sizes?.length > 0)
             data.unitOfMeasure = 'пакет';
@@ -251,19 +254,18 @@ export const ProductController = {
         if (!data.unitOfMeasure && data.sizes?.length === 0)
             data.unitOfMeasure = 'бр.';
 
-        const validationError = (await validateProduct(data));
+        const validate = await validateProduct(data);
 
-        if (validationError) return validationError;
+        if (validate) return validate;
 
         const product = await Product.findById(id);
 
         if (!product) return { status: 404, message: 'Продуктът не е открит' };
 
         // Check if new image was uploaded
-        if (files.image) {
+        if (files?.image) {
             const mainImage = files.image[0].buffer;
             data.image = await uploadImg(mainImage, 'products');
-
             // delete original image if it exists
             if (product.image) {
                 fs.existsSync(product.image.path) &&
@@ -275,7 +277,7 @@ export const ProductController = {
             data.image = product.image;
 
         //TODO Test what happens with images when changing on the ecommerce
-        if (files.additionalImages?.length > 0) {
+        if (files?.additionalImages?.length > 0) {
             const additionalImages = files.additionalImages.map(file => file.buffer);
             var additionalImagesPaths = [];
             for (const img of additionalImages)
@@ -296,14 +298,14 @@ export const ProductController = {
 
         if (data.code && data.code !== product.code) { // New product code was entered
             const codeExists = await Product.findOne({ code: data.code });
-            if (codeExists) return { status: 400, message: 'Вече съществува продукт с този код' };
+            if (codeExists) return { status: 400, message: 'Вече съществува продукт с този код', property: 'code' };
         }
 
         if (data.barcode && data.barcode !== product.barcode) { // New product barcode was entered
-            if (data.barcode.length !== 13) return { status: 400, message: 'Невалиден баркод. Баркодът трябва да е 13 цифри' };
+            if (data.barcode.length !== 13) return { status: 400, message: 'Невалиден баркод. Баркодът трябва да е 13 цифри', property: 'barcode' };
 
             const barcodeExists = await Product.findOne({ barcode: data.barcode });
-            if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод' };
+            if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод', property: 'barcode' };
         }
 
         // If new product code was entered and barcode is empty, set barcode
@@ -346,8 +348,7 @@ export const ProductController = {
         if (inDocument) {
             product.deleted = true;
             await product.save();
-        }
-        else await product.deleteOne();
+        } else await product.deleteOne();
 
         return { status: 204, wooId };
     }
