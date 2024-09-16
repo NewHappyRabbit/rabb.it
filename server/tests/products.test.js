@@ -20,6 +20,7 @@ afterAll(async () => {
 });
 
 const products = [];
+
 describe('POST /products', async () => {
     const category = await new Category({
         name: "Test",
@@ -61,6 +62,9 @@ describe('POST /products', async () => {
         const imgExists = fs.existsSync(product.image.path)
         expect(product.image).toBeTypeOf('object');
         expect(imgExists).toEqual(true); // saved to public/images/ folder
+
+        //delete image
+        fs.unlinkSync(product.image.path);
     });
 
     test("Create variable product + code and barcode auto generated", async () => {
@@ -291,6 +295,35 @@ describe('POST /products', async () => {
     });
 });
 
+describe('GET /products/:id', async () => {
+    const category = await new Category({
+        name: "Test",
+        slug: "test",
+    }).save();
+
+    test('Get product', async () => {
+        const pr = await new Product({
+            name: "Test",
+            code: '11111111',
+            barcode: '1111111111111',
+            quantity: 10,
+            retailPrice: 10,
+            wholesalePrice: 8,
+            deliveryPrice: 5,
+            sizes: [],
+            category: category._id
+        }).save();
+        const { status, product } = await ProductController.getById(pr._id);
+        expect(status).toBe(200);
+        expect(product.code).toEqual(product.code);
+    });
+
+    test('Non-existing product', async () => {
+        const { status } = await ProductController.getById('665f18f6377386e5a8f33c4a');
+        expect(status).toBe(404);
+    })
+});
+
 describe('PUT /products/:id', async () => {
     const category = await new Category({
         name: "Test",
@@ -393,7 +426,7 @@ describe('PUT /products/:id', async () => {
         for (let size of sizes) expect(updatedProduct.sizes.find(s => s.size === size.size)).toEqual(size);
     });
 
-    test('Update image', async () => {
+    describe('Update image', async () => {
         const data = {
             name: "Test",
             description: "Test",
@@ -423,18 +456,25 @@ describe('PUT /products/:id', async () => {
         const { status: status2, product: product2 } = await ProductController.put({ id: product._id, data, files: { image } });
         expect(status2).toBe(201);
 
-        setTimeout(() => {
-            test('Old image deleted', async () => {
-                const deleted = !fs.existsSync(product.image.path);
-                expect(deleted).toEqual(true);
-            })
+        await Promise.resolve();
+        await Promise.resolve();
 
-            test('New image saved', async () => {
-                expect(product2.image).toBeTypeOf('object');
-                const saved = fs.existsSync(product2.image.path);
+        test('Old image deleted', async () => {
+            const deleted = !fs.existsSync(product.image.path);
+            expect(deleted).toEqual(true);
+        })
+
+        test('New image saved', async () => {
+            setTimeout(async () => {
+                const pr = await Product.findById(product2._id);
+                expect(pr.image).toBeTypeOf('object');
+                const saved = fs.existsSync(pr.image.path);
                 expect(saved).toEqual(true); // saved to public/images/ folder
-            });
-        }, 500)
+
+                //delete image
+                fs.unlinkSync(pr.image.path);
+            }, 300)
+        });
     })
 
     describe('Validate', async () => {
@@ -504,7 +544,7 @@ describe('PUT /products/:id', async () => {
         test('Barcode already exists', async () => {
             const data = {
                 name: "Test 2",
-                code: "777",
+                code: "98989",
                 barcode: "4444444444444",
                 description: "Test",
                 quantity: 10,
@@ -834,3 +874,10 @@ describe('DELETE /products/:id', async () => {
         expect(product2.deleted).toBe(true);
     })
 });
+
+describe('GET /products', async () => {
+    test('Get products', async () => {
+        const products = await Product.find();
+        expect(products.length).toBeGreaterThan(0);
+    });
+})
