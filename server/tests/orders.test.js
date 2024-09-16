@@ -1,0 +1,322 @@
+import 'dotenv/config';
+import { afterAll, describe, expect, test } from 'vitest'
+import { mongoConfig } from '../config/database.js'
+import { setEnvVariables } from './common.js';
+import { Product } from '../models/product.js';
+import { documentTypes, Order, orderTypes, paymentTypes, woocommerce } from '../models/order.js';
+import { OrderController } from '../controllers/orders.js';
+import { Customer } from '../models/customer.js';
+import { Company } from '../models/company.js';
+import { Category } from '../models/category.js';
+import { User } from '../models/user.js';
+
+setEnvVariables();
+await mongoConfig();
+
+afterAll(async () => {
+    await Product.deleteMany({});
+    await Order.deleteMany({});
+    await Category.deleteMany({});
+    await Company.deleteMany({});
+    await Customer.deleteMany({});
+});
+
+const company = await Company.create({
+    "bank": {
+        "name": "Райфайзен Банк АД",
+        "code": "RZBBSF",
+        "iban": "BG12RZBB91551012345678"
+    },
+    "name": "Сиско Трейд ЕТ",
+    "mol": "Свилен Емилов",
+    "phone": "0891231233",
+    "vat": "999999999",
+    "country": "България",
+    "state": "Русе",
+    "city": "Бяла",
+    "street": "ул. Шипка 10",
+    "senders": [
+        "Иван Иванов",
+    ],
+    "default": true,
+    "taxvat": "BG999999999",
+    "tax": 20,
+    "address": "fff"
+});
+
+const category = await Category.create({
+    "name": "Category 0",
+    "slug": "category-0",
+    "path": null,
+    "order": 0,
+    "depth": []
+})
+
+const simpleProductData = {
+    "category": category._id,
+    "noInvoice": false,
+    "code": "1643",
+    "barcode": "0000000016438",
+    "name": "Simple",
+    "description": "",
+    "unitOfMeasure": "бр.",
+    "quantity": 100,
+    "minQty": null,
+    "sizes": [],
+    "deliveryPrice": 10,
+    "wholesalePrice": 13,
+    "retailPrice": 15.5,
+    "hidden": false,
+    "deleted": false,
+    "outOfStock": false,
+    "additionalImages": [],
+};
+
+const variableProductData = {
+    "category": category._id,
+    "noInvoice": false,
+    "code": "1644",
+    "barcode": "0000000016445",
+    "name": "Variable",
+    "description": "",
+    "unitOfMeasure": "пакет",
+    "quantity": 100,
+    "minQty": null,
+    "sizes": [
+        {
+            "size": "S",
+            "quantity": 100
+        },
+        {
+            "size": "M",
+            "quantity": 100
+        },
+        {
+            "size": "L",
+            "quantity": 100
+        }
+    ],
+    "deliveryPrice": 30,
+    "wholesalePrice": 39,
+    "retailPrice": 15.5,
+    "hidden": false,
+    "deleted": false,
+    "outOfStock": false,
+    "additionalImages": [],
+};
+
+const customer = await Customer.create({
+    "name": "ff",
+    "mol": "ff",
+    "vat": "1444444441",
+    "address": "fff",
+    "receivers": [
+        "ff"
+    ],
+    "deleted": false,
+    "taxvat": "445"
+});
+
+const admin = await User.create({
+    username: 'test',
+    password: 'test',
+    role: 'admin'
+})
+
+describe('POST /orders', async () => {
+    describe('Wholesale order', async () => {
+        const simpleProduct = await Product.create(simpleProductData);
+        const variableProduct = await Product.create(variableProductData);
+
+        const data = {
+            "date": "2024-09-16",
+            "type": "stokova",
+            "customer": customer._id,
+            "orderType": "wholesale",
+            "products": [
+                { // simple product
+                    "index": 0,
+                    "product": simpleProduct._id,
+                    "quantity": "2",
+                    "price": 13,
+                    "discount": "10",
+                    "unitOfMeasure": "бр."
+                },
+                {
+                    "index": 1,
+                    "product": variableProduct._id,
+                    "quantity": "5",
+                    "price": 39,
+                    "discount": 0,
+                    "selectedSizes": [
+                        "S",
+                        "M",
+                        "L"
+                    ],
+                    "unitOfMeasure": "пакет"
+                },
+                {
+                    "index": 2,
+                    "name": "Simple non-existing",
+                    "quantity": "4",
+                    "price": "6",
+                    "discount": 0,
+                    "unitOfMeasure": "пакет"
+                },
+                {
+                    "index": 3,
+                    "name": "Variable non-existing",
+                    "quantity": "7",
+                    "price": "3",
+                    "qtyInPackage": 3,
+                    "discount": 0,
+                    "unitOfMeasure": "пакет"
+                }
+            ],
+            "paymentType": "cash",
+            "paidAmount": 0,
+            "company": company._id,
+            "receiver": "HH",
+            "sender": "GG"
+        };
+
+        const { status, order, updatedProducts } = await OrderController.post({ data, userId: admin._id });
+
+        test('Data is correct', () => {
+            expect(status).toBe(201);
+            expect(order.number).toBe("1");
+            expect(order.date).toStrictEqual(new Date(data.date));
+            expect(updatedProducts.length).toBe(2);
+            expect(order.customer.toString()).toBe(customer._id.toString());
+            expect(order.orderType).toBe('wholesale');
+            expect(order.paymentType).toBe('cash');
+            expect(order.products.length).toBe(4);
+            expect(order.company.toString()).toBe(company._id.toString());
+            expect(order.type).toBe('stokova');
+            expect(order.paidAmount).toBe(0);
+            expect(order.receiver).toBe(data.receiver);
+            expect(order.sender).toBe(data.sender);
+            //TODO Check total price
+        });
+
+        test('New customer receiver added', async () => {
+            const updatedCustomer = await Customer.findById(customer._id);
+            expect(updatedCustomer.receivers.length).toBe(2);
+            expect(updatedCustomer.receivers[1]).toBe(data.receiver);
+        });
+
+        test('New company sender added', async () => {
+            const updatedCompany = await Company.findById(company._id);
+            expect(updatedCompany.senders.length).toBe(2);
+            expect(updatedCompany.senders[1]).toBe(data.sender);
+        });
+
+        test('Products quantities are removed', async () => {
+            const updatedSimpleProduct = await Product.findById(simpleProduct._id);
+            const updatedVariableProduct = await Product.findById(variableProduct._id);
+            expect(updatedSimpleProduct.quantity).toBe(98);
+            expect(updatedVariableProduct.quantity).toBe(95);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'S').quantity).toBe(95);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'M').quantity).toBe(95);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'L').quantity).toBe(95);
+        });
+    });
+
+    describe('Retail order', async () => {
+        const simpleProduct = await Product.create(simpleProductData);
+        const variableProduct = await Product.create(variableProductData);
+
+        const data = {
+            "date": "2024-09-16",
+            "type": "stokova",
+            "customer": customer._id,
+            "orderType": "retail",
+            "products": [
+                {
+                    "index": 0,
+                    "product": simpleProduct._id,
+                    "quantity": 6,
+                    "price": 15.5,
+                    "discount": 0,
+                    "unitOfMeasure": "бр."
+                },
+                {
+                    "index": 1,
+                    "product": variableProduct._id,
+                    "quantity": 2,
+                    "price": 15.5,
+                    "size": "S",
+                    "discount": "20",
+                    "unitOfMeasure": "пакет"
+                },
+                {
+                    "index": 2,
+                    "name": "Simple non-existing",
+                    "quantity": "3",
+                    "price": "4",
+                    "discount": 0,
+                    "unitOfMeasure": "л."
+                },
+                {
+                    "index": 3,
+                    "name": "Variable non-existing",
+                    "quantity": 1,
+                    "price": "6",
+                    "size": "L",
+                    "discount": 0,
+                    "unitOfMeasure": "бр."
+                }
+            ],
+            "paymentType": "cash",
+            "paidAmount": 0,
+            "company": company._id,
+            "receiver": "HH",
+            "sender": "GG"
+        }
+
+        const { status, order, updatedProducts } = await OrderController.post({ data, userId: admin._id });
+
+        test('Data is correct', () => {
+            expect(status).toBe(201);
+            expect(order.number).toBe("2");
+            expect(order.date).toStrictEqual(new Date(data.date));
+            expect(updatedProducts.length).toBe(2);
+            expect(order.customer.toString()).toBe(customer._id.toString());
+            expect(order.orderType).toBe('retail');
+            expect(order.paymentType).toBe('cash');
+            expect(order.products.length).toBe(4);
+            expect(order.company.toString()).toBe(company._id.toString());
+            expect(order.type).toBe('stokova');
+            expect(order.paidAmount).toBe(0);
+            expect(order.receiver).toBe(data.receiver);
+            expect(order.sender).toBe(data.sender);
+            //TODO Check total price
+        });
+
+        test('Products quantities are removed', async () => {
+            const updatedSimpleProduct = await Product.findById(simpleProduct._id);
+            const updatedVariableProduct = await Product.findById(variableProduct._id);
+            expect(updatedSimpleProduct.quantity).toBe(94);
+            expect(updatedVariableProduct.quantity).toBe(98);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'S').quantity).toBe(98);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'M').quantity).toBe(100);
+            expect(updatedVariableProduct.sizes.find(s => s.size === 'L').quantity).toBe(100);
+        });
+    });
+
+    //TODO Validate
+})
+
+/* describe('GET /orders/:id', async() => {
+    test('Get order by id', async () => {
+        const 
+    })
+}) */
+
+test('GET /orders/params', async () => {
+    const data = OrderController.getParams();
+    expect(data.orderTypes).toEqual(orderTypes);
+    expect(data.paymentTypes).toEqual(paymentTypes);
+    expect(data.documentTypes).toEqual(documentTypes);
+    expect(data.woocommerce).toEqual(woocommerce)
+});
