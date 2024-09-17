@@ -1,31 +1,33 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: Deploy to Hostinger VM
 
 on:
-    push:
-        branches: ["main"]
-    pull_request:
-        branches: ["main"]
+    workflow_dispatch:
 
 jobs:
-    build:
+    deploy:
         runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [18.x, 20.x, 22.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
         steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Set up SSH
+              uses: webfactory/ssh-agent@v0.7.0
               with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: "npm"
-            - run: npm ci
-            - run: npm test
-            # Restart server
-            # - run: npx pm2 reload all
+                  ssh-private-key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3tlzezvt10ETqZidDjC8PiTm2zqboTsM8admTf4y6n newhappyrabbit3@gmail.com"
+
+            - name: Execute Commands on Hostinger VM
+              run: |
+                  #ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
+                  # Navigate to your app directory
+                  #cd /var/www/html/rabb.it
+
+                  # Run commands (e.g., git pull, build, restart services, etc.)
+                  #git pull origin main
+                  #npm install
+                  #npm run build
+
+                  # Restart services if needed (e.g., PM2, systemctl, etc.)
+                  #pm2 restart all
+                  touch /var/www/html/test.txt
+                  EOF

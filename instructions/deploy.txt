@@ -8,8 +8,10 @@ For local installs without domain (on customer PC, not VPS):
 - Windows: https://npmjs.org/package/qckwinsvc
 - Linux: https://www.npmjs.com/package/pm2
 
+---------
 For VPS installs with domain:
 1. Install nginx and config using the instructions in instructions\nginx.txt
+2. Install certbot for SSL: https://certbot.eff.org/instructions?ws=nginx&os=snap
 2. Install the domain certificate following the instructions in instructions\domain_ssl.txt
 3. Nginx should autostart by default on VPS
 4. Make node server autostart on boot:
