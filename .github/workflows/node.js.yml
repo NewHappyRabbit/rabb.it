@@ -61,6 +61,11 @@ jobs:
             - name: Execute Commands on Hostinger VM
               run: |
                   ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
+
+                  eval "$(ssh-agent -s)"
+                  ssh-add ~/.ssh/github-actions
+                  git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
+
                   # Navigate to your app directory
                   cd /var/www/html/rabb.it
 
