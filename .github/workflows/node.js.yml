@@ -27,7 +27,7 @@ jobs:
 
             - name: Execute Commands on Hostinger VM
               run: |
-                  #ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
+                  ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
                   # Navigate to your app directory
                   #cd /var/www/html/rabb.it
 
