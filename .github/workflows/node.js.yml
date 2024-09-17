@@ -62,12 +62,13 @@ jobs:
               run: |
                   ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
 
+                  # Navigate to your app directory
+                  cd /var/www/html/rabb.it
+
                   eval "$(ssh-agent -s)"
                   ssh-add ~/.ssh/github-actions
                   git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
 
-                  # Navigate to your app directory
-                  cd /var/www/html/rabb.it
 
                   # Run commands (e.g., git pull, build, restart services, etc.)
                   git pull origin live
