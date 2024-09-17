@@ -29,14 +29,14 @@ jobs:
               run: |
                   ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
                   # Navigate to your app directory
-                  #cd /var/www/html/rabb.it
+                  cd /var/www/html/rabb.it
 
                   # Run commands (e.g., git pull, build, restart services, etc.)
-                  #git pull origin main
-                  #npm install
-                  #npm run build
+                  git pull origin live
+                  npm install
+                  npm run web-prod
 
                   # Restart services if needed (e.g., PM2, systemctl, etc.)
-                  #pm2 restart all
-                  touch /var/www/html/test.txt
+                  pm2 restart all
+                  exit
                   EOF
