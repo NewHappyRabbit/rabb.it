@@ -345,8 +345,6 @@ export const OrderController = {
         if (data.sender !== order.sender) {
             const company = await Company.findById(data.company);
 
-            if (!company) return { status: 404, message: 'Компанията не е намерена' };
-
             if (!company.senders) company.senders = [data.sender];
 
             if (!company.senders.includes(data.sender)) company.senders.push(data.sender);
@@ -355,8 +353,6 @@ export const OrderController = {
 
         if (data.receiver !== order.receiver) {
             const customer = await Customer.findById(data.customer);
-
-            if (!customer) return { status: 404, message: 'Партньорът не е намерен' };
 
             if (!customer.receivers) customer.receivers = [data.receiver];
 
@@ -388,7 +384,7 @@ export const OrderController = {
             data.number = seq.seq;
         }
 
-        if (order.woocommerce) {
+        if (order.woocommerce && data.woocommerce) {
             // Update woo status
             const newStatus = data.woocommerce;
             data.woocommerce = order.woocommerce;

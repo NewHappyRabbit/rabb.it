@@ -148,7 +148,8 @@ const validOrderData = {
     "total": "50",
 };
 
-/* 
+//TODO Add tests for order.unpaid, order.total
+
 describe('POST /orders', async () => {
     describe('Wholesale order', async () => {
         const simpleProduct = await Product.create(simpleProductData);
@@ -609,12 +610,56 @@ test('GET /orders/params', async () => {
     expect(data.documentTypes).toEqual(documentTypes);
     expect(data.woocommerce).toEqual(woocommerce)
 });
- */
 
 describe('PUT /orders/:id', async () => {
+    describe('Update order', async () => {
+        const newData = JSON.parse(JSON.stringify(validOrderData));
+        newData.type = "invoice";
+        newData.receiver = 'CC';
+        newData.sender = 'CC';
 
+        const newOrder = await Order.create(validOrderData);
+        const { status } = await OrderController.put({ data: newData, id: newOrder._id });
+        const order = await Order.findById(newOrder._id);
+
+        test('Saved', async () => {
+            expect(status).toBe(201);
+        });
+
+        test('New sender saved', async () => {
+            const company = await Company.findById(newData.company);
+            expect(company.senders.includes(newData.sender)).toBe(true);
+        });
+
+        test('New receiver saved', async () => {
+            const customer = await Customer.findById(newData.customer);
+            expect(customer.receivers.includes(newData.receiver)).toBe(true);
+        });
+
+        test('New order number on document type change', async () => {
+            expect(order.documentType).toBe(newData.documentType);
+            expect(order.number).not.toBe(newOrder.number);
+        });
+    });
+
+    test('Non-existing order', async () => {
+        const { status } = await OrderController.put({ data: validOrderData, id: '66df6c6f63ff5e701805e633' });
+        expect(status).toBe(404);
+    });
 });
 
 describe('DELETE /orders/:id', async () => {
+    test('Delete order', async () => {
+        const newOrder = await Order.create(validOrderData);
+        const { status } = await OrderController.delete(newOrder._id);
+        expect(status).toBe(204);
 
+        const order = await Order.findById(newOrder._id);
+        expect(order.deleted).toBe(true);
+    });
+
+    test('Non-existing order', async () => {
+        const { status } = await OrderController.delete('66df6c6f63ff5e701805e633');
+        expect(status).toBe(404);
+    });
 });
