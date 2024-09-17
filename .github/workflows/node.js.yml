@@ -69,8 +69,9 @@ jobs:
                   ssh-add ~/.ssh/github-actions
                   git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
 
-
                   # Run commands (e.g., git pull, build, restart services, etc.)
+                  git checkout .
+                  git clean -df
                   git pull origin live
                   npm install
                   npm run web-prod
