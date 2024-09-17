@@ -81,7 +81,7 @@ http {
     }
 }
 
-4. Done! If you are using Live Server extension, add the SSL certificate as instructed in instructions\ssl.txt file.
+4. Done! If you are using Live Server extension, add the SSL certificate as instructed in instructions\local_ssl.txt file.
 
 If you want nginx to start with your PC automatically, follow these steps:
 

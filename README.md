@@ -147,6 +147,8 @@ To run this project, you will need to add all of the following environment varia
 | `MONGO_PASSWORD` | string (ex. "veryLongPassword") | Password for MongoDB connection
 | `MONGO_URI` | string (ex. mongodb+srv://cluster.server.mongodb.net) | Connection URI for MongoDB
 | `JWT_SECRET` | string | Used for user password generation
+| `MONGO_TEST_USER` | string (ex. "testuser") | Username for MongoDB connection. Used for running tests. |
+| `MONGO_TEST_PASSWORD` | string (ex. "testpass") | Password for the test user |
 
 ## WooCommerce environment variables and hooks
 
@@ -166,16 +168,6 @@ This is **NOT** required if you are not using the WooCommerce! Setup the followi
 | Topic         | Delivery URL                                       | Notes                                             |
 | ------------- | -------------------------------------------------- | ------------------------------------------------- |
 | Order created | https://example.com/server/woocommerce/hooks/order | On new order in WooCommerce, create it in the app |
-
----
-
-## Testing environment variables
-
-To run tests, you will need to add all of the following environment variables to your `.env` file
-| Variable | Value | Decsription |
-| - | - | - |
-| `MONGO_TEST_USER` | string (ex. "testuser") | Username for MongoDB connection |
-| `MONGO_TEST_PASSWORD` | string (ex. "testpass") | Password for MongoDB connection |
 
 ---
 
@@ -201,7 +193,7 @@ Install dependencies
   npm install
 ```
 
-Create an SSL certificate. Instructions on how-to in `/instructions/ssl.txt`
+Create an SSL certificate. Instructions on how-to in `/instructions/local_ssl.txt`
 
 Start the server
 

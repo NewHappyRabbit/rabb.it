@@ -1,0 +1,18 @@
+This instructions file shows the process to deploy the app to production for the first time.
+
+For local installs without domain (on customer PC, not VPS):
+1. Install nginx and config using the instructions in instructions\nginx.txt
+2. Install mkcert and create SSL certificates following the instructions in instructions\local_ssl.txt
+3. Make nginx autostart on boot (via the instructions)
+4. Make node server autostart on boot:
+- Windows: https://npmjs.org/package/qckwinsvc
+- Linux: https://www.npmjs.com/package/pm2
+
+For VPS installs with domain:
+1. Install nginx and config using the instructions in instructions\nginx.txt
+2. Install the domain certificate following the instructions in instructions\domain_ssl.txt
+3. Nginx should autostart by default on VPS
+4. Make node server autostart on boot:
+- Linux: https://www.npmjs.com/package/pm2
+
+use "pm2 start entry.cjs -i max" to use all the CPUs on VPS and enable cluster mode
