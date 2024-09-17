@@ -121,8 +121,34 @@ const admin = await User.create({
     username: 'test',
     password: 'test',
     role: 'admin'
-})
+});
 
+const validOrderData = {
+    "date": "2024-09-16",
+    "type": "stokova",
+    "number": "123",
+    "customer": customer._id,
+    "orderType": "wholesale",
+    "products": [
+        {
+            "index": 0,
+            "name": "Simple non-existing",
+            "quantity": "4",
+            "price": "6",
+            "discount": 0,
+            "unitOfMeasure": "пакет"
+        },
+    ],
+    "paymentType": "cash",
+    "paidAmount": 0,
+    "company": company._id,
+    "receiver": "HH",
+    "sender": "GG",
+    "user": admin._id,
+    "total": "50",
+};
+
+/* 
 describe('POST /orders', async () => {
     describe('Wholesale order', async () => {
         const simpleProduct = await Product.create(simpleProductData);
@@ -304,14 +330,277 @@ describe('POST /orders', async () => {
         });
     });
 
-    //TODO Validate
-})
+    describe('Validate', async () => {
+        const simpleProduct = await Product.create(simpleProductData);
+        const variableProduct = await Product.create(variableProductData);
 
-/* describe('GET /orders/:id', async() => {
+        const data = {
+            "date": "2024-09-16",
+            "type": "stokova",
+            "customer": customer._id,
+            "orderType": "wholesale",
+            "products": [
+                { // simple product
+                    "index": 0,
+                    "product": simpleProduct._id,
+                    "quantity": "2",
+                    "price": 13,
+                    "discount": "10",
+                    "unitOfMeasure": "бр."
+                },
+                {
+                    "index": 1,
+                    "product": variableProduct._id,
+                    "quantity": "5",
+                    "price": 39,
+                    "discount": 0,
+                    "selectedSizes": [
+                        "S",
+                        "M",
+                        "L"
+                    ],
+                    "unitOfMeasure": "пакет"
+                },
+                {
+                    "index": 2,
+                    "name": "Simple non-existing",
+                    "quantity": "4",
+                    "price": "6",
+                    "discount": 0,
+                    "unitOfMeasure": "пакет"
+                },
+                {
+                    "index": 3,
+                    "name": "Variable non-existing",
+                    "quantity": "7",
+                    "price": "3",
+                    "qtyInPackage": 3,
+                    "discount": 0,
+                    "unitOfMeasure": "пакет"
+                }
+            ],
+            "paymentType": "cash",
+            "paidAmount": 0,
+            "company": company._id,
+            "receiver": "HH",
+            "sender": "GG"
+        };
+
+        test('No date', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            delete temp.date;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('date');
+        });
+
+        test('No document type', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            delete temp.type;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('type');
+        });
+
+        test('No customer', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            delete temp.customer;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('customer');
+        });
+
+        test('Non-existing customer', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.customer = simpleProduct._id;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(404);
+            expect(property).toBe('customer');
+        });
+
+        test('No order type', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            delete temp.orderType;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('orderType');
+        });
+
+        test('Non-existing order type', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.orderType = 'asdasd';
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('orderType');
+        });
+
+        test('No products', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            delete temp.products;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('products');
+        });
+
+        test('No selected size for wholesale', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[1].selectedSizes = [];
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('size');
+        })
+
+        test('No product id or name', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].product = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('product');
+        });
+
+        test('Non-existing product', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].product = '66cdc2935881796551ea88b5';
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(404);
+            expect(property).toBe('product');
+        });
+
+        test('No quantity', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].quantity = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('quantity');
+        });
+
+        test('Quantity <= 0', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].quantity = 0;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('quantity');
+        });
+
+        test('No price', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].price = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('price');
+        });
+
+        test('Price < 0', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].price = -1;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('price');
+        });
+
+        test('Discount < 0', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].discount = -1;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('discount');
+        });
+
+        test('Discount > 100', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].discount = 101;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('discount');
+        });
+
+        test('No unit of measure', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.products[0].unitOfMeasure = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('unitOfMeasure');
+        });
+
+        test('No payment type', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.paymentType = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('paymentType');
+        });
+
+        test('Non-existing payment type', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.paymentType = 'asd';
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('paymentType');
+        });
+
+        test('Paid amount < 0', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.paidAmount = -1;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('paidAmount');
+        });
+
+        test('No company', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.company = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('company');
+        });
+
+        test('Non-existing company', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.company = '66cdc2935881796551ea88b5';
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('company');
+        });
+
+        test('No receiver', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.receiver = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('receiver');
+        });
+
+        test('No sender', async () => {
+            const temp = JSON.parse(JSON.stringify(data));
+            temp.sender = undefined;
+            const { status, property } = await OrderController.post({ data: temp, userId: admin._id });
+            expect(status).toBe(400);
+            expect(property).toBe('sender');
+        });
+    });
+});
+
+test('GET /orders', async () => {
+    await Order.create(validOrderData);
+    const { orders } = await OrderController.get({});
+    expect(orders.length).toBeGreaterThan(0);
+});
+
+describe('GET /orders/:id', async () => {
     test('Get order by id', async () => {
-        const 
-    })
-}) */
+        const newOrder = await Order.create(validOrderData);
+        const { status, order } = await OrderController.getById(newOrder._id);
+
+        expect(status).toBe(200);
+        expect(newOrder._id.toString()).toBe(order._id.toString());
+    });
+
+    test('Non-existing order', async () => {
+        const { status } = await OrderController.getById('66df6c6f63ff5e701805e633');
+
+        expect(status).toBe(404);
+    });
+});
 
 test('GET /orders/params', async () => {
     const data = OrderController.getParams();
@@ -319,4 +608,13 @@ test('GET /orders/params', async () => {
     expect(data.paymentTypes).toEqual(paymentTypes);
     expect(data.documentTypes).toEqual(documentTypes);
     expect(data.woocommerce).toEqual(woocommerce)
+});
+ */
+
+describe('PUT /orders/:id', async () => {
+
+});
+
+describe('DELETE /orders/:id', async () => {
+
 });

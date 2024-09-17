@@ -5,79 +5,74 @@ import { Company } from "../models/company.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 async function validateOrder(data) {
     if (!data.date)
-        return { status: 400, message: 'Въведете дата' };
+        return { status: 400, message: 'Въведете дата', property: 'date' };
 
     if (!data.type || Object.keys(documentTypes).indexOf(data.type) === -1)
-        return { status: 400, message: 'Невалиден тип на документа' };
+        return { status: 400, message: 'Невалиден тип на документа', property: 'type' };
 
     if (!data.customer)
-        return { status: 400, message: 'Въведете клиент' };
+        return { status: 400, message: 'Въведете клиент', property: 'customer' };
 
     const existingCustomer = await Customer.findById(data.customer);
 
     if (!existingCustomer)
-        return { status: 400, message: 'Клиентът не съществува' };
+        return { status: 404, message: 'Клиентът не съществува', property: 'customer' };
 
     if (!data.orderType || Object.keys(orderTypes).indexOf(data.orderType) === -1)
-        return { status: 400, message: 'Въведете тип на продажбата' };
+        return { status: 400, message: 'Въведете тип на продажбата', property: 'orderType' };
+
+    if (!data.paymentType || Object.keys(paymentTypes).indexOf(data.paymentType) === -1)
+        return { status: 400, message: 'Невалиден тип на плащане', property: 'paymentType' };
+
+    if (data.paidAmount < 0)
+        return { status: 400, message: 'Платената сума трябва да е по-голяма или равна на 0', property: 'paidAmount' };
+
+    if (!data.company)
+        return { status: 400, message: 'Въведете фирма', property: 'company' };
+
+    const existingCompany = await Company.findById(data.company);
+
+    if (!existingCompany)
+        return { status: 400, message: 'Фирмата не съществува', property: 'company' };
+
+    if (!data.receiver)
+        return { status: 400, message: 'Въведете получател', property: 'receiver' };
+
+    if (!data.sender)
+        return { status: 400, message: 'Въведете изпращач', property: 'sender' };
 
     if (!data.products || data.products.length === 0)
-        return { status: 400, message: 'Въведете продукти' };
+        return { status: 400, message: 'Въведете продукти', property: 'products' };
 
     for (let i = 0; i < data.products.length; i++) {
         const product = data.products[i];
 
         const existingProduct = await Product.findById(product.product);
-        if (product.product) {
-            if (!existingProduct)
-                return { status: 400, message: 'Продуктът не съществува' };
-
-            if (data.orderType === 'wholesale' && product.selectedSizes?.length === 0) // atleast 1 size must be selected
-                return { status: 400, message: `Трябва да изберете поне 1 размер за продукта ${existingProduct.name} [${existingProduct.code}]` };
-        }
+        if (product.product && !existingProduct)
+            return { status: 404, message: 'Продуктът не съществува', property: 'product' };
 
         if (!product.product && !product.name)
-            return { status: 400, message: 'Въведете продукт' };
+            return { status: 400, message: 'Въведете продукт', property: 'product', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         // Variable existing product
         if (data.orderType === 'wholesale' && existingProduct && product.selectedSizes?.length === 0)
-            return { status: 400, message: `Трябва да изберете поне 1 размер за продукта: ${existingProduct.name} [${existingProduct.code}]` };
+            return { status: 400, message: `Трябва да изберете поне 1 размер за продукта: ${existingProduct.name} [${existingProduct.code}]`, property: 'size', _id: existingProduct._id };
 
         if (!product.quantity || product.quantity <= 0)
-            return { status: 400, message: `Въведете количество за продукта: ${product.name}` };
+            return { status: 400, message: `Въведете количество за продукта: ${product.name}`, property: 'quantity', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (!product.price)
-            return { status: 400, message: 'Въведете цена' };
+            return { status: 400, message: 'Въведете цена', property: 'price', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (product.price < 0)
-            return { status: 400, message: 'Цената трябва да е по-голяма или равна на 0' };
+            return { status: 400, message: 'Цената трябва да е по-голяма или равна на 0', property: 'price', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (product.discount && (product.discount < 0 || product.discount > 100))
-            return { status: 400, message: 'Отстъпката трябва да е в границите между 0 и 100' };
+            return { status: 400, message: 'Отстъпката трябва да е в границите между 0 и 100', property: 'discount', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (!product.unitOfMeasure)
-            return { status: 400, message: 'Липсва мярка за артикул' };
+            return { status: 400, message: 'Липсва мярка за артикул', property: 'unitOfMeasure', ...(existingProduct ? { _id: existingProduct._id } : {}) };
     }
-
-    if (!data.paymentType || Object.keys(paymentTypes).indexOf(data.paymentType) === -1)
-        return { status: 400, message: 'Невалиден тип на плащане' };
-
-    if (data.paidAmount < 0)
-        return { status: 400, message: 'Платената сума трябва да е по-голяма или равна на 0' };
-
-    if (!data.company)
-        return { status: 400, message: 'Въведете фирма' };
-
-    const existingCompany = await Company.findById(data.company);
-
-    if (!existingCompany)
-        return { status: 400, message: 'Фирмата не съществува' };
-
-    if (!data.receiver)
-        return { status: 400, message: 'Въведете получател' };
-
-    if (!data.sender)
-        return { status: 400, message: 'Въведете изпращач' };
 }
 
 async function removeProductsQuantities({ data, returnedProducts }) {
