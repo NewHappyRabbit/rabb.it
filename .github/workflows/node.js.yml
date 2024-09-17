@@ -77,6 +77,6 @@ jobs:
                   npm run web-prod
 
                   # Restart services if needed (e.g., PM2, systemctl, etc.)
-                  pm2 restart all
+                  pm2 reload all
                   exit
                   EOF
