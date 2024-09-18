@@ -18,6 +18,14 @@ Use the server blocks from instructions\nginx_server.txt
 2. Install certbot for SSL: https://certbot.eff.org/instructions?ws=nginx&os=pip
 - Do "sudo apt install python3-certbot-nginx" after Step 2.
 
+3. Generate SSH key: 
+- Run the following command in ~/.ssh: ssh-keygen -t rsa -b 4096 -C "newhappyrabbit3@gmail.com"
+- Name it github-actions
+- Copy the contents of github-actions.pub to https://github.com/settings/keys
+- Copy the contents of github-actions.pub to Hostinger Panel > Settings > SSH keys
+- Copy the contents of github-actions to Repository > Settings > Secrets > Actions > Add a new secret > SSH_PRIVATE_KEY
+
+
 3. Generate SSH keys on VPS for:
 3.1 Access from VPS to Github (for pull requests): https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
 - Run the following commands:
