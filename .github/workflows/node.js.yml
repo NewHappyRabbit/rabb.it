@@ -16,44 +16,7 @@ jobs:
             - name: Set up SSH Key
               run: |
                   mkdir -p ~/.ssh
-                  echo "-----BEGIN OPENSSH PRIVATE KEY-----
-                  b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
-                  NhAAAAAwEAAQAAAYEAtPBULsB40yB1g37pfw2ATrCsjfRTBVkEZIH+Pe1KtR7ribYMOpCD
-                  ULihXlzAuXGXEIT5mwdpiyP1BcuoCyBHqc8K2iSXs/kuG1i6bDQfWCdrE8VaMbJap0iHRW
-                  fshuzM1XnZtLkofsUFjhIa0k9KV5zMPsm6O/M5a96JbLzWCwRAu9kvXjoHyhXh0u+zPuKn
-                  vmM3ZHUMUhKwpWbvr105lENtBSRl1TGAgzM9Ie8kAzWxoqbSLC49i1axm09GzcXX8/uXfV
-                  0XLr31HYAMq54CXJpMw3V35BYt+v77eK6F9e8dDB9bkNHinT5RY8SxrknCP+jn9VuSnwVQ
-                  CZjcq1NOcUZnrp/57QoNvuFV7WfB2tZl+hL0son53UVRxiJe+OuosiUCEdqQvYx+QG+CY/
-                  zvOzHiezlAIHOYkTdQQObLa1SI9Ui/TqSjvhndZiGsEtom76XJMpPfH+hlfj0HXYAXMmvF
-                  HxvLYmPqhD41sDppQ5cjd2KncHn7iEPUu6iSY+1vAAAFkH/awbt/2sG7AAAAB3NzaC1yc2
-                  EAAAGBALTwVC7AeNMgdYN+6X8NgE6wrI30UwVZBGSB/j3tSrUe64m2DDqQg1C4oV5cwLlx
-                  lxCE+ZsHaYsj9QXLqAsgR6nPCtokl7P5LhtYumw0H1gnaxPFWjGyWqdIh0Vn7IbszNV52b
-                  S5KH7FBY4SGtJPSleczD7JujvzOWveiWy81gsEQLvZL146B8oV4dLvsz7ip75jN2R1DFIS
-                  sKVm769dOZRDbQUkZdUxgIMzPSHvJAM1saKm0iwuPYtWsZtPRs3F1/P7l31dFy699R2ADK
-                  ueAlyaTMN1d+QWLfr++3iuhfXvHQwfW5DR4p0+UWPEsa5Jwj/o5/Vbkp8FUAmY3KtTTnFG
-                  Z66f+e0KDb7hVe1nwdrWZfoS9LKJ+d1FUcYiXvjrqLIlAhHakL2MfkBvgmP87zsx4ns5QC
-                  BzmJE3UEDmy2tUiPVIv06ko74Z3WYhrBLaJu+lyTKT3x/oZX49B12AFzJrxR8by2Jj6oQ+
-                  NbA6aUOXI3dip3B5+4hD1LuokmPtbwAAAAMBAAEAAAGAK/gzHOFc+0FqDThsGZn4UicQ57
-                  Y17pjBPoNwezAM9ZK7/k0lD55KqvUTEdFMbEQ0R6lo1smoVk24n13sSjff8l4D7xrxWqT1
-                  FWQseVr5OvzpQna1AlqrOPehF7a3fdpRtJbV1tsgAh5yySGRLwZhtITABYoUHblvfM0pbC
-                  k/gpHYAU43+pfziKJkrFPfpSqDRPrrXRgslE1CbA9ls6Hd+i+gcJ11uac76aYr9vEcOUN1
-                  FWegr2fVQOUiZ/GN7TdkaFhBzrSDyldxOZ6O8KxycGiIGHRm+acqVPSOkC8eOOasLY0K3m
-                  sEH2XpTU4pzU6C7oyq/1jEB+rQfX1Pa4mPkGxPCiCqXUWulxq2CV/IJy5NdLz3ETjusien
-                  yqW/Dax0SiY0PLPDRdS2wghK8HLfDYdvGOHjpdw5GO2Ql+CtRWaGY/lpacsHS3CT/3du/N
-                  31lUpMtlm1JxBuTuFM08WlL2VfL9NDuQyaWj6C6/phHYYNiD5H1kBUFck/GHkojqAxAAAA
-                  wQDGWzm79NXoRydZMoZzDB1S/KW4jcPkx/Qw+U7BpaTK6PnEoG/EqWUSu6vp5USxthT5AO
-                  /sHN2MUkwhCHdUsL6f1HdIWJU0WBYd7gux3BRJgK7doGHdWn7o6g7fSmLMxOwINhOJY0p1
-                  9Tou5/sVEnbkUtcQCcGIp32yM2hQbHHt0tKLCMDjxmr2Ad5s63s5J+2loyrhkwHNBiiT40
-                  l1l/A+HVHlMEx7cHliI/BneuvMTVxh6Q9bgpsm/Zfi5WmQEGAAAADBAOg52hEliT0RzJQv
-                  9mDkCKrNndCck5zwuLhQdPpDxVO8a/36nOG78tZ75zDE4e8Q+VGiDPWdXo605i9JRglKU/
-                  pgvPgWCusEc+F+65wjfgXbDrnw3aIhTZ2qZoj0tLEs4xW9Xoj3aggG3baMAkqM32+aB2c9
-                  VAxO+F1p6XKeqJVPPEF/Y1eMzshIG1dsIJaK+NagIg9SDegEhxtiBLx84fnoWnEev5S91e
-                  bnOIPgUvfFcfza1g8lvJ2gHG3kgAttQwAAAMEAx3ZZS9aNzTpsWmEVsYQDEXVcBXQM6bhQ
-                  QWGqZFl7asqb5ddz4fJfGcRM5GeBYIG59u5juiUW1GAYconDTlYV2vphFeWEb52y3SNzKC
-                  79eaPaoB9UFEyDDGs2C0qB4PENlQjsLRpRmhlv8zDd3XvFlvU81k6Znw9Df8qMTNSr8uz3
-                  Z19PgRmt0+eQWtitE31GKDK5rVQ23C01vsZgIdtcO4bANUNMWlOACrpXgNFXVaNJJsEKkG
-                  yb675K8D3FIMZlAAAAGW5ld2hhcHB5cmFiYml0M0BnbWFpbC5jb20B
-                  -----END OPENSSH PRIVATE KEY-----" > ~/.ssh/id_rsa
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
 
                   chmod 600 ~/.ssh/id_rsa
                   ssh-keyscan local.emo-sklad.bg >> ~/.ssh/known_hosts
