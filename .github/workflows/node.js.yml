@@ -8,15 +8,15 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            # - name: Checkout repository
-            # uses: actions/checkout@v3
-            # with:
-            #     ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
             - name: Set up SSH Key
               run: |
                   mkdir -p ~/.ssh
-                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+                  echo "-----BEGIN OPENSSH PRIVATE KEY-----                                                                                  b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+                  QyNTUxOQAAACDQ3ZhC0PJa1ZPO+dhebPHi7GBD2xruq4C6BeQr08QVMQAAAKDqLtQt6i7U
+                  LQAAAAtzc2gtZWQyNTUxOQAAACDQ3ZhC0PJa1ZPO+dhebPHi7GBD2xruq4C6BeQr08QVMQ
+                  AAAEAqArN9p5MGETKqIpT0M+46rz904KqB/rWUHXXiof2Z49DdmELQ8lrVk8752F5s8eLs
+                  YEPbGu6rgLoF5CvTxBUxAAAAGW5ld2hhcHB5cmFiYml0M0BnbWFpbC5jb20BAgME
+                  -----END OPENSSH PRIVATE KEY-----" > ~/.ssh/id_rsa
 
                   chmod 600 ~/.ssh/id_rsa
                   ssh-keyscan local.emo-sklad.bg >> ~/.ssh/known_hosts
