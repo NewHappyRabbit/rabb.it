@@ -72,7 +72,7 @@ jobs:
                   cd /var/www/html/rabb.it
 
                   eval "$(ssh-agent -s)"
-                  ssh-add ~/.ssh/github-actions
+                  ssh-add ~/.ssh/id_rsa
                   git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
 
                   # Run commands (e.g., git pull, build, restart services, etc.)
