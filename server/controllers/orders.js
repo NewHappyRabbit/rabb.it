@@ -3,6 +3,7 @@ import { Customer } from "../models/customer.js";
 import { Product } from "../models/product.js";
 import { Company } from "../models/company.js";
 import { AutoIncrement } from "../models/autoincrement.js";
+
 async function validateOrder(data) {
     if (!data.date)
         return { status: 400, message: 'Въведете дата', property: 'date' };
@@ -48,6 +49,7 @@ async function validateOrder(data) {
         const product = data.products[i];
 
         const existingProduct = await Product.findById(product.product);
+
         if (product.product && !existingProduct)
             return { status: 404, message: 'Продуктът не съществува', property: 'product' };
 
@@ -55,7 +57,7 @@ async function validateOrder(data) {
             return { status: 400, message: 'Въведете продукт', property: 'product', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         // Variable existing product
-        if (data.orderType === 'wholesale' && existingProduct && product.selectedSizes?.length === 0)
+        if (data.orderType === 'wholesale' && existingProduct && existingProduct.sizes.length > 0 && (!product.selectedSizes || product.selectedSizes?.length === 0))
             return { status: 400, message: `Трябва да изберете поне 1 размер за продукта: ${existingProduct.name} [${existingProduct.code}]`, property: 'size', _id: existingProduct._id };
 
         if (!product.quantity || product.quantity <= 0)
@@ -97,10 +99,10 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             // Remove quantity from each selected size (can be all of them, or just some (sell open package))
             for (let size of product.selectedSizes) {
                 // Check if there is enough quantity of selected size
-                if (existingProduct.sizes.filter(s => s.size === size)[0].quantity < product.quantity)
-                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.filter(s => s.size === size)[0].quantity}` };
+                if (existingProduct.sizes.find(s => s.size === size).quantity < product.quantity)
+                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(s => s.size === size.size).quantity}` };
 
-                existingProduct.sizes.filter(s => s.size === size)[0].quantity -= product.quantity;
+                existingProduct.sizes.find(s => s.size === size).quantity -= product.quantity;
             }
 
             // Update package quantity to be the lowest of all selected sizes quantity
@@ -158,18 +160,16 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         total += (product.quantity * product.price) * (1 - product.discount / 100);
     }
 
-    // Update all products in paralel with promies
-    await Promise.all(updatedProducts.map(product => product.save()));
     total = total.toFixed(2);
 
     return { total, updatedProducts };
 }
 
-async function returnProductsQuantities(data) {
+async function returnProductsQuantities(order) {
     var savedProducts = [];
 
-    for (let i = 0; i < data.products.length; i++) {
-        const product = data.products[i];
+    for (let i = 0; i < order.products.length; i++) {
+        const product = order.products[i];
 
         if (!product.product) continue; // if product not in db, skip
 
@@ -179,9 +179,23 @@ async function returnProductsQuantities(data) {
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
-        if (data.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
+        if (order.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
             // Return quantity to each selected size (can be all of them, or just some (sell open package))
-            for (let size of product.selectedSizes) existingProduct.sizes.filter(s => s.size === size)[0].quantity += product.quantity;
+
+            let sizesToReturn;
+
+            // If in original order the product was simple (had no sizes selected)
+            if (product.selectedSizes.length === 0) {
+                sizesToReturn = productInDb.sizes.map(s => s.size); // return quantity to all currently existing sizes
+            } else sizesToReturn = product.selectedSizes; // else the previously selected sizes
+
+            console.log({ sizesToReturn, productInDb, product })
+
+            for (let size of sizesToReturn) {
+                const s = existingProduct.sizes.find(s => s.size === size);
+                // Check if size exists in product (it may have been removed for example)
+                if (s) s.quantity += product.quantity;
+            }
 
             // Update package quantity to be the lowest of all selected sizes quantity
             existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
@@ -190,13 +204,13 @@ async function returnProductsQuantities(data) {
         }
 
         // Wholesale + Simple product
-        if (data.orderType === 'wholesale' && existingProduct?.sizes?.length === 0) {
+        if (order.orderType === 'wholesale' && existingProduct?.sizes?.length === 0) {
             existingProduct.quantity += product.quantity;
             existingProduct.outOfStock = false;
         }
 
         // Retail + Variable product
-        if (data.orderType === 'retail' && existingProduct.sizes.length > 0) {
+        if (order.orderType === 'retail' && existingProduct.sizes.length > 0) {
             existingProduct.sizes.filter(size => size.size === product.size)[0].quantity += product.quantity;
 
             // Update package quantity to be the lowest of all selected sizes quantity
@@ -206,7 +220,7 @@ async function returnProductsQuantities(data) {
         }
 
         // Retail + Simple product
-        if (data.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
+        if (order.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
             existingProduct.quantity += product.quantity;
 
             existingProduct.outOfStock = false;
@@ -319,6 +333,9 @@ export const OrderController = {
 
         if (status) return { status, message };
 
+        // Update all products in paralel with promies
+        await Promise.all(updatedProducts.map(product => product.save()));
+
         data.total = total;
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
@@ -370,6 +387,9 @@ export const OrderController = {
         let { total, updatedProducts, status, message } = await removeProductsQuantities({ data, returnedProducts });
         if (status) return { status, message };
 
+        // Update all products in paralel with promies
+        await Promise.all(updatedProducts.map(product => product.save()));
+
         data.total = total;
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
@@ -401,6 +421,9 @@ export const OrderController = {
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
         const returnedProducts = await returnProductsQuantities(order);
+
+        // Update all products in paralel with promies
+        await Promise.all(returnedProducts.map(product => product.save()));
 
         order.deleted = true;
         await order.save();

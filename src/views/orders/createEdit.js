@@ -260,7 +260,7 @@ function updateSize(e) {
 
 function updateDiscount(e) {
     const target = e.target;
-    fixInputPrice(target);
+    fixInputPrice({ target });
     let value = target.value;
 
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
@@ -280,7 +280,7 @@ function updateDiscount(e) {
 
 function updatePrice(e) {
     const target = e.target;
-    fixInputPrice(target, true);
+    fixInputPrice({ target, roundPrice: true });
     const value = target.value;
 
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
@@ -525,7 +525,7 @@ function addProduct(e) {
     if (e.target.value === '') return;
 
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    if ((e.ctrlKey && e.key !== 'v') && (e.key !== 'v' && e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
     var product, quantity = 1;
 
@@ -569,7 +569,7 @@ function addProduct(e) {
     }
     // Wholesale + IN DB + simple
     else if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product._id === productInDB._id);
+        const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
         // Check if product is already in addedProducts
         if (inArray) {
             inArray.quantity += quantity;
@@ -1123,7 +1123,29 @@ export async function createEditOrderPage(ctx, next) {
             order = req.data;
             orderType = order.orderType;
             addedProducts = order.products;
-            addedProducts.map(product => product.index = addedProductsIndex++);
+
+            for (let product of addedProducts) {
+                product.index = addedProductsIndex++;
+
+                // Check if any size was removed from product and delete it from selectedSizes
+                if (product.selectedSizes && product?.product?.sizes.length === 0) // product was converted from variable to simple
+                    product.selectedSizes = [];
+
+                else if (product.selectedSizes?.length > 0 && product?.product?.sizes.length > 0) {
+                    // Check if any of the previously selected sizes was removed from the product and remove it from selectedSizes
+                    for (let size of product.selectedSizes) {
+                        if (!product.product.sizes.find(s => s.size === size)) {
+                            product.selectedSizes = product.selectedSizes.filter(s => s !== size);
+                        }
+                    }
+                }
+
+                else if (product.selectedSizes?.length === 0 && product?.product?.sizes.length > 0) {
+                    // Product was converted from simple to variable, enable all sizes
+                    product.selectedSizes = product.product.sizes.map(s => s.size);
+                }
+            }
+
             selectedCustomer = order.customer;
             selectedCompany = companies.filter(c => c._id === order.company)[0];
 

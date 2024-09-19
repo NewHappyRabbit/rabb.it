@@ -5,12 +5,14 @@ import { app } from '../app.js';
 import { httpLogger } from './logger.js';
 
 export const corsURLS = [
-    // Local nginx (when uploaded to server)
+    // Nginx
     'http://localhost', 'https://localhost',
-    // Local dev (for Live Server vscode)
+
+    // VSCODE Live Server extension
     'http://localhost:3003', 'https://localhost:3003',
+
     // Public domain
-    'https://app.emo-sklad.bg', 'https://app.emo-sklad.bg/server',
+    process.env.URL, `${process.env.URL}/server`,
     // For hooks
     process.env.WOO_URL,
 ];

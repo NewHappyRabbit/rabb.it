@@ -10,12 +10,13 @@ export const ReferencesController = {
             $and: [{ deleted: { $ne: true } }]
         };
 
-        const { cursor, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product } = query;
+        const { print = false, cursor, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product } = query;
         var prevCursor = null;
         var nextCursor = null;
-        var limit = 5;
+        var limit = print === 'true' ? 0 : 5; // If printing - dont limit results
 
-        cursor && dbQuery.$and.push({ _id: { $lte: cursor } });
+        // If printing start from first page instead at cursor
+        !print && cursor && dbQuery.$and.push({ _id: { $lte: cursor } });
 
         from && dbQuery.$and.push({ date: { $gte: from } });
 
@@ -62,6 +63,9 @@ export const ReferencesController = {
         }
 
         if (!orders || orders.length === 0) return { orders: [], prevCursor, nextCursor };
+
+        // If printing, no need to create cursor for traversing
+        if (print) return { orders };
 
         // get next order to generate cursor for traversing
         if (orders.length === limit)

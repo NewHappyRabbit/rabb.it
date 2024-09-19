@@ -163,7 +163,7 @@ export async function createEditCustomerPage(ctx, next) {
 
                 <div class="mb-3">
                     <label for="discount" class="form-label">Отстъпка %</label>
-                    <input @keyup=${(e) => fixInputPrice(e.target)} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer.discount ? customer.discount : ''} autocomplete="off">
+                    <input @keyup=${(e) => fixInputPrice({ target: e.target })} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer.discount ? customer.discount : ''} autocomplete="off">
                 </div>
 
                 <div id="alert" class="d-none alert" role="alert"></div>

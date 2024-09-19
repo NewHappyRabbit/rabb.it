@@ -26,7 +26,6 @@ async function loadCategories() {
     return categoriesOptions(options);
 }
 
-
 function calculateUnitPrice() {
     // if (selectedSizes.length === 0) return; // if no sizes added, do nothing
     const deliveryEl = document.getElementById('deliveryPrice');
@@ -35,7 +34,7 @@ function calculateUnitPrice() {
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
 
-    fixInputPrice(unitPriceEl, true);
+    fixInputPrice({ target: unitPriceEl, roundPrice: true });
 
     const unitPrice = unitPriceEl.value;
 
@@ -60,7 +59,7 @@ function calculateProductPrices(e) {
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
 
-    fixInputPrice(deliveryPriceEl, true);
+    fixInputPrice({ target: deliveryPriceEl, roundPrice: true });
 
     const deliveryPrice = deliveryPriceEl.value;
 
@@ -91,7 +90,7 @@ function calculatePriceWholesale() {
     const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
 
-    fixInputPrice(wholesaleUnitPrice, true);
+    fixInputPrice({ target: wholesaleUnitPrice, roundPrice: true });
 
     wholesalePrice.value = roundPrice(wholesaleUnitPrice.value * (selectedSizes.length || 1));
 }
@@ -106,18 +105,22 @@ function calculateUnitPriceWholesale() {
     wholesaleUnitPrice.value = (wholesalePrice.value / (selectedSizes.length || 1)).toFixed(2);
 }
 
+function updateTotalQty() {
+    const totalQtyEl = document.getElementById('totalQty');
+    const totalQuantity = selectedSizes.map(s => s.quantity).reduce((a, b) => a + b, 0);
+    totalQtyEl.value = totalQuantity;
+}
+
 function updateQuantity() {
     const quantity = document.getElementById('quantity').value;
-    const quantityEl = document.getElementById('quantityEl');
+    const totalQtyEl = document.getElementById('totalQty');
 
     if (quantity === '' || selectedSizes.length === 0) {
-        quantityEl.value = '';
+        totalQtyEl.value = '';
         return;
     }
 
-    const totalQuantity = selectedSizes.length * quantity;
-
-    quantityEl.value = totalQuantity;
+    updateTotalQty();
 
     // Update prices, because retail price uses quantity to calculate
     calculateProductPrices();
@@ -132,13 +135,16 @@ function addSize(e) {
 
     const size = suffix ? sizeEl.value + suffix : sizeEl.value;
 
-    if (size !== '' && !selectedSizes.includes(size)) {
-        selectedSizes.push(size);
+    if (size !== '' && !selectedSizes.find(s => s.size === size)) {
+        selectedSizes.push({ size, quantity: 0 });
 
         const addedSizes = document.getElementById('addedSizes');
 
         render(sizesTemplate(selectedSizes), addedSizes);
     }
+
+    // Product whole quantity cant be edited when sizes exist
+    document.getElementById('quantity').setAttribute('readonly', true);
 
     updateQuantity();
 
@@ -148,13 +154,16 @@ function addSize(e) {
 
 function removeSize(e) {
     e.preventDefault();
-    const size = e.target.textContent;
-    selectedSizes = selectedSizes.filter(s => s !== size);
+    const size = e.target.id.split('size-')[1];
+
+    selectedSizes = selectedSizes.filter(s => s.size !== size);
 
     if (selectedSizes.length === 0)
         document.getElementById('deliveryPricePerUnit').disabled = true;
 
     const addedSizes = document.getElementById('addedSizes');
+
+    if (selectedSizes.length === 0) document.getElementById('quantity').removeAttribute('readonly');
 
     updateQuantity();
 
@@ -166,7 +175,7 @@ const quantityTemplate = () => html`
             <div class="col-12 col-sm-4 mb-3">
                 <label for="quantity" class="form-label">Брой | Мярка</label>
                 <div class="input-group">
-                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${editPage}">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
                     <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
                     <datalist id="unitOfMeasureOptions">
                         <option value="пакет"></option>
@@ -186,16 +195,16 @@ const quantityTemplate = () => html`
             <div class="col-12 col-sm-4 mb-3">
                 <label for="size" class="form-label">Размери | Суфикс</label>
                 <div class="input-group">
-                    <input class="form-control" name="size" id="size" autocomplete="off" ?readonly="${editPage}">
+                    <input class="form-control" name="size" id="size" autocomplete="off"">
                     <input class="form-control" name="suffix" id="suffix" autocomplete="off" placeholder="г. / м.">
-                    <button @click=${addSize} class="btn btn-primary" ?disabled=${editPage}><i class="bi bi-plus-lg"></i></button>
+                    <button @click=${addSize} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
                 </div>
                 <div id="addedSizes" class="d-flex gap-1 mt-1 flex-wrap"></div>
             </div>
 
             <div class="col-12 col-sm-4">
-                <label for="quantityEl" class="form-label">Общ брой</label>
-                <input class="form-control" type="number" .value=${product && product.quantity * selectedSizes.length} id="quantityEl" min="0" step="1" disabled>
+                <label for="totalQty" class="form-label">Общ брой</label>
+                <input class="form-control" type="number" .value=${product?.sizes?.length > 0 ? product.sizes.map(s => s.quantity).reduce((a, b) => a + b, 0) : ''} id="totalQty" min="0" step="1" disabled>
             </div>
         </div>
     `;
@@ -204,7 +213,7 @@ const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" ?disabled=${selectedSizes.length === 0} inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
             </div>
 
             <div class="col ${!['both', 'whole'].includes(deliveryPriceFields) ? 'd-none' : ''}">
@@ -230,13 +239,35 @@ const pricesTemplate = () => html`
         </div>
     `;
 
+function updateWholeQuantity() {
+    // This function updates the packages quantity depending on the selected sizes size with least quantity
+    const leastQuantity = Math.min(...selectedSizes.map(s => s.quantity));
+    document.getElementById('quantity').value = leastQuantity;
+}
+
+function updateSizeQuantity(e) {
+    const { name, value } = e.target;
+
+    // TODO Fix the input price to be decimal instead of integer, since other shops may have products that are in kilograms, meters, etc.
+    fixInputPrice({ target: e.target, int: true });
+
+    const size = selectedSizes.find(s => s.size === name.split('-')[0]);
+    size.quantity = Number(value);
+
+    updateTotalQty();
+
+    updateWholeQuantity();
+}
+
 const sizesTemplate = () => html`
-        ${selectedSizes.map(size => html`
-            ${editPage ? html`<div class="btn bg-primary text-white">${size}</div>` : html`<button @click=${removeSize} class="btn bg-primary bgDangerHover">${size}</button>`}
-        `)
+    ${selectedSizes.map(size => html`
+        <div class="input-group mb-2 me-2" style="width: 30%">
+            <label for="${size.size}-quantity" class="input-group-text border-primary">${size.size}</label>
+            <input class="form-control border-primary" type="text" @keyup=${updateSizeQuantity} name="${size.size}-quantity" id="${size.size}-quantity" inputmode="decimal" required .value=${size.quantity} autocomplete="off">
+            <button class="btn btn-outline-secondary bgDangerHover" id="size-${size.size}" @click=${removeSize} type="button">X</button>
+        </div>`)
     }
 `;
-
 
 function removeImage(e) {
     const dt = new DataTransfer();
@@ -277,6 +308,20 @@ function validateProduct(data) {
         invalidFlag = markInvalid('quantity');
     else markValid('quantity');
 
+    // TODO ???? Should the user be able to convert from existing variable product to simple
+    /* if (editPage && product?.sizes?.length > 0 && selectedSizes.length === 0)
+        invalidFlag = markInvalid('size');
+    else markValid('size'); */
+
+    // Check if each size has a quantity
+    if (selectedSizes.length > 0) {
+        selectedSizes.map(size => {
+            if (!size.quantity || size.quantity <= 0)
+                invalidFlag = markInvalid(`${size.size}-quantity`);
+            else markValid(`${size.size}-quantity`);
+        })
+    }
+
     if (!data.deliveryPrice || data.deliveryPrice < 0 || !priceRegex.test(data.deliveryPrice)) {
         invalidFlag = markInvalid('deliveryPrice');
         markInvalid('deliveryPricePerUnit');
@@ -308,7 +353,9 @@ async function updateProduct(e) {
     const formData = new FormData(form);
 
     const data = Object.fromEntries(formData.entries());
-    data.sizes = selectedSizes.map(size => ({ size, quantity: data.quantity }));
+
+    data.sizes = selectedSizes;
+
     formData.set('sizes', JSON.stringify(data.sizes));
 
     const invalidData = validateProduct(data);
@@ -456,7 +503,7 @@ export async function createEditProductPage(ctx, next) {
             editPage = true;
             const req = await axios.get(`/products/${ctx.params.id}`);
             product = req.data;
-            selectedSizes = product.sizes.map(s => s.size);
+            selectedSizes = product.sizes;
         } else {
             editPage = false;
             product = '';
@@ -477,36 +524,36 @@ export async function createEditProductPage(ctx, next) {
 
     const template = () => html`
         ${nav()}
-<div class="container-fluid">
-    <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
-    <div class="row mb-3">
-        <label for="image" class="form-label">Главна снимка</label>
-        <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
-        <img id="imagePreview" class="${product?.image?.url ? '' : 'd-none'} img-thumbnail w-25" .src=${product?.image?.url} alt="">
-    </div>
+        <div class="container-fluid">
+            <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
+                <div class="row mb-3">
+                    <label for="image" class="form-label">Главна снимка</label>
+                    <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
+                    <img id="imagePreview" class="${product?.image?.url ? '' : 'd-none'} img-thumbnail w-25" .src=${product?.image?.url} alt="">
+                </div>
 
-    <div class="row mb-3">
-        <label for="additionalImages" class="form-label">Допълнителни снимка</label>
-        <input @change=${loadPreviewImages} class="form-control" type="file" name="additionalImages" id="additionalImages" accept="image/*" multiple>
-        <div id="additionalImagesPreview" class="d-flex flex-wrap"></div>
-    </div>
+                <div class="row mb-3">
+                    <label for="additionalImages" class="form-label">Допълнителни снимка</label>
+                    <input @change=${loadPreviewImages} class="form-control" type="file" name="additionalImages" id="additionalImages" accept="image/*" multiple>
+                    <div id="additionalImagesPreview" class="d-flex flex-wrap"></div>
+                </div>
 
-    <div class="row mb-3">
-        <label for="category" class="form-label">Категория</label>
-        <select class="form-select border-primary" name="category" id="category" required>
-            ${until(loadCategories(), html`<option>Зареждане...</option>`)}
-        </select>
-    </div>
+                <div class="row mb-3">
+                    <label for="category" class="form-label">Категория</label>
+                    <select class="form-select border-primary" name="category" id="category" required>
+                        ${until(loadCategories(), html`<option>Зареждане...</option>`)}
+                    </select>
+                </div>
 
-    <div class="row mb-3">
-        <label for="name" class="form-label">Име</label>
-        <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
-    </div>
+                <div class="row mb-3">
+                    <label for="name" class="form-label">Име</label>
+                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
+                </div>
 
-    <div class="row mb-3">
-        <label for="description" class="form-label">Описание</label>
-        <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
-</div>
+                <div class="row mb-3">
+                    <label for="description" class="form-label">Описание</label>
+                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
+                </div>
 
                 ${quantityTemplate()}
 
@@ -550,11 +597,10 @@ export async function createEditProductPage(ctx, next) {
                         </label>
                     </div>`}
 
-<div id="alert" class="d-none alert" role="alert"></div>
+                <div id="alert" class="d-none alert" role="alert"></div>
                 ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'submit', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3' }) : ''}
-            </form >
-        </div >
-    `;
+            </form>
+        </div>`;
 
     render(template(), container);
     render(sizesTemplate(selectedSizes), document.getElementById('addedSizes'));

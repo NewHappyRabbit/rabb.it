@@ -20,57 +20,56 @@ function switchPage(cursor) {
         // replace cursor value in query
         const newQuery = query.split('&').map(q => q.includes('cursor') ? 'cursor=' + cursor : q).join('&');
         page('/references/orders/?' + newQuery);
-    } else {
-        // add cursor to query
-        page('/references/orders/?' + query + '&cursor=' + cursor);
-    }
+    } else
+        page('/references/orders/?' + query + '&cursor=' + cursor); // add cursor to query
 }
 
-const table = (orders, prevCursor, nextCursor) => html`
-    <div class="table-responsive">
-        <table class="mt-3 table table-striped table-hover text-center">
-            <thead>
+// TODO Remove certain columns when print = true
+const table = ({ print = false, orders, prevCursor, nextCursor }) => html`
+    <table class="mt-3 table table-bordered table-striped table-hover text-center">
+        <thead>
+            <tr>
+                <th scope="col">Снимка</th>
+                <th scope="col">Тип</th>
+                <th scope="col">Номер</th>
+                <th scope="col">Партньор</th>
+                <th scope="col">Обект</th>
+                <th scope="col">Потребител</th>
+                <th scope="col">Дата</th>
+                <th scope="col">Артикул</th>
+                <th scope="col">Цена</th>
+                <th scope="col">Пакети/Бройки</th>
+                <th scope="col">Бройки в пакет/Размер</th>
+                <th scope="col">Отстъпка %</th>
+                <th scope="col">Сума</th>
+                <th scope="col">Начин на плащане</th>
+                <th scope="col">Тип на продажба</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${orders?.map(order => html`
+                ${order.products.map(product => html`
                 <tr>
-                    <th scope="col">Тип</th>
-                    <th scope="col">Номер</th>
-                    <th scope="col">Партньор</th>
-                    <th scope="col">Обект</th>
-                    <th scope="col">Потребител</th>
-                    <th scope="col">Дата</th>
-                    <th scope="col">Артикул</th>
-                    <th scope="col">Цена</th>
-                    <th scope="col">Пакети/Бройки</th>
-                    <th scope="col">Бройки в пакет/Размер</th>
-                    <th scope="col">Отстъпка %</th>
-                    <th scope="col">Сума</th>
-                    <th scope="col">Начин на плащане</th>
-                    <th scope="col">Тип на продажба</th>
+                    <td>${product?.product?.image?.url ? html`<img class="img-thumbnail" src=${product.product.image.url}/>` : ''}</td>
+                    <td>${params.documentTypes[order.type]}</td>
+                    <td>${order.number}</td>
+                    <td>${order.customer.name}</td>
+                    <td>${order.company.name}</td>
+                    <td>${order.user.username}</td>
+                    <td>${new Date(order.date).toLocaleDateString('bg')}</td>
+                    <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
+                    <td>${formatPrice(product.price)}</td>
+                    <td>${product.quantity}</td>
+                    <td>${product?.qtyInPackage || product?.selectedSizes?.length || ''}</td>
+                    <td>${product?.discount}</td>
+                    <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+                    <td>${params.paymentTypes[order.paymentType]}</td>
+                    <td>${params.orderTypes[order.orderType]}</td>
                 </tr>
-            </thead>
-            <tbody>
-                ${orders?.map(order => html`
-                    ${order.products.map(product => html`
-                    <tr>
-                        <td>${params.documentTypes[order.type]}</td>
-                        <td>${order.number}</td>
-                        <td>${order.customer.name}</td>
-                        <td>${order.company.name}</td>
-                        <td>${order.user.username}</td>
-                        <td>${new Date(order.date).toLocaleDateString('bg')}</td>
-                        <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
-                        <td>${formatPrice(product.price)}</td>
-                        <td>${product.quantity}</td>
-                        <td>${product?.qtyInPackage || product?.selectedSizes?.length || ''}</td>
-                        <td>${product?.discount}</td>
-                        <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
-                        <td>${params.paymentTypes[order.paymentType]}</td>
-                        <td>${params.orderTypes[order.orderType]}</td>
-                    </tr>
-                    `)}
                 `)}
-            </tbody>
-        </table>
-    </div>
+            `)}
+        </tbody>
+    </table>
     <div class="d-flex justify-content-center">
         ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
         ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
@@ -178,6 +177,21 @@ const filters = (customers, companies, users, products, params) => html`
         </form>
 `;
 
+async function print() {
+    const printContainer = document.getElementById('printContainer');
+
+    // Add print=true to querystring
+    const currentURL = new URLSearchParams(pageCtx.querystring);
+    currentURL.set('print', true);
+    const newURL = currentURL.toString();
+
+    // Get all references without pagination
+    const req = await axios.get(pageCtx.pathname + '?' + newURL);
+    const { orders } = req.data;
+    render(table({ orders, print: true }), printContainer);
+    window.print();
+}
+
 async function loadReferences() {
     try {
         const req = await axios.get(path)
@@ -194,7 +208,7 @@ async function loadReferences() {
 
         return html`
         ${filters(customers, companies, users, products, params)}
-        ${table(orders, prevCursor, nextCursor)}`
+        ${table({ orders, prevCursor, nextCursor })}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
@@ -218,10 +232,13 @@ export function referencesOrdersPage(ctx, next) {
 
     const template = () => html`
         ${nav()}
-        <div class="container-fluid">
-            <button class="btn btn-primary text-end">Принтирай</button>
-            ${until(loadReferences(), spinner)}
+        <div class="container-fluid d-print-none">
+            <button @click=${print} class="btn btn-primary">Принтирай</button>
+            <div id="references" class="table-responsive">
+                ${until(loadReferences(), spinner)}
+            </div>
         </div>
+        <div id="printContainer" class="d-none d-print-block"></div>
     `;
 
     render(template(), container);
