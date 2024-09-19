@@ -1,6 +1,8 @@
 node_modules/
 .DS_Store
 .env
+public
+pm2.log
 # package-lock.json
 server/logs/live.log
 .vscode/settings.json

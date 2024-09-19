@@ -76,7 +76,6 @@ export function loginPage() {
     const loginForm = html`
     <div class="container position-absolute top-50 start-50 translate-middle" style="max-width: 600px">
         <img src="images/logo.png" alt="logo" class="logo d-block m-auto mb-3 w-25">
-        <img src="images/logo.png" alt="logo" class="logo d-block m-auto mb-3 w-25">
         <form @submit=${login} class="d-flex flex-column gap-3 m-auto">
             <div>
                 <label for="username" class="form-label">Име</label>

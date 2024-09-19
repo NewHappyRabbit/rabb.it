@@ -8,19 +8,10 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
-
             - name: Set up SSH Key
               run: |
                   mkdir -p ~/.ssh
-                  echo "-----BEGIN OPENSSH PRIVATE KEY-----
-                  b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-                  QyNTUxOQAAACD97Zc3s77ddBE6mYnQ4wvD4k5ts6m6E7DPGnZk3+MupwAAAKDAl4ydwJeM
-                  nQAAAAtzc2gtZWQyNTUxOQAAACD97Zc3s77ddBE6mYnQ4wvD4k5ts6m6E7DPGnZk3+Mupw
-                  AAAEBHoQAZwFQFNZayswhLEoEA1bJXVxYQimP7Z8jlQB2yvv3tlzezvt10ETqZidDjC8Pi
-                  Tm2zqboTsM8admTf4y6nAAAAGW5ld2hhcHB5cmFiYml0M0BnbWFpbC5jb20BAgME
-                  -----END OPENSSH PRIVATE KEY-----" > ~/.ssh/id_rsa
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
 
                   chmod 600 ~/.ssh/id_rsa
                   ssh-keyscan local.emo-sklad.bg >> ~/.ssh/known_hosts
@@ -28,15 +19,22 @@ jobs:
             - name: Execute Commands on Hostinger VM
               run: |
                   ssh -o StrictHostKeyChecking=no root@local.emo-sklad.bg << 'EOF'
+
                   # Navigate to your app directory
-                  cd /var/www/html/rabb.it
+                  cd /var/www/local.emo-sklad.bg/html/rabb.it
+
+                  eval "$(ssh-agent -s)"
+                  ssh-add ~/.ssh/github-actions
+                  git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
 
                   # Run commands (e.g., git pull, build, restart services, etc.)
+                  git checkout .
+                  git clean -df
                   git pull origin live
                   npm install
                   npm run web-prod
 
                   # Restart services if needed (e.g., PM2, systemctl, etc.)
-                  pm2 restart all
+                  pm2 reload all
                   exit
                   EOF

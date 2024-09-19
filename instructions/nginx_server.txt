@@ -1,0 +1,40 @@
+server {
+    # Redirect HTTP to HTTPS
+    listen 80;
+    listen [::]:80;
+    server_name local.emo-sklad.bg;
+    return 301 https://$host$request_uri;
+}
+
+
+server {
+    # HTTPS
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name local.emo-sklad.bg; # Replace with your domain name
+
+    # Path to SSL certificates
+    ssl_certificate /etc/letsencrypt/live/local.emo-sklad.bg/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/local.emo-sklad.bg/privkey.pem;
+
+    # Frontend application
+    location / {
+        # Where to look for files
+        root /var/www/local.emo-sklad.bg/html/rabb.it/public;
+        # Used for SPA
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Node server
+    # All requests to /server/.....
+    location /server/ {
+        # Remove the "/server/" from the url when redirecting request
+        rewrite /server/(.*) /$1 break;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
