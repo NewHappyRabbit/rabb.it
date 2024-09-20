@@ -15,10 +15,7 @@ export function woocommerceRoutes() {
             const data = req.body;
 
             const { status, message } = await WooHookCreateOrder(data);
-            if (status !== 201) {
-                console.log({ status, message })
-                return res.status(status).send(message);
-            }
+            if (status !== 201) return res.status(status).send(message);
 
             console.log('Order from Woo transfered to app!')
 

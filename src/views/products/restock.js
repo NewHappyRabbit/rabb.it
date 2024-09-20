@@ -84,10 +84,9 @@ function addProduct(e) {
 
     if (e.target.value === '') return;
 
-    console.log((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter')
 
-    // check if copy-pasted or enter was pressed
-    if ((e.ctrlKey && e.key !== 'v' || e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
+    if ((e.ctrlKey && e.key !== 'v') && (e.key !== 'v' && e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
     var product, quantity = 1;
 
@@ -102,8 +101,6 @@ function addProduct(e) {
 
     // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
     const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
-
-    console.log(productInDB)
 
     if (productInDB) {
         // check if product already in table and increase quantity

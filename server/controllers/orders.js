@@ -189,8 +189,6 @@ async function returnProductsQuantities(order) {
                 sizesToReturn = productInDb.sizes.map(s => s.size); // return quantity to all currently existing sizes
             } else sizesToReturn = product.selectedSizes; // else the previously selected sizes
 
-            console.log({ sizesToReturn, productInDb, product })
-
             for (let size of sizesToReturn) {
                 const s = existingProduct.sizes.find(s => s.size === size);
                 // Check if size exists in product (it may have been removed for example)

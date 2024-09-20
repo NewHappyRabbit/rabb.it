@@ -23,7 +23,7 @@ function auth(ctx, next) {
 }
 
 function keybinds(e) {
-    if (!loggedInUser || e.ctrlKey === false) return;
+    if (!loggedInUser || e.ctrlKey === false || e.code !== 'MetaLeft') return;
     if (e.code === 'Digit2') { // CTRL+2 - new order page
         e.preventDefault();
         page('/orders/create');

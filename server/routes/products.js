@@ -77,7 +77,7 @@ export function productsRoutes() {
 
             const file = fs.createWriteStream('public/urls.txt');
             file.on('error', function (err) {
-                console.log(err);
+                console.error(err);
             });
 
             file.write(txt);

@@ -121,7 +121,6 @@ export const CustomerController = {
         return { status: 201 };
     },
     delete: async (id) => {
-        console.log(id, typeof id);
         const customer = await Customer.findById(id);
         if (!customer) return { status: 404, message: 'Партньорът не е намерен' };
 
