@@ -158,7 +158,7 @@ export async function createEditCustomerPage(ctx, next) {
 
                 <div class="col-sm-6">
                     <label for="email" class="form-label">Имейл</label>
-                    <input class="form-control" type="email" id="email" name="email" maxlength="15" .value=${customer?.email || ''} placeholder="пример: rado@abv.bg" autocomplete="off">
+                    <input class="form-control" type="email" id="email" name="email" .value=${customer?.email || ''} placeholder="пример: rado@abv.bg" autocomplete="off">
                 </div>
 
                 <div class="mb-3">
