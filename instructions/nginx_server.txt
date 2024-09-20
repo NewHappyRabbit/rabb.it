@@ -21,6 +21,7 @@ server {
     location / {
         # Where to look for files
         root /var/www/local.emo-sklad.bg/html/rabb.it/public;
+
         # Used for SPA
         try_files $uri $uri/ /index.html;
     }
@@ -36,5 +37,8 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        
+        # Set the max body size to 500MB (for when images are uploaded through forms)
+        client_max_body_size 500M;
     }
 }

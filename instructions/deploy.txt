@@ -13,10 +13,13 @@ For VPS installs with domain on Debian:
 1. Install nginx: https://www.digitalocean.com/community/tutorials/initial-server-setup-with-debian-11
 
 2. Config nginx: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-debian-11
-Use the server blocks from instructions\nginx_server.txt
+- Follow the above tutorial for creating a directory in sites-available and then creating a symlink in sites-enabled
+- Use the server blocks from instructions\nginx_server.txt for the config file (ex local.emo-sklad.bg)
+- Delete the default config file in sites-enabled
 
 2. Install certbot for SSL: https://certbot.eff.org/instructions?ws=nginx&os=pip
 - Do "sudo apt install python3-certbot-nginx" after Step 2.
+- After install, do "nginx -t" to test the ssl config is correct. If so, "nginx -s reload" to load it.
 
 3. Generate SSH key:
 - Run the following command in ~/.ssh: ssh-keygen -t rsa -b 4096 -C "newhappyrabbit3@gmail.com"
