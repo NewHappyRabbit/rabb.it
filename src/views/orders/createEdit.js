@@ -525,7 +525,7 @@ function addProduct(e) {
     if (e.target.value === '') return;
 
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((e.ctrlKey && e.key !== 'v') && (e.key !== 'v' && e.code !== 'MetaLeft') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    if (!(e.ctrlKey && e.key === 'v') && !(e.metaKey && e.key === 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
     var product, quantity = 1;
 
