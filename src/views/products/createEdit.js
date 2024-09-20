@@ -18,10 +18,12 @@ async function loadCategories() {
 
     const options = {
         categories,
-        selected: product && product.category,
+        ...(product && { selected: product.category._id }),
         showNoParent: false,
         disableWithChilden: true
     }
+
+    console.log(options);
 
     return categoriesOptions(options);
 }

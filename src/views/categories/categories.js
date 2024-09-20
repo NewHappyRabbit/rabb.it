@@ -178,7 +178,7 @@ export function categoriesOptions(params) {
 
     const parentCategories = categories.filter(cat => !cat.path);
 
-    var options = showNoParent ? [html`<option value="">Без категория</option>`] : [];
+    var options = showNoParent ? [html`<option value="">Без категория</option>`] : [html`<option disabled ?selected=${!selected} value="">Избери категория</option>`];
     const option = (category) => html`<option ?disabled=${disableWithChilden && categories.some(cat => cat.path?.includes(category.slug))} .selected=${selected && selected == category._id} slug="${category.slug}" value="${category._id}">${category.depth.map(() => '-').join(' ')}${category.name}</option>`;
 
     function recursion(category) {

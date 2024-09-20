@@ -112,7 +112,8 @@ input[readonly] {
 
 /* Fix for border color not being shown because we added border-primary to input (to mark as required)  */
 .form-control.is-invalid,
-.was-validated .form-control:invalid {
+.was-validated .form-control:invalid,
+.form-select.is-invalid {
 	border-color: var(--bs-form-invalid-border-color) !important;
 }
 
