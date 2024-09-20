@@ -1123,6 +1123,7 @@ export async function createEditOrderPage(ctx, next) {
             order = req.data;
             orderType = order.orderType;
             addedProducts = order.products;
+            documentType = order.documentType;
 
             for (let product of addedProducts) {
                 product.index = addedProductsIndex++;
