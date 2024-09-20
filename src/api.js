@@ -302,7 +302,7 @@ export function transliterate(word) {
 }
 
 export function slugify(word) {
-    return transliterate(word.toLowerCase().replace(/ /g, '-'))
+    return transliterate(word.toLowerCase().replace(/ /g, '-'));
 }
 
 export function reverseTranslitarate(word) {

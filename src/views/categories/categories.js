@@ -172,7 +172,7 @@ export function categoriesOptions(params) {
 
     // add depth value
     for (let category of categories)
-        category.depth = category.path ? category.path.split(',').filter(function (el) {
+        category.depth = category.path ? category.path.split(/\w,\w/gm).filter(function (el) {
             return el != "";
         }) : [];
 
