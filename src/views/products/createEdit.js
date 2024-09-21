@@ -253,7 +253,7 @@ function updateSizeQuantity(e) {
     // TODO Fix the input price to be decimal instead of integer, since other shops may have products that are in kilograms, meters, etc.
     fixInputPrice({ target: e.target, int: true });
 
-    const size = selectedSizes.find(s => s.size === name.split('-')[0]);
+    const size = selectedSizes.find(s => s.size === name.split('-quantity')[0]);
     size.quantity = Number(value);
 
     updateTotalQty();
