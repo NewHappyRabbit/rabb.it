@@ -27,7 +27,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname + '/public'),
         filename: '[name].[contenthash].js',
-        clean: true,
+        // clean: true,
     },
     optimization: {
         runtimeChunk: 'single',
