@@ -263,7 +263,7 @@ function updateSizeQuantity(e) {
 
 const sizesTemplate = () => html`
     ${selectedSizes.map(size => html`
-        <div class="input-group mb-2 me-2" style="width: 30%">
+        <div class="input-group mb-2 me-2" style="width: 45%">
             <label for="${size.size}-quantity" class="input-group-text border-primary">${size.size}</label>
             <input class="form-control border-primary" type="text" @keyup=${updateSizeQuantity} name="${size.size}-quantity" id="${size.size}-quantity" inputmode="decimal" required .value=${size.quantity} autocomplete="off">
             <button class="btn btn-outline-secondary bgDangerHover" id="size-${size.size}" @click=${removeSize} type="button">X</button>
