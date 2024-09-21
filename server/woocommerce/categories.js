@@ -28,11 +28,8 @@ export async function WooCreateCategory(category) {
         if (parent) data.parent = parent.woocommerce.id;
     }
 
-    if (process.env.ENV !== 'dev' && category.image) {
-        //TODO Test if images are uploading on live site
-        //TODO Test in dev if image uploads successfully
+    if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: `${process.env.URL}${category.image}` };
-    }
 
     WooCommerce.post("products/categories", data).then((response) => {
         // Success
@@ -63,13 +60,8 @@ export async function WooEditCategory(category) {
         if (parent) data.parent = parent.woocommerce.id;
     }
 
-    if (process.env.ENV !== 'dev' && category.image) {
-        //TODO Test if images are uploading on live site
-        //TODO Test in dev if image uploads successfully
-        //TODO I think if no image is passed it will delete the images in the product, test to see. If not, check if the img is different
-
+    if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: `${process.env.URL}${category.image}` };
-    }
 
     WooCommerce.put(`products/categories/${category.woocommerce.id}`, data).then(() => {
         // Success

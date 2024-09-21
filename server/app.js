@@ -41,7 +41,6 @@ server.listen(port, () => {
 
 // Socket.io
 const socketIoPath = '/socket.io/';
-// const socketIoPath = process.env.ENV === 'dev' ? '/socket.io/' : '/server/socket.io/';
 export const io = new Server(server, {
     cors: {
         origin: corsURLS,

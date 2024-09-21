@@ -157,7 +157,7 @@ export async function WooCreateProduct(product) {
     }
 
     // If not in live environment, set product status as private to not show it for clients
-    if (process.env.ENV !== 'live') {
+    if (process.env.ENV === 'dev') {
         data.status = 'private';
         data.catalog_visibility = 'hidden';
     }
