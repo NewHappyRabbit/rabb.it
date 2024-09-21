@@ -112,8 +112,6 @@ export function printLabel(product, quantity = 1) {
 
     if (!product.barcode || !product.name || !product.wholesalePrice || !product.code) return console.error('Missing product data for printing label');
 
-    console.log(product, quantity);
-
     const zplCommand = `^XA
 ~TA024
 ~JSN
