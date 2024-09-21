@@ -106,7 +106,8 @@ const sizesTemplate = (sizes) => html`
 `;
 
 function uslugifyPath(path) {
-    var newPath = path.split(/\w,\w/gm).filter(e => e != '');
+    var newPath = path.split(',').filter(e => e != '');
+    console.log({ path, newPath });
     newPath = newPath.map(e => unslugify(e));
     return newPath.join(' > ');
 }

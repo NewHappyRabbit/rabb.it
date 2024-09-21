@@ -302,7 +302,7 @@ export function transliterate(word) {
 }
 
 export function slugify(word) {
-    return transliterate(word.toLowerCase().replace(/ /g, '-'));
+    return transliterate(word.toLowerCase().replace(/ /g, '-').replace(',', '%%%'));
 }
 
 export function reverseTranslitarate(word) {
@@ -312,7 +312,7 @@ export function reverseTranslitarate(word) {
 }
 
 export function unslugify(word) {
-    var newWord = reverseTranslitarate(word.toLowerCase().replace(/-/g, ' '));
+    var newWord = reverseTranslitarate(word.toLowerCase().replace(/-/g, ' ').replace(/%%%/, ','));
     return newWord.charAt(0).toUpperCase() + newWord.slice(1);
 }
 
