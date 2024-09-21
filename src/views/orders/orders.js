@@ -27,7 +27,8 @@ function switchPage(cursor) {
     }
 }
 
-const table = (orders, prevCursor, nextCursor) => html`
+const table = ({ count, orders, prevCursor, nextCursor }) => html`
+    <div class="mt-2 mb-2">Брой документи: ${count}</div>
     <div class="table-responsive">
         <table class="mt-3 table table-striped table-hover text-center align-middle">
             <thead>
@@ -89,7 +90,7 @@ async function applyFilters(e) {
     // remove empty fields
     Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
 
-    if (data.length === 0)
+    if (Object.keys(data).length === 0)
         page('/orders')
     else if (data.length === 1)
         page(`/orders?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
@@ -100,7 +101,7 @@ async function applyFilters(e) {
 }
 
 // TODO Add filter for only woocommerce or only app orderes
-const filters = (customers, companies, params) => html`
+const filters = ({ customers, companies, params }) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
             <div class="col-6 col-sm">
                 <label for="customer">Партньор:</label>
@@ -160,15 +161,15 @@ const filters = (customers, companies, params) => html`
 
 async function loadSales() {
     try {
-        const { orders, prevCursor, nextCursor } = (await axios.get(path)).data;
+        const { count, orders, prevCursor, nextCursor } = (await axios.get(path)).data;
 
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers', { params: { page: 'orders' } })).data.customers;
         const companies = (await axios.get('/companies')).data.companies;
 
         return html`
-        ${filters(customers, companies, params)}
-        ${table(orders, prevCursor, nextCursor)}`
+        ${filters({ customers, companies, params })}
+        ${table({ count, orders, prevCursor, nextCursor })}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');

@@ -301,6 +301,8 @@ describe('GET /products/:id', async () => {
         slug: "test",
     }).save();
 
+    //TODO Add expect(count) tests
+    // TODO Add onlyHidden tests
     test('Get product', async () => {
         const pr = await new Product({
             name: "Test",

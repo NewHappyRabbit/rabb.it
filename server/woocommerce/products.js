@@ -27,9 +27,9 @@ export async function WooCheckProductAttributesINIT() {
             slug: 'size',
             order_by: 'name_num'
         },
-        {
-            name: 'Тест',
-            slug: 'test',
+        { // This is used for the viber url to display size correctly
+            name: 'Размер за Viber',
+            slug: 'size_viber',
             order_by: 'name_num'
         },
     ];
@@ -43,15 +43,15 @@ export async function WooCheckProductAttributesINIT() {
                     found = true;
 
                     // Check if attribute exists in mongodb
-                    const inMongo = mongoAttributes.find(m => m.slug == attribute.slug);
+                    const inMongo = mongoAttributes.find(m => 'pa_' + m.slug == existingAttribute.slug);
 
                     if (inMongo) {
                         inMongo.woocommerce.id = existingAttribute.id;
                         inMongo.save();
                     } else {
                         attribute.woocommerce = { id: existingAttribute.id };
+                        ProductAttribute.create(attribute);
                     }
-                    ProductAttribute.create(attribute);
 
                     break;
                 }
@@ -89,7 +89,6 @@ export async function WooCheckProductAttributesINIT() {
         console.error("Response Data:", error.response.data);
     });
 }
-
 export async function WooCreateProductsINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
@@ -168,7 +167,11 @@ export async function WooCreateProduct(product) {
 
         const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
         const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+        const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
         const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+        const simpleSizes = product.sizes.map(s => s.size);
+        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
 
         data.attributes = [
             { // pcs
@@ -181,7 +184,13 @@ export async function WooCreateProduct(product) {
                 id: sizeId,
                 visible: true,
                 variation: false,
-                options: product.sizes.map(s => s.size)
+                options: simpleSizes
+            },
+            { // viber size
+                id: viberSizeId,
+                visible: false,
+                variation: false,
+                options: viberSizes// Get the first and last size and do 'X-Y'
             },
             { // piecePrice
                 id: piecePriceId,
@@ -236,7 +245,11 @@ export async function WooEditProduct(oldProductData, newProductData) {
 
         const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
         const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+        const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
         const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+        const simpleSizes = newProductData.sizes.map(s => s.size);
+        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
 
         data.attributes = [
             { // pcs
@@ -249,7 +262,13 @@ export async function WooEditProduct(oldProductData, newProductData) {
                 id: sizeId,
                 visible: true,
                 variation: false,
-                options: newProductData.sizes.map(s => s.size)
+                options: simpleSizes
+            },
+            { // viber size
+                id: viberSizeId,
+                visible: false,
+                variation: false,
+                options: viberSizes // Get the first and last size and do 'X-Y'
             },
             { // piecePrice
                 id: piecePriceId,

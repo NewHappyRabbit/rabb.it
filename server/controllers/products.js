@@ -66,7 +66,7 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
-    get: async ({ page, cursor, search }) => {
+    get: async ({ page, cursor, search, onlyHidden }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -91,13 +91,17 @@ export const ProductController = {
 
         cursor && query.$and.push({ _id: { $lte: cursor } });
 
+        if (onlyHidden && onlyHidden === 'true')
+            query.$and.push({ hidden: true });
+
         if (search)
             query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
 
         const products = await Product.find(query).limit(limit).sort({ _id: -1 }).populate('category', 'name path');
+        const count = await Product.countDocuments(query);
 
         if (!products || products.length === 0)
-            return { products: [], prevCursor, nextCursor, status: 200 };
+            return { count, products: [], prevCursor, nextCursor, status: 200 };
 
         // get next product to generate cursor for traversing
         if (products.length === limit)
@@ -113,7 +117,7 @@ export const ProductController = {
             prevCursor = prevProducts[prevProducts.length - limit + 1]?._id || null;
         }
 
-        return { products, prevCursor, nextCursor, status: 200 };
+        return { count, products, prevCursor, nextCursor, status: 200 };
     },
     getById: async (id) => {
         const product = await Product.findById(id);

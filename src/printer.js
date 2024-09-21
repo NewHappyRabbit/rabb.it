@@ -102,13 +102,17 @@ export function setSelectedPrinter() {
     selectedPrinter = printer;
 }
 
-export function printLabel(product = { barcode, name, sizes, code, wholesalePrice }, quantity = 1) {
+export function printLabel(product, quantity = 1) {
     // The below code was generated with these steps:
     // 1. Install ZebraDesigner3
     // 2. Setup the label however you want
     // 3. Go to File > Print > check "Print to file" > click "Print"
     // 4. Save the file and then edit with notepad
     // 5. First line is some thrash, so skip it and copy everything else. Done!
+
+    if (!product.barcode || !product.name || !product.wholesalePrice || !product.code) return console.error('Missing product data for printing label');
+
+    console.log(product, quantity);
 
     const zplCommand = `^XA
 ~TA024
@@ -134,7 +138,7 @@ export function printLabel(product = { barcode, name, sizes, code, wholesalePric
 ^LS0
 ^BY3,2,72^FT87,120^BEN,,Y,N
 ^FH\^FD${product.barcode}^FS
-^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product?.sizes?.length > 0 ? `[${product.sizes.map(s => s.size).join(', ')}]` : ''}^FS^CI27
+^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes.map(s => s.size).join(', ')}]` : ''}^FS^CI27
 ^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? product.wholesalePrice / product.sizes.length : product.wholesalePrice)}^FS^CI27
 ^FT303,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
 ^PQ${quantity},0

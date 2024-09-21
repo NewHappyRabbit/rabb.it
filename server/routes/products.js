@@ -36,7 +36,7 @@ export function productSockets(socket) {
             wholesalePrice: product.wholesalePrice
         }
 
-        if (product.sizes.length)
+        if (product.sizes?.length)
             minifiedProduct.sizes = product.sizes;
 
         io.in('printer').emit('print', minifiedProduct, quantity);
@@ -48,13 +48,13 @@ export function productsRoutes() {
 
     productsRouter.get('/products', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { cursor, search, page } = req.query;
+            const { cursor, search, onlyHidden, page } = req.query;
 
-            const { products, prevCursor, nextCursor, status, message } = await ProductController.get({ page, cursor, search });
+            const { count, products, prevCursor, nextCursor, status, message } = await ProductController.get({ page, cursor, search, onlyHidden });
             if (status !== 200)
                 return res.status(status).send(message);
 
-            res.json({ products, prevCursor, nextCursor });
+            res.json({ count, products, prevCursor, nextCursor });
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -117,7 +117,7 @@ export function productsRoutes() {
                 WooCreateProduct(product);
 
             if (data.printLabel) {
-                if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
+                if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
                 io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes }, product.quantity);
             }
 
@@ -148,7 +148,7 @@ export function productsRoutes() {
                     product.quantity = found.quantity;
                 }
 
-                if (io.in('printer').length === 0) return; // if no pc with printer connected, do nothing
+                if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
                 io.in('printer').emit('printRestock', productsToPrint);
             }
 

@@ -21,9 +21,9 @@ export async function ordersRoutes() {
 
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { orders, prevCursor, nextCursor } = await OrderController.get({ ...req.query });
+            const { count, orders, prevCursor, nextCursor } = await OrderController.get({ ...req.query });
 
-            res.json({ orders, prevCursor, nextCursor });
+            res.json({ count, orders, prevCursor, nextCursor });
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

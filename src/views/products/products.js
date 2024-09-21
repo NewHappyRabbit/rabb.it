@@ -10,7 +10,7 @@ import { spinner } from '@/views/components';
 import { loggedInUser } from '@/views/login';
 import { socket } from '@/api';
 
-var path, pageCtx;
+var path, pageCtx, selectedFilters = {};
 
 
 var selectedProduct;
@@ -18,11 +18,9 @@ var selectedProduct;
 async function loadProducts() {
     try {
         const req = await axios.get(path)
-        const products = req.data.products;
-        const prevCursor = req.data.prevCursor;
-        const nextCursor = req.data.nextCursor;
+        const { products, prevCursor, nextCursor, count } = req.data
 
-        return table(products, prevCursor, nextCursor);
+        return table({ count, products, prevCursor, nextCursor });
     } catch (err) {
         console.error(err);
         alert('Грешка при зареждане на продуктите');
@@ -107,12 +105,12 @@ const sizesTemplate = (sizes) => html`
 
 function uslugifyPath(path) {
     var newPath = path.split(',').filter(e => e != '');
-    console.log({ path, newPath });
     newPath = newPath.map(e => unslugify(e));
     return newPath.join(' > ');
 }
 
-const table = (products, prevCursor, nextCursor) => html`
+const table = ({ count, products, prevCursor, nextCursor }) => html`
+    <div class="mt-2 mb-2">Брой артикули: ${count}</div>
     <div class="table-responsive mt-2">
         <table class="table table-striped table-hover text-center">
                 <thead>
@@ -170,32 +168,50 @@ function switchPage(cursor) {
     page(uri);
 }
 
+async function applyFilters(e) {
+    e.preventDefault();
+
+    const formData = new FormData(document.getElementById('filters'));
+    const data = Object.fromEntries(formData.entries());
+
+    if (data.onlyHidden)
+        data.onlyHidden = true;
+
+    // remove empty fields
+    Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
+
+    if (Object.keys(data).length === 0)
+        page('/products')
+    else if (data.length === 1)
+        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
+    else {
+        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
+        page(`/products?${uri}`);
+    }
+}
+
 export function productsPage(ctx, next) {
     path = ctx.path;
     pageCtx = ctx;
 
+    // check if filters are applied
+    if (ctx.querystring)
+        selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
+    else
+        selectedFilters = {};
+
     selectedProduct = null;
 
-    function findProduct(e) {
-        const search = e.target.value;
-        const lastSearch = ctx.querystring.split('search=')[1]?.split('&')[0];
-
-        if (lastSearch === search) // Skip
-            return;
-
-        var uri;
-        if (search.length == 0) // Remove from query
-            uri = removeQuery(ctx, 'search');
-        else
-            uri = addQuery(ctx, 'search', search);
-
-        page(uri);
-    }
-
     const filters = () => html`
-    <div class="col-9 col-sm">
-        <label for="customer">Продукт:</label>
-        <input @keyup=${delay(findProduct, 300)} list="customersList" placeholder="Въведи име или код" id="customer" class="form-control" autocomplete="off">
+    <div class="col-6 col-sm">
+        <label for="search">Продукт:</label>
+        <input @keyup=${delay(applyFilters, 300)} .value=${selectedFilters?.search || ''} placeholder="Въведи име или код" id="search" name="search" class="form-control" autocomplete="off">
+    </div>
+    <div class="col-6 col-sm">
+        <div class="form-check form-switch p-0">
+            <label class="form-check-label d-block" for="onlyHidden">Само скрити:</label>
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyHidden" ?checked=${selectedFilters?.onlyHidden} name="onlyHidden">
+        </div>
     </div>
 `;
 
@@ -206,9 +222,9 @@ export function productsPage(ctx, next) {
         <div class="container-fluid">
             <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
             <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
-            <div id="filters" class="mt-2 row align-items-end w-100">
+            <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
                 ${filters()}
-            </div>
+            </form>
             ${until(loadProducts(), spinner)}
         </div >
     `;

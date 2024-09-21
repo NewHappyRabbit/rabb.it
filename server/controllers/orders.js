@@ -236,6 +236,7 @@ export const OrderController = {
         let query = {
             $and: [{ deleted: { $ne: true } }]
         };
+
         var prevCursor = null;
         var nextCursor = null;
         var limit = 15;
@@ -267,8 +268,9 @@ export const OrderController = {
         }
 
         const orders = await Order.find(query).limit(limit).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
+        const count = await Order.countDocuments(query);
 
-        if (!orders || orders.length === 0) return { orders: [], prevCursor, nextCursor };
+        if (!orders || orders.length === 0) return { count, orders: [], prevCursor, nextCursor };
 
         // get next order to generate cursor for traversing
         if (orders.length === limit)
@@ -284,7 +286,7 @@ export const OrderController = {
             prevCursor = prevOrders[prevOrders.length - limit + 1]?._id || null;
         }
 
-        return { orders, prevCursor, nextCursor };
+        return { count, orders, prevCursor, nextCursor };
     },
     getParams: () => {
         var data = {
