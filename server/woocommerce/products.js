@@ -193,7 +193,6 @@ export async function WooCreateProduct(product) {
     }
 
     if (process.env.ENV !== 'dev' && product.image) {
-        //TODO Test if images are uploading on live site
         data.images = [{ src: `${process.env.URL}${product.image}` }];
 
         if (product.additionalImages) {
@@ -232,10 +231,36 @@ export async function WooEditProduct(oldProductData, newProductData) {
     const category = await Category.findById(newProductData.category);
     if (category) data.categories = [{ id: category.woocommerce.id }];
 
-    //TODO TEST IF IMAGES WORK ON LIVE SERVER
-    //TODO I think if no image is passed it will delete the images in the product, test to see. If not, check if the img is different
+    if (newProductData.sizes.length > 0) {
+        const mongoAttributes = await ProductAttribute.find({});
+
+        const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
+        const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+        const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+        data.attributes = [
+            { // pcs
+                id: pcsId,
+                visible: true,
+                variation: false,
+                options: newProductData.sizes.length.toString()
+            },
+            { // size
+                id: sizeId,
+                visible: true,
+                variation: false,
+                options: newProductData.sizes.map(s => s.size)
+            },
+            { // piecePrice
+                id: piecePriceId,
+                visible: true,
+                variation: false,
+                options: (newProductData.wholesalePrice / newProductData.sizes.length).toFixed(2).toString()
+            },
+        ]
+    } else data.attributes = [];
+
     if (process.env.ENV !== 'dev' && newProductData.image) {
-        //TODO Test if images are uploading on live site
         data.images = [{ src: `${process.env.URL}${newProductData.image}` }];
 
         if (newProductData.additionalImages) {

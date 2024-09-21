@@ -617,5 +617,6 @@ export async function createEditProductPage(ctx, next) {
     if (!product) {
         document.getElementById('deliveryPricePerUnit').value = 1;
         document.getElementById('deliveryPrice').value = 1;
+        document.getElementById('retailPrice').value = 2;
     }
 }

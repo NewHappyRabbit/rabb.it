@@ -63,7 +63,8 @@ export function productsRoutes() {
 
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true } }).select('woocommerce.permalink -_id').lean();
+            const hidden = req.query.hidden === 'true';
+            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden }).select('woocommerce.permalink -_id').lean();
 
             const urls = productsURLS.map(p => p.woocommerce.permalink);
 
