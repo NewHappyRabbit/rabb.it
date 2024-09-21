@@ -612,4 +612,10 @@ export async function createEditProductPage(ctx, next) {
     // If product has sizes, enable deliveryPricePerUnit
     if (selectedSizes.length)
         document.getElementById('deliveryPricePerUnit').disabled = false;
+
+    //TODO REMOVE BELOW CODE AFTER INITAL PRODUCTS ARE ADDED
+    if (!product) {
+        document.getElementById('deliveryPricePerUnit').value = 1;
+        document.getElementById('deliveryPrice').value = 1;
+    }
 }
