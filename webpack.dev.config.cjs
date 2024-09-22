@@ -24,10 +24,9 @@ module.exports = {
         ]
     },
     output: {
-        path: path.resolve(__dirname + '/public'),
-        filename: '[name].js',
-        // filename: '[name].[contenthash].js',
-        // clean: true
+        path: path.resolve(__dirname + '/public/dist'),
+        filename: '[name].[contenthash].js',
+        clean: true
     },
     optimization: {
         runtimeChunk: 'single',
@@ -44,21 +43,19 @@ module.exports = {
     devtool: 'eval-source-map',
     plugins: [
         new MiniCssExtractPlugin({
-            filename: '[name].css',
-            // filename: '[name].[contenthash].css',
+            filename: '[name].[contenthash].css',
         }),
         new CompressionPlugin({
             test: /\.js(\?.*)?$/i,
         }),
         new HtmlWebpackPlugin({
-            // hash: true,
-            filename: 'index.html',
+            filename: path.resolve(__dirname, 'public/', 'index.html'),
             template: './src/index.html',
             base: '/'
         }),
         new CopyPlugin({
             patterns: [
-                { from: "src/static" },
+                { from: "src/static", to: path.resolve(__dirname, 'public') },
             ],
             options: {
                 concurrency: 100,
