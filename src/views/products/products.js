@@ -66,7 +66,7 @@ function onSubmitPrint(e) {
 
     const qty = document.getElementById('printQty');
 
-    socket.emit('send-print', selectedProduct, qty.value);
+    socket.emit('send-print', selectedProduct, Number(qty.value));
 
     qty.value = 1;
 }

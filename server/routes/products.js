@@ -27,7 +27,7 @@ export function productSockets(socket) {
     })
 
     socket.on('send-print', (product, quantity) => {
-        if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
+        if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
         if (!product || !product.name || !product.code || !product.barcode || !product.wholesalePrice || !quantity) return;
         const minifiedProduct = {
             name: product.name,
@@ -117,7 +117,7 @@ export function productsRoutes() {
                 WooCreateProduct(product);
 
             if (data.printLabel) {
-                if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
+                if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
                 io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes }, product.quantity);
             }
 
@@ -148,7 +148,7 @@ export function productsRoutes() {
                     product.quantity = found.quantity;
                 }
 
-                if (io.sockets.adapter.rooms.get("printer") !== undefined) return; // if no pc with printer connected, do nothing
+                if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
                 io.in('printer').emit('printRestock', productsToPrint);
             }
 
