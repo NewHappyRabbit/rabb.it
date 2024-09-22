@@ -123,7 +123,7 @@ const table = ({ count, products, prevCursor, nextCursor }) => html`
                         <th scope="col">Размери</th>
                         <th scope="col" class="text-nowrap">Доставна</th>
                         <th scope="col" class="text-nowrap">Едро</th>
-                        <th scope="col">Дребно</th>
+                        <!-- <th scope="col">Дребно</th> -->
                         <th scope="col">Действия</th>
                     </tr>
                 </thead>
@@ -137,14 +137,14 @@ const table = ({ count, products, prevCursor, nextCursor }) => html`
                             <td class="text-nowrap">${product.quantity} бр.</td>
                             <td>${product.sizes.length > 0 ? sizesTemplate(product.sizes) : ''}</td>
                             <td class="text-nowrap">
-                                ${formatPrice(product.deliveryPrice)}
-                                <div class="text-secondary">${product.sizes.length > 0 ? formatPrice(product.deliveryPrice / product.sizes.length) : ''}</div>
+                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.deliveryPrice / product.sizes.length)}/бр.</div>` : ''}
+                                <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.deliveryPrice)}</div>
                             </td>
                             <td class="text-nowrap">
-                                ${formatPrice(product.wholesalePrice)}
-                                <div class="text-secondary">${product.sizes.length > 0 ? formatPrice(product.wholesalePrice / product.sizes.length) : ''}</div>
+                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / product.sizes.length)}/бр.</div>` : ''}
+                                <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.wholesalePrice)}</div>
                             </td>
-                            <td class="text-nowrap">${formatPrice(product.retailPrice)}</td>
+                            <!-- <td class="text-nowrap">${formatPrice(product.retailPrice)}</td> -->
                             <td class="text-nowrap">
                                 <a href="/products/${product._id}" class="btn btn-primary"><i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</span></a>
                                 <button @click=${() => selectedProduct = product} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"> Етикети</span></button>
@@ -152,13 +152,13 @@ const table = ({ count, products, prevCursor, nextCursor }) => html`
                             </td>
                         </tr>
                     `)}
-                </tbody>
-            </table>
-            <div class="d-flex justify-content-center">
-                ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
-                ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
-            </div>
-    </div>`;
+                </tbody >
+            </table >
+    <div class="d-flex justify-content-center">
+        ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
+        ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
+    </div>
+    </div > `;
 
 function switchPage(cursor) {
     var uri;
@@ -183,10 +183,10 @@ async function applyFilters(e) {
     if (Object.keys(data).length === 0)
         page('/products')
     else if (data.length === 1)
-        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
+        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]} `);
     else {
-        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
-        page(`/products?${uri}`);
+        const uri = Object.keys(data).map(key => `${key}=${data[key]} `).join('&');
+        page(`/products?${uri} `);
     }
 }
 
@@ -203,9 +203,9 @@ export function productsPage(ctx, next) {
     selectedProduct = null;
 
     const filters = () => html`
-    <div class="col-6 col-sm">
+    <div class="col-6 col-sm" >
         <label for="search">Продукт:</label>
-        <input @keyup=${delay(applyFilters, 300)} .value=${selectedFilters?.search || ''} placeholder="Въведи име или код" id="search" name="search" class="form-control" autocomplete="off">
+        <input @keyup=${delay(applyFilters, 300)} .value = ${selectedFilters?.search || ''} placeholder = "Въведи име или код" id = "search" name = "search" class="form-control" autocomplete = "off" >
     </div>
     <div class="col-6 col-sm">
         <div class="form-check form-switch p-0">
@@ -219,12 +219,12 @@ export function productsPage(ctx, next) {
         ${deleteModal()}
         ${printModal()}
         ${nav()}
-        <div class="container-fluid">
-            <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
-            <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
-            <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
-                ${filters()}
-            </form>
+<div class="container-fluid">
+    <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
+    <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
+    <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
+    ${filters()}
+</form>
             ${until(loadProducts(), spinner)}
         </div >
     `;

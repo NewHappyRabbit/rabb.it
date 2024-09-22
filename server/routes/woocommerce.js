@@ -1,10 +1,12 @@
-import { permit } from "../middleware/auth.js";
 import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooHookAuth } from '../middleware/woocommerce.js'
 import { WooHookCreateOrder } from "../woocommerce/orders.js";
+import { WooCommerce } from "../config/woocommerce.js";
 
 export function woocommerceRoutes() {
+    if (!WooCommerce) return;
+
     const woocommerceRoutes = express.Router();
     woocommerceRoutes.use(WooHookAuth);
 

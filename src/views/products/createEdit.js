@@ -173,6 +173,16 @@ function removeSize(e) {
 const quantityTemplate = () => html`
         <div class="row mb-3" id="qtyTemplate">
             <div class="col-12 col-sm-4 mb-3">
+                <label for="size" class="form-label">Размери | Суфикс</label>
+                <div class="input-group">
+                    <input class="form-control" name="size" id="size" autocomplete="off"">
+                    <input class="form-control" name="suffix" id="suffix" autocomplete="off" placeholder="г. / м.">
+                    <button @click=${addSize} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+                </div>
+                <div id="addedSizes" class="d-flex gap-1 mt-1 flex-wrap"></div>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-3">
                 <label for="quantity" class="form-label">Брой | Мярка</label>
                 <div class="input-group">
                     <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
@@ -190,16 +200,6 @@ const quantityTemplate = () => html`
                 <label for="minQty" class="form-label">Мин. брой за на едро</label>
                 <input class="form-control" type="number" inputmode="numeric" name="minQty" id="minQty" min="0" step="1" aria-describedby="minQtyHelp" .value=${product && product.minQty} autocomplete="off">
                 <div id="minQtyHelp" class="form-text">Бройки които да се запазят за продажби на едро. Няма да може да се продават на дребно.</div>
-            </div>
-
-            <div class="col-12 col-sm-4 mb-3">
-                <label for="size" class="form-label">Размери | Суфикс</label>
-                <div class="input-group">
-                    <input class="form-control" name="size" id="size" autocomplete="off"">
-                    <input class="form-control" name="suffix" id="suffix" autocomplete="off" placeholder="г. / м.">
-                    <button @click=${addSize} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
-                </div>
-                <div id="addedSizes" class="d-flex gap-1 mt-1 flex-wrap"></div>
             </div>
 
             <div class="col-12 col-sm-4">
@@ -307,11 +307,6 @@ function validateProduct(data) {
     if (!data.quantity)
         invalidFlag = markInvalid('quantity');
     else markValid('quantity');
-
-    // TODO ???? Should the user be able to convert from existing variable product to simple
-    /* if (editPage && product?.sizes?.length > 0 && selectedSizes.length === 0)
-        invalidFlag = markInvalid('size');
-    else markValid('size'); */
 
     // Check if each size has a quantity
     if (selectedSizes.length > 0) {
@@ -613,7 +608,7 @@ export async function createEditProductPage(ctx, next) {
     if (selectedSizes.length)
         document.getElementById('deliveryPricePerUnit').disabled = false;
 
-    //TODO REMOVE BELOW CODE AFTER INITAL PRODUCTS ARE ADDED
+    //FIXME REMOVE BELOW CODE AFTER INITAL PRODUCTS ARE ADDED
     if (!product) {
         document.getElementById('deliveryPricePerUnit').value = 1;
         document.getElementById('deliveryPrice').value = 1;
