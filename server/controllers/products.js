@@ -2,7 +2,7 @@ import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
-import { uploadImg } from "./common.js";
+import { roundPrice, uploadImg } from "./common.js";
 import fs from 'fs';
 
 async function validateProduct(data) {
@@ -185,6 +185,10 @@ export const ProductController = {
         const barcodeExists = await Product.findOne({ barcode: data.barcode });
         if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод' };
 
+        // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
+        if (!data.description || data.description == '' && data.sizes.length > 0)
+            data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length}бр. в серия по ${(data.wholesalePrice / data.sizes.length).toFixed(2)} лв. - Код ${data.code}`;
+
         const product = await Product.create(data);
         return { product, status: 201 };
     },
@@ -317,6 +321,10 @@ export const ProductController = {
             const newCode = data.code.toString().padStart(12, '0'); // pad code with 0s to 12 digits
             data.barcode = `${newCode}${checkDigitEAN13(newCode.toString())}`;
         }
+
+        // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
+        if (!data.description || data.description == '' && data.sizes.length > 0)
+            data.description = `${data.name} - от ${data.sizes[0].size} до ${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length}бр. в серия по ${roundPrice(data.wholesalePrice / data.sizes.length).toFixed(2)} лв. - Код ${data.code}`;
 
         await product.updateOne(data, { new: true });
         return { status: 201, product };

@@ -30,3 +30,8 @@ export async function uploadImg(image, folder) {
 
     return { url, path };
 }
+
+export function roundPrice(price) {
+    // Round to 1 decimal
+    return Math.round(price * 10) / 10;
+}
