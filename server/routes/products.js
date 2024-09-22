@@ -116,14 +116,12 @@ export function productsRoutes() {
             if (data.hidden !== true)// if product should be hidden from website
                 WooCreateProduct(product);
 
-            if (data.printLabel) {
-                if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
+            // if no pc with printer connected, do nothing
+            if (data.printLabel && io.sockets.adapter.rooms.get("printer") !== undefined)
                 io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes }, product.quantity);
-            }
 
             res.status(status).json(product);
         } catch (error) {
-            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -139,7 +137,8 @@ export function productsRoutes() {
             if (status !== 200)
                 return res.status(status).send(message);
 
-            if (printLabelCheck) {
+            // if no pc with printer connected, do nothing
+            if (printLabelCheck && io.sockets.adapter.rooms.get("printer") !== undefined) {
                 const productsToPrint = await Product.find({ _id: { $in: doneProducts.map(p => p._id) } }).select('name code barcode sizes wholesalePrice');
 
                 // set the quantity to what we just restocked before sending to print
@@ -149,7 +148,6 @@ export function productsRoutes() {
                     product.quantity = found.quantity;
                 }
 
-                if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
                 io.in('printer').emit('printRestock', productsToPrint);
             }
 
@@ -175,8 +173,9 @@ export function productsRoutes() {
             if (product.hidden !== true) // if hidden then its not in the website
                 WooEditProduct(product, data);
 
-            res.status(status).send();
+            res.status(status).json(product);
         } catch (error) {
+            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

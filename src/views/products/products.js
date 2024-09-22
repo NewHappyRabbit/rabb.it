@@ -5,7 +5,7 @@ import { html, render } from 'lit/html.js';
 import { nav } from '@/views/nav.js';
 import { until } from 'lit/directives/until.js';
 import axios from 'axios';
-import { addQuery, delay, removeQuery, unslugify, formatPrice } from '@/api';
+import { addQuery, delay, unslugify, formatPrice } from '@/api';
 import { spinner } from '@/views/components';
 import { loggedInUser } from '@/views/login';
 import { socket } from '@/api';

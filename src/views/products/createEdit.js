@@ -9,6 +9,7 @@ import { nav } from '@/views/nav';
 import { submitBtn, toggleSubmitBtn } from '@/views/components';
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
+import page from 'page';
 
 var selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
 
@@ -354,8 +355,7 @@ async function updateProduct(e) {
     formData.set('sizes', JSON.stringify(data.sizes));
 
     const invalidData = validateProduct(data);
-    if (invalidData)
-        return toggleSubmitBtn();
+    if (invalidData) return toggleSubmitBtn();
 
     form.classList.add('was-validated');
     form.classList.remove('needs-validation');
@@ -365,23 +365,6 @@ async function updateProduct(e) {
     try {
         const req = product ? await axios.put(`/products/${product._id}`, formData) : await axios.post('/products', formData);
         if (req.status === 201) {
-            //FIXME DELETE AFTER SVILEN ENTERS ALL HIS PRODUCTS IN DB
-            const newProduct = req.data;
-            console.log(newProduct);
-
-            // create empty input field text
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = newProduct.description;
-
-            // copy to clipboard
-            input.select();
-            input.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(input.value);
-            // FIXME DELETE END LINE
-
-
-
             toggleSubmitBtn();
 
             if (!product) { // if product creation and not editing
@@ -404,6 +387,11 @@ async function updateProduct(e) {
             document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             document.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
             alertEl.textContent = `Продуктът е ${product ? 'редактиран' : 'създаден'} успешно.`;
+
+            //FIXME DELETE AFTER SVILEN ENTERS ALL HIS PRODUCTS IN DB
+            const newProduct = req.data;
+            page(`/products/${newProduct._id}`);
+            // FIXME DELETE END LINE
         }
     } catch (err) {
         toggleSubmitBtn();

@@ -185,8 +185,6 @@ export const ProductController = {
         const barcodeExists = await Product.findOne({ barcode: data.barcode });
         if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод' };
 
-        console.log(data);
-
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
         if (!data.description && data.sizes.length > 0)
             data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length}бр. в серия по ${Number(data.wholesalePrice / data.sizes.length).toFixed(2)} лв. - Код ${data.code}`;
@@ -327,8 +325,10 @@ export const ProductController = {
         }
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
-        if (!data.description || data.description == '' && data.sizes.length > 0)
-            data.description = `${data.name} - от ${data.sizes[0].size} до ${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length}бр. в серия по ${roundPrice(data.wholesalePrice / data.sizes.length).toFixed(2)} лв. - Код ${data.code}`;
+        if (!data.description && data.sizes.length > 0)
+            data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length}бр. в серия по ${Number(data.wholesalePrice / data.sizes.length).toFixed(2)} лв. - Код ${data.code}`;
+        else if (!data.description)
+            data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 
         await product.updateOne(data, { new: true });
         return { status: 201, product };
