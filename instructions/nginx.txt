@@ -1,4 +1,4 @@
-Instructions for Windows:
+Instructions for Windows LOCAL:
 1. Download and extract nginx to "c:\nginx";
 
 2. Open the file "nginx.conf" in the "conf" folder and delete the whole http block.
@@ -26,37 +26,6 @@ http {
         # Path to SSL certificates
         ssl_certificate "C:/nginx/ssl/localhost.pem";
         ssl_certificate_key "C:/nginx/ssl/localhost.key";
-
-        # Frontend application
-        location / {
-            # Where to look for files
-            root html/rabb.it/public;
-            # Used for SPA
-            try_files $uri $uri/ /index.html;
-        }
-
-        # Node server
-        # All requests to /server/.....
-        location /server/ {
-            # Remove the "/server/" from the url when redirecting request
-            rewrite /server/(.*) /$1 break;
-            proxy_pass http://127.0.0.1:3000;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-    }
-
-    server { # Server for local.emo-sklad.bg
-        # HTTPS
-        listen 443 ssl;
-        server_name local.emo-sklad.bg;
-
-        # Path to SSL certificates
-        ssl_certificate "C:/nginx/ssl/local.emo-sklad.bg.pem";
-        ssl_certificate_key "C:/nginx/ssl/local.emo-sklad.bg.key";
 
         # Frontend application
         location / {
