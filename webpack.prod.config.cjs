@@ -26,7 +26,8 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname + '/public'),
-        filename: '[name].[contenthash].js',
+        filename: '[name].js',
+        // filename: '[name].[contenthash].js',
         // clean: true,
     },
     optimization: {
@@ -43,7 +44,8 @@ module.exports = {
     },
     plugins: [
         new MiniCssExtractPlugin({
-            filename: '[name].[contenthash].css'
+            filename: '[name].css'
+            // filename: '[name].[contenthash].css'
         }),
         new CompressionPlugin({
             test: /\.js(\?.*)?$/i,
