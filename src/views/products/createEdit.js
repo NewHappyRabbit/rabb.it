@@ -365,6 +365,23 @@ async function updateProduct(e) {
     try {
         const req = product ? await axios.put(`/products/${product._id}`, formData) : await axios.post('/products', formData);
         if (req.status === 201) {
+            //FIXME DELETE AFTER SVILEN ENTERS ALL HIS PRODUCTS IN DB
+            const newProduct = req.data;
+            console.log(newProduct);
+
+            // create empty input field text
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = newProduct.description;
+
+            // copy to clipboard
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value);
+            // FIXME DELETE END LINE
+
+
+
             toggleSubmitBtn();
 
             if (!product) { // if product creation and not editing

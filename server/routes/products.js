@@ -121,8 +121,9 @@ export function productsRoutes() {
                 io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes }, product.quantity);
             }
 
-            res.status(status).send();
+            res.status(status).json(product);
         } catch (error) {
+            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
