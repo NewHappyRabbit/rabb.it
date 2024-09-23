@@ -45,6 +45,9 @@ export const nav = () => html`
                         </ul>
                     </li>` : ''}
                     <li class="nav-item">
+                        <a class="nav-link" href="/products/create"><i class="bi bi-plus"></i> Създай продукт</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/products"><i class="bi bi-box-seam"></i> Стоки</a>
                     </li>
                     <li class="nav-item">

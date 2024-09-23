@@ -3,7 +3,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 export function permit(...permittedRoles) {
     return (req, res, next) => {
-        const token = req.cookies.jwt;
+        const token = req.cookies?.jwt;
 
         if (token) {
             jwt.verify(token, jwtSecret, (err, decodedToken) => {

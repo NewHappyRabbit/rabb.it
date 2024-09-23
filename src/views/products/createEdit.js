@@ -151,6 +151,7 @@ function addSize(e) {
 
     sizeEl.value = '';
     sizeEl.focus();
+    sizeEl.click();
 }
 
 function removeSize(e) {
@@ -497,12 +498,10 @@ function loadPreviewImages(e) {
     });
 }
 
+
 function selectCategory(e) {
     // FIXME Delete this after svilen enters all his products in db
     document.getElementById('category').value = e.target.value;
-    const productName = document.getElementById('name');
-    if (productName.value.length > 0) return;
-
     document.getElementById('name').value = categories.find(c => c._id === e.target.value).name;
 }
 
@@ -548,15 +547,15 @@ export async function createEditProductPage(ctx, next) {
                 </div>
 
                 <div class="row mb-3">
-                    <label for="name" class="form-label">Име</label>
-                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
-                </div>
-
-                <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
                     <select @change=${selectCategory} class="form-select border-primary" name="category" id="category" required>
                         ${until(loadCategories(), html`<option>Зареждане...</option>`)}
                     </select>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="name" class="form-label">Име</label>
+                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
                 </div>
 
                 ${quantityTemplate()}
