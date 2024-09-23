@@ -539,15 +539,15 @@ export async function createEditProductPage(ctx, next) {
                 </div>
 
                 <div class="row mb-3">
+                    <label for="name" class="form-label">Име</label>
+                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
+                </div>
+
+                <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
                     <select class="form-select border-primary" name="category" id="category" required>
                         ${until(loadCategories(), html`<option>Зареждане...</option>`)}
                     </select>
-                </div>
-
-                <div class="row mb-3">
-                    <label for="name" class="form-label">Име</label>
-                    <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
                 </div>
 
                 <div class="row mb-3">
