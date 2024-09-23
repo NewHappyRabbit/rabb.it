@@ -11,11 +11,11 @@ import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
 
-var selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
+var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
 
 async function loadCategories() {
     const req = await axios.get('/categories');
-    const categories = req.data;
+    categories = req.data;
 
     const options = {
         categories,
@@ -497,6 +497,15 @@ function loadPreviewImages(e) {
     });
 }
 
+function selectCategory(e) {
+    // FIXME Delete this after svilen enters all his products in db
+    document.getElementById('category').value = e.target.value;
+    const productName = document.getElementById('name');
+    if (productName.value.length > 0) return;
+
+    document.getElementById('name').value = categories.find(c => c._id === e.target.value).name;
+}
+
 export async function createEditProductPage(ctx, next) {
     try {
         if (ctx.params.id) {
@@ -545,19 +554,19 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
-                    <select class="form-select border-primary" name="category" id="category" required>
+                    <select @change=${selectCategory} class="form-select border-primary" name="category" id="category" required>
                         ${until(loadCategories(), html`<option>Зареждане...</option>`)}
                     </select>
-                </div>
-
-                <div class="row mb-3">
-                    <label for="description" class="form-label">Описание</label>
-                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
                 </div>
 
                 ${quantityTemplate()}
 
                 ${pricesTemplate()}
+
+                <div class="row mb-3">
+                    <label for="description" class="form-label">Описание</label>
+                    <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
+                </div>
 
                 <div class="row mb-3">
                     <label for="code" class="form-label">Код</label>
