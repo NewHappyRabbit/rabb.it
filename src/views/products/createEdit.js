@@ -137,7 +137,7 @@ function addSize(e) {
     const size = suffix ? sizeEl.value + suffix : sizeEl.value;
 
     if (size !== '' && !selectedSizes.find(s => s.size === size)) {
-        selectedSizes.push({ size, quantity: 0 });
+        selectedSizes.push({ size, quantity: selectedSizes.length ? selectedSizes[0].quantity : 0 });
 
         const addedSizes = document.getElementById('addedSizes');
 
