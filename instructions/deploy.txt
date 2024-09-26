@@ -12,17 +12,21 @@ For local installs without domain (on customer PC, not VPS):
 For VPS installs with domain on Debian:
 1. Install nginx: https://www.digitalocean.com/community/tutorials/initial-server-setup-with-debian-11
 
-2. Config nginx: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-debian-11
-- Follow the above tutorial for creating a directory in sites-available and then creating a symlink in sites-enabled
-- Use the server blocks from instructions\nginx_server.txt for the config file (ex local.emo-sklad.bg)
-- Delete the default config file in sites-enabled
+2. Point domain to server ip.
 
 3. Install certbot for SSL: https://certbot.eff.org/instructions?ws=nginx&os=pip
 - Do "sudo apt install python3-certbot-nginx" after Step 2.
-- After install, do "nginx -t" to test the ssl config is correct. If so, "nginx -s reload" to load it.
 - If step 7 doesnt work because "nginx -t" fails, do this instead: "sudo certbot --nginx -d example.com"
 
-4. Generate SSH key:
+4. Config nginx: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-debian-11
+- Follow the above tutorial for creating a directory in sites-available and then creating a symlink in sites-enabled
+- Use the server blocks from instructions\nginx_server.txt for the config file (ex local.emo-sklad.bg)
+- Delete the default config file in sites-enabled
+- Do "sudo certbot --nginx -d example.com" again to insert the certificate into the actual config of the app.
+- After install, do "nginx -t" to test the ssl config is correct. If so, "nginx -s reload" to load it.
+
+
+5. Generate SSH key:
 - Run the following command in ~/.ssh: ssh-keygen -t rsa -b 4096 -C "newhappyrabbit3@gmail.com"
 - Name it github-actions
 - Add it to authorized_keys: cat github-actions.pub >> ~/.ssh/authorized_keys
@@ -30,31 +34,32 @@ For VPS installs with domain on Debian:
 - Copy the contents of github-actions.pub to Hostinger Panel > Settings > SSH keys
 - Copy the contents of github-actions to Repository > Settings > Secrets > Actions > Add a new secret > SSH_PRIVATE_KEY
 
-5. Create a personal access token in github
+6. Create a personal access token in github
 -- Open https://github.com/settings/tokens
 -- Generate new access token (classic)
 --- Expiration: never
 --- Select "repo"
 --- Copy the key (ghp_....) and follow the instructions below.
 
-6. Install git: sudo apt install git-all
+7. Install git: sudo apt install git-all
 
-7. Git clone the repository
+8. Git clone the repository
 - Run: git clone -b branch --single-branch https://username:token@github.com/username/repo.git
 -- Replace username, token with your personal access token, repo with the name of the repository, and branch with the name of the branch
 -- Example: git clone -b live --single-branch https://NewHappyRabbit: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@github.com/NewHappyRabbit/rabb.it.git
 --- "-b branch" selects which branch to clone
 --- "--single-branch" clones only the specified branch
+- Do "git pull" once to add Github authenticity to ssh hostnames.
 
-8. Cd to the rabb.it folder and run:
+9. Cd to the rabb.it folder and run:
 - git remote set-url origin git@github.com:username/repo.git
 - Example: git remote set-url origin git@github.com:NewHappyRabbit/rabb.it.git
 
-9. Install node: https://github.com/nodesource/distributions?tab=readme-ov-file#using-debian-as-root-nodejs-20
+10. Install node: https://github.com/nodesource/distributions?tab=readme-ov-file#using-debian-as-root-nsolid-or-nodejs-lts
 
-10. Install dependencies: npm i
+11. Install dependencies: npm i
 
-11. Create the env file and add the production environment variables:
+12. Create the env file and add the production environment variables:
 - Create env file: nano .env
 - Add the variables:
 ENV=dev
@@ -65,10 +70,10 @@ MONGO_URI=mongodb+srv://cluster0.g35gxcm.mongodb.net/
 JWT_SECRET=007ea3f72d295f81f2e8b1ef9ee20fda718fcceb6226bb7d9674dd0d47201315
 - Save it
 
-12. Setup node to autostart with PM2: https://www.npmjs.com/package/pm2
+13. Setup node to autostart with PM2: https://www.npmjs.com/package/pm2
 - Install globally: npm install pm2 -g
 - Start the rabb.it/entry.cjs file and name the process as "node": pm2 start entry.cjs --name node -i max --log pm2.log
-- Set the process to startup with machine: pm2 startup
+- Set the process to startup with vps: pm2 startup
 - Save: pm2 save
 
-13. Run the frontend once: npm run web-prod
+14. Run the frontend once: npm run web-prod
