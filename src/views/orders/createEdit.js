@@ -374,7 +374,7 @@ const wholesaleProductsTable = (products) => html`
         <thead>
             <tr>
                 <th>Продукт</th>
-                <th>Мултиплайър</th>
+                <th>Повтарящи бр. от размер</th>
                 <th>Брой в пакет</th>
                 <th>Цена за брой</th>
                 <th>Мярка</th>
@@ -1061,9 +1061,9 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
 
                     <td class="text-nowrap">${product.quantity}</td>
 
-                    <td>${product?.selectedSizes?.length || product.qtyInPackage}</td>
+                    <td>${product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage}</td>
 
-                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
+                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
 
