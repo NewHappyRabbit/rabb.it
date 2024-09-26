@@ -34,6 +34,7 @@ function calculateUnitPrice() {
     const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
+    const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
 
     fixInputPrice({ target: unitPriceEl, roundPrice: true });
 
@@ -47,10 +48,19 @@ function calculateUnitPrice() {
         return unitPriceEl.value = '';
     }
 
+    const sizesLength = selectedSizes.length || 1;
     const deliveryPriceEl = document.getElementById('deliveryPrice');
-    deliveryPriceEl.value = roundPrice(unitPrice * (selectedSizes.length || 1));
+    deliveryPriceEl.value = roundPrice(unitPrice * parseInt(sizesLength * multiplier));
 
     calculateProductPrices();
+}
+
+function updateMultiplier() {
+    const multiplier = document.getElementById('multiplier');
+    fixInputPrice({ target: multiplier, int: true })
+    calculateUnitPrice();
+    updateWholeQuantity();
+    updateQuantity();
 }
 
 function calculateProductPrices(e) {
@@ -59,6 +69,7 @@ function calculateProductPrices(e) {
     const wholesalePrice = document.getElementById('wholesalePrice');
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
+    const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
 
     fixInputPrice({ target: deliveryPriceEl, roundPrice: true });
 
@@ -73,37 +84,40 @@ function calculateProductPrices(e) {
     }
 
     // Update price per unit if coming from event (changing this price directly and not from the unitPrice funciton) and sizes are selected
+    const sizesLength = selectedSizes.length || 1;
     if (e)
-        unitPriceEl.value = (deliveryPrice / (selectedSizes.length || 1)).toFixed(2);
+        unitPriceEl.value = (deliveryPrice / parseInt(sizesLength * multiplier)).toFixed(2);
 
     const wholesale = roundPrice(deliveryPrice * (1 + wholesaleMarkup / 100));
 
     //Retail price is calculated per piece, hencefore the price is divided by amount of sizes
-    const sizesLength = selectedSizes.length || 1;
-    const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / sizesLength);
+    const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / parseInt(sizesLength * multiplier));
 
     wholesalePrice.value = roundPrice(wholesale);
-    wholesaleUnitPrice.value = (wholesale / sizesLength).toFixed(2);
+    wholesaleUnitPrice.value = (wholesale / parseInt(sizesLength * multiplier)).toFixed(2);
     retailPrice.value = roundPrice(retail);
 }
 
 function calculatePriceWholesale() {
     const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
+    const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
 
     fixInputPrice({ target: wholesaleUnitPrice, roundPrice: true });
 
-    wholesalePrice.value = roundPrice(wholesaleUnitPrice.value * (selectedSizes.length || 1));
+    const sizesLength = selectedSizes.length || 1;
+    wholesalePrice.value = roundPrice(wholesaleUnitPrice.value * parseInt(sizesLength * multiplier));
 }
 
 function calculateUnitPriceWholesale() {
     const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
+    const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
 
+    fixInputPrice({ target: wholesalePrice, roundPrice: true });
 
-    fixInputPrice(wholesalePrice, true);
-
-    wholesaleUnitPrice.value = (wholesalePrice.value / (selectedSizes.length || 1)).toFixed(2);
+    const sizesLength = selectedSizes.length || 1;
+    wholesaleUnitPrice.value = (wholesalePrice.value / parseInt(sizesLength * multiplier)).toFixed(2);
 }
 
 function updateTotalQty() {
@@ -130,6 +144,7 @@ function updateQuantity() {
 function addSize(e) {
     e.preventDefault();
     document.getElementById('deliveryPricePerUnit').disabled = false;
+    document.getElementById('multiplier').disabled = false;
     const sizeEl = document.getElementById('size');
     const suffixEl = document.getElementById('suffix');
     const suffix = suffixEl.value;
@@ -148,6 +163,7 @@ function addSize(e) {
     document.getElementById('quantity').setAttribute('readonly', true);
 
     updateQuantity();
+    calculateUnitPrice();
 
     sizeEl.value = '';
     sizeEl.focus();
@@ -160,14 +176,17 @@ function removeSize(e) {
 
     selectedSizes = selectedSizes.filter(s => s.size !== size);
 
-    if (selectedSizes.length === 0)
+    if (selectedSizes.length === 0) {
         document.getElementById('deliveryPricePerUnit').disabled = true;
+        document.getElementById('multiplier').disabled = true;
+    }
 
     const addedSizes = document.getElementById('addedSizes');
 
     if (selectedSizes.length === 0) document.getElementById('quantity').removeAttribute('readonly');
 
     updateQuantity();
+    calculateUnitPrice();
 
     render(sizesTemplate(selectedSizes), addedSizes);
 }
@@ -198,6 +217,11 @@ const quantityTemplate = () => html`
                 </div>
             </div>
 
+            <div class="col-12 col-sm-4 mb-3">
+                <label for="multiplier" class="form-label">Мултипликатор</label>
+                <input @change=${updateMultiplier} @keyup=${updateMultiplier} class="form-control" type="number" inputmode="numeric" name="multiplier" id="multiplier" min="1" step="1" required .value=${product && product.multiplier} placeholder="1" autocomplete="off" ?disabled="${selectedSizes.length === 0}">
+            </div>
+
             <div class="col-12 col-sm-3 mb-3 d-none">
                 <label for="minQty" class="form-label">Мин. брой за на едро</label>
                 <input class="form-control" type="number" inputmode="numeric" name="minQty" id="minQty" min="0" step="1" aria-describedby="minQtyHelp" .value=${product && product.minQty} autocomplete="off">
@@ -215,7 +239,7 @@ const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" ?disabled=${selectedSizes.length === 0} inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / product.sizes.length)} autocomplete="off">
+                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" ?disabled=${selectedSizes.length === 0} inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / (product.sizes.length * (product.multiplier || 1)))} autocomplete="off">
             </div>
 
             <div class="col ${!['both', 'whole'].includes(deliveryPriceFields) ? 'd-none' : ''}">
@@ -225,7 +249,7 @@ const pricesTemplate = () => html`
 
             <div class="col pe-0 ${!['both', 'unit'].includes(wholesalePriceFields) ? 'd-none' : ''}"">
                 <label for="unitPrice" class="form-label">Цена на едро за брой <span class="text-primary">(+${wholesaleMarkup}%)</span></label>
-                <input class="form-control border-primary" @keyup=${calculatePriceWholesale} type="text" name="wholesaleUnitPrice" id="wholesaleUnitPrice" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.wholesalePrice / product.sizes.length)} autocomplete="off">
+                <input class="form-control border-primary" @keyup=${calculatePriceWholesale} type="text" name="wholesaleUnitPrice" id="wholesaleUnitPrice" inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.wholesalePrice / (product.sizes.length * (product.multiplier || 1)))} autocomplete="off">
             </div>
 
 
@@ -243,8 +267,9 @@ const pricesTemplate = () => html`
 
 function updateWholeQuantity() {
     // This function updates the packages quantity depending on the selected sizes size with least quantity
+    const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
     const leastQuantity = Math.min(...selectedSizes.map(s => s.quantity));
-    document.getElementById('quantity').value = leastQuantity;
+    document.getElementById('quantity').value = parseInt(leastQuantity / multiplier);
 }
 
 function updateSizeQuantity(e) {
@@ -335,7 +360,9 @@ function validateProduct(data) {
         markValid('wholesaleUnitPrice');
     }
 
-    if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice) || Number(data.deliveryPrice / (selectedSizes.length || 1)) >= Number(data.retailPrice))
+    const sizesLength = selectedSizes.length || 1;
+    const multiplier = parseInt(data.multiplier) || 1;
+    if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice) || Number(data.deliveryPrice / (sizesLength * multiplier)) >= Number(data.retailPrice))
         invalidFlag = markInvalid('retailPrice');
     else markValid('retailPrice');
 

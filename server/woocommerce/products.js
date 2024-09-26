@@ -178,7 +178,8 @@ export async function WooCreateProduct(product) {
                 id: pcsId,
                 visible: true,
                 variation: false,
-                options: product.sizes.length.toString()
+                options: (product.sizes.length * product.multiplier).toString(),
+                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
             { // size
                 id: sizeId,
@@ -196,7 +197,8 @@ export async function WooCreateProduct(product) {
                 id: piecePriceId,
                 visible: true,
                 variation: false,
-                options: (product.wholesalePrice / product.sizes.length).toFixed(2).toString()
+                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
         ]
     }

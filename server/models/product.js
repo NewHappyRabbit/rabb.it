@@ -60,6 +60,11 @@ const productSchema = new Schema({
         match: [/^\d*$/, 'Минималните пакети трябва да са просто число: пример 5, 50'],
         default: 0,
     },
+    multiplier: {
+        type: Number,
+        match: [/^\d*$/, 'Множителя трябва да е просто число: пример 1, 5, 50'],
+        default: 1,
+    },
     sizes: [
         {
             _id: false,
@@ -101,7 +106,7 @@ const productSchema = new Schema({
                 if (this.sizes.length === 0)
                     return v > this.deliveryPrice;
 
-                return v > (this.deliveryPrice / this.sizes.length).toFixed(2);
+                return v > (this.deliveryPrice / (this.sizes.length * this.multiplier)).toFixed(2);
             },
             message: 'Цената на дребно трябва да е по-голяма от доставната цена!'
         },

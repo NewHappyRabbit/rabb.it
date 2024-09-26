@@ -137,11 +137,11 @@ const table = ({ count, products, prevCursor, nextCursor }) => html`
                             <td class="text-nowrap">${product.quantity} бр.</td>
                             <td>${product.sizes.length > 0 ? sizesTemplate(product.sizes) : ''}</td>
                             <td class="text-nowrap">
-                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.deliveryPrice / product.sizes.length)}/бр.</div>` : ''}
+                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.deliveryPrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
                                 <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.deliveryPrice)}</div>
                             </td>
                             <td class="text-nowrap">
-                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / product.sizes.length)}/бр.</div>` : ''}
+                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
                                 <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.wholesalePrice)}</div>
                             </td>
                             <!-- <td class="text-nowrap">${formatPrice(product.retailPrice)}</td> -->
