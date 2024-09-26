@@ -98,11 +98,12 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         if (data.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
             // Remove quantity from each selected size (can be all of them, or just some (sell open package))
             for (let size of product.selectedSizes) {
+                const quantityToRemove = product.quantity * product.multiplier;
                 // Check if there is enough quantity of selected size
-                if (existingProduct.sizes.find(s => s.size === size).quantity < product.quantity)
+                if (existingProduct.sizes.find(s => s.size === size).quantity < quantityToRemove)
                     return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(s => s.size === size.size).quantity}` };
 
-                existingProduct.sizes.find(s => s.size === size).quantity -= product.quantity;
+                existingProduct.sizes.find(s => s.size === size).quantity -= quantityToRemove;
             }
 
             // Update package quantity to be the lowest of all selected sizes quantity
@@ -183,6 +184,7 @@ async function returnProductsQuantities(order) {
             // Return quantity to each selected size (can be all of them, or just some (sell open package))
 
             let sizesToReturn;
+            const quantityToReturn = product.quantity * product.multiplier;
 
             // If in original order the product was simple (had no sizes selected)
             if (product.selectedSizes.length === 0) {
@@ -192,7 +194,7 @@ async function returnProductsQuantities(order) {
             for (let size of sizesToReturn) {
                 const s = existingProduct.sizes.find(s => s.size === size);
                 // Check if size exists in product (it may have been removed for example)
-                if (s) s.quantity += product.quantity;
+                if (s) s.quantity += quantityToReturn;
             }
 
             // Update package quantity to be the lowest of all selected sizes quantity
@@ -306,6 +308,8 @@ export const OrderController = {
     },
     post: async ({ data, userId }) => {
         const validation = await validateOrder(data);
+
+        // return console.log(data)
 
         if (validation) return validation;
 

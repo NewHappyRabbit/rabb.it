@@ -86,6 +86,7 @@ const orderSchema = new Schema({
                     return this.orderType === 'retail';
                 }
             },
+            multiplier: Number,
             price: { // price without discount
                 type: Number,
                 required: true,

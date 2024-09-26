@@ -71,7 +71,7 @@ export const ProductController = {
         // If no page is given then it will return all products
 
         if (page && page === 'orders' || page === 'references') {
-            const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty');
+            const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
             return { products, status: 200 };
         }
 

@@ -338,8 +338,8 @@ function updateSelectedSizes(e) {
 
     // Update price based on selected sizes length
     if (addedProducts[arrayIndex].selectedSizes.length > 0) {
-        const unitPrice = addedProducts[arrayIndex].product.wholesalePrice / addedProducts[arrayIndex].product.sizes.length;
-        addedProducts[arrayIndex].price = (unitPrice * addedProducts[arrayIndex].selectedSizes.length).toFixed(2);
+        const unitPrice = addedProducts[arrayIndex].product.wholesalePrice / (addedProducts[arrayIndex].product.sizes.length * addedProducts[arrayIndex].product.multiplier);
+        addedProducts[arrayIndex].price = (unitPrice * addedProducts[arrayIndex].selectedSizes.length * addedProducts[arrayIndex].multiplier).toFixed(2);
     } else addedProducts[arrayIndex].price = 0;
 
     rerenderTable();
@@ -355,11 +355,26 @@ const checkboxSizes = (product) => html`
         </div>`)
     }`;
 
+function updateMultiplier(e) {
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+    fixInputPrice({ target: e.target, int: true });
+    addedProducts[arrayIndex].multiplier = parseInt(e.target.value);
+
+    // Update price for package
+    const unitPrice = addedProducts[arrayIndex].product.wholesalePrice / (addedProducts[arrayIndex].product.sizes.length * addedProducts[arrayIndex].product.multiplier);
+    addedProducts[arrayIndex].price = (unitPrice * addedProducts[arrayIndex].selectedSizes.length * addedProducts[arrayIndex].multiplier).toFixed(2);
+
+    rerenderTable();
+}
+
 const wholesaleProductsTable = (products) => html`
     <table id="orders" class="table mt-3 table-striped">
         <thead>
             <tr>
                 <th>Продукт</th>
+                <th>Мултиплайър</th>
                 <th>Брой в пакет</th>
                 <th>Цена за брой</th>
                 <th>Мярка</th>
@@ -374,11 +389,17 @@ const wholesaleProductsTable = (products) => html`
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
+
+                    <td>
+                        ${product?.product?.sizes?.length
+        ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
+        : ''}
+                    </td>
                     ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
-                    <td>${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / product.product.sizes.length) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+                    <td>${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
 
                     <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
 
@@ -525,7 +546,7 @@ function addProduct(e) {
     if (e.target.value === '') return;
 
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if (!(e.ctrlKey && e.key === 'v') && !(e.metaKey && e.key === 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
     var product, quantity = 1;
 
@@ -555,12 +576,13 @@ function addProduct(e) {
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
                 price: productInDB.wholesalePrice,
-                unitPrice: productInDB.wholesalePrice / productInDB.sizes.length, // only used to display the price per unit in column
-                discount: selectedCustomer?.discount || 0
+                unitPrice: productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
+                discount: selectedCustomer?.discount || 0,
+                multiplier: productInDB.multiplier,
             };
 
             if (temp.selectedSizes.length !== productInDB.sizes.length) {
-                const unitPrice = productInDB.wholesalePrice / productInDB.sizes.length;
+                const unitPrice = productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier);
                 temp.price = (unitPrice * temp.selectedSizes.length).toFixed(2);
             }
 
@@ -787,8 +809,6 @@ async function createEditOrder() {
     const formData = new FormData(form);
     var filteredProducts = [];
 
-
-
     // transform addedProducts to the type used in backend
     if (orderType === 'wholesale') {
         addedProducts.forEach(product => {
@@ -802,7 +822,8 @@ async function createEditOrder() {
                         price: product.price,
                         discount: product.discount,
                         selectedSizes: product.selectedSizes,
-                        unitOfMeasure: product.product.unitOfMeasure
+                        unitOfMeasure: product.product.unitOfMeasure,
+                        multiplier: product.multiplier
                     });
                 }
 

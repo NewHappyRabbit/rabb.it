@@ -218,7 +218,7 @@ const quantityTemplate = () => html`
             </div>
 
             <div class="col-12 col-sm-4 mb-3">
-                <label for="multiplier" class="form-label">Мултипликатор</label>
+                <label for="multiplier" class="form-label">Мултиплайър</label>
                 <input @change=${updateMultiplier} @keyup=${updateMultiplier} class="form-control" type="number" inputmode="numeric" name="multiplier" id="multiplier" min="1" step="1" required .value=${product && product.multiplier} placeholder="1" autocomplete="off" ?disabled="${selectedSizes.length === 0}">
             </div>
 
