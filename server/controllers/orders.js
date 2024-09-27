@@ -309,8 +309,6 @@ export const OrderController = {
     post: async ({ data, userId }) => {
         const validation = await validateOrder(data);
 
-        // return console.log(data)
-
         if (validation) return validation;
 
         // Add sender to company
@@ -344,11 +342,23 @@ export const OrderController = {
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
-        var seq = await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { $inc: { seq: 1 } }, { new: true }).select('seq');
+        // New logic for editing document number
+        // Check if document number already exists
+        if (data.number) {
+            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number });
 
-        if (!seq) seq = await AutoIncrement.create({ name: data.type, company, seq: 1 });
+            if (order) return { status: 409, message: 'Документ с такъв номер вече съществува' };
+        }
 
-        data.number = seq.seq;
+        // Update sequence number if document number > current sequence number
+        // Else, probably customer skipped a document number before and now fills the empty numbers
+        let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+        if (seq) {
+            await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
+        } else if (!seq) {
+            seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
+            data.number = seq.seq;
+        }
 
         const order = await new Order(data).save();
 
@@ -363,9 +373,8 @@ export const OrderController = {
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
         // Check if sender and receiver were changed
+        const company = await Company.findById(data.company);
         if (data.sender !== order.sender) {
-            const company = await Company.findById(data.company);
-
             if (!company.senders) company.senders = [data.sender];
 
             if (!company.senders.includes(data.sender)) company.senders.push(data.sender);
@@ -398,13 +407,13 @@ export const OrderController = {
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
-        // Check if company or document type was changed and change document number
-        if (data.company !== order.company.toString() || data.type !== order.type) {
-            var seq = await AutoIncrement.findOneAndUpdate({ name: data.type, company: data.company }, { $inc: { seq: 1 } }, { new: true }).select('seq');
-
-            if (!seq)
-                seq = await AutoIncrement.create({ name: data.type, company: data.company, seq: 1 });
-
+        // Update sequence number if document number > current sequence number
+        // Else, probably customer skipped a document number before and now fills the empty numbers
+        let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+        if (seq) {
+            await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
+        } else if (!seq) {
+            seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
             data.number = seq.seq;
         }
 

@@ -10,7 +10,7 @@ import Quagga from 'quagga';
 import page from 'page';
 import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
 
-var order, defaultValues, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [];
+var order, defaultValues, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
 
 function changeOrderType(e) {
     orderType = e.target.value;
@@ -23,8 +23,9 @@ function changeOrderType(e) {
     rerenderTable();
 }
 
-function selectDocumentType(e) {
+async function selectDocumentType(e) {
     documentType = e.target.value;
+    await getDocumentTypeNumber();
     rerenderTable();
 }
 
@@ -94,7 +95,7 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="number" class="form-label">Документ номер:</label>
-            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" value=${order && order.number} disabled placeholder="Автоматично">
+            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? order.number : documentNumber}>
         </div>
         <div class="col-6 col-sm">
             <label for="orderType" class="form-label">Тип на продажба:</label>
@@ -875,6 +876,7 @@ async function createEditOrder() {
     }
 
     const data = {
+        number: document.getElementById('number').value,
         date: document.getElementById('date').value,
         type: document.getElementById('type').value,
         customer: selectedCustomer?._id,
@@ -916,7 +918,7 @@ async function createEditOrder() {
     } catch (err) {
         toggleSubmitBtn();
         console.error(err);
-        if (err.response.status === 400) {
+        if (err.response.status === 400 || err.response.status === 409) {
             alertEl.classList.remove('d-none', 'alert-success');
             alertEl.classList.add('alert-danger');
             alertEl.textContent = err.response.data;
@@ -1129,6 +1131,12 @@ const template = (params, customers) => html`
     </div>
     <div id="printContainer" class="d-none d-print-block"></div>`;
 
+async function getDocumentTypeNumber() {
+    const getNewDocumentNumber = await axios.get('/orders/number', { params: { documentType, company: selectedCompany._id } });
+    documentNumber = getNewDocumentNumber.data;
+    const numberEl = document.getElementById('number');
+    if (numberEl) numberEl.value = documentNumber;
+}
 export async function createEditOrderPage(ctx, next) {
     try {
         //TODO When all routes are converted to controllers, create single routes for this kind of requests. Instead of using 4 seperate requests to get companies, products, etc. do one single request to for example "/ordersInfo" and use the controllers to get all the info.
@@ -1169,7 +1177,7 @@ export async function createEditOrderPage(ctx, next) {
             }
 
             selectedCustomer = order.customer;
-            selectedCompany = companies.filter(c => c._id === order.company)[0];
+            selectedCompany = companies.find(c => c._id === order.company._id);
 
             // if order was just created and print was requested
             if (ctx.querystring.includes('print')) {
@@ -1183,6 +1191,8 @@ export async function createEditOrderPage(ctx, next) {
             selectedCompany = companies[0];
             selectedCustomer = undefined;
             addedProducts = [];
+
+            await getDocumentTypeNumber();
         }
 
         // reset form
@@ -1207,22 +1217,23 @@ export async function createEditOrderPage(ctx, next) {
 
         // Add listener for barcode scanner
         const barcodeInput = document.getElementById('product');
-        barcodeInput.addEventListener('textInput', function (e) {
-            if (e.data.length >= 10) {
-                e.preventDefault();
-                // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
-                // simulate Enter key pressed on input field to activate addProduct function
-                const event = new KeyboardEvent('keyup', {
-                    key: 'Enter',
-                    code: 'Enter',
-                    which: 13,
-                    keyCode: 13,
-                });
+        if (barcodeInput)
+            barcodeInput.addEventListener('textInput', function (e) {
+                if (e.data.length >= 10) {
+                    e.preventDefault();
+                    // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
+                    // simulate Enter key pressed on input field to activate addProduct function
+                    const event = new KeyboardEvent('keyup', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        which: 13,
+                        keyCode: 13,
+                    });
 
-                barcodeInput.value += e.data;
-                barcodeInput.dispatchEvent(event);
-            }
-        });
+                    barcodeInput.value += e.data;
+                    barcodeInput.dispatchEvent(event);
+                }
+            });
     } catch (err) {
         console.error(err);
         alert('Възникна грешка')
