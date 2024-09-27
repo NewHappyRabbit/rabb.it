@@ -33,11 +33,13 @@ export function productSockets(socket) {
             name: product.name,
             code: product.code,
             barcode: product.barcode,
-            wholesalePrice: product.wholesalePrice
+            wholesalePrice: product.wholesalePrice,
         }
 
-        if (product.sizes?.length)
+        if (product.sizes?.length) {
             minifiedProduct.sizes = product.sizes;
+            minifiedProduct.multiplier = product.multiplier;
+        }
 
         io.in('printer').emit('print', minifiedProduct, quantity);
     });
@@ -118,7 +120,7 @@ export function productsRoutes() {
 
             // if no pc with printer connected, do nothing
             if (data.printLabel && io.sockets.adapter.rooms.get("printer") !== undefined)
-                io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes }, product.quantity);
+                io.in('printer').emit('print', { name: product.name, code: product.code, barcode: product.barcode, wholesalePrice: product.wholesalePrice, sizes: product.sizes, multiplier: product.multiplier }, product.quantity);
 
             res.status(status).json(product);
         } catch (error) {
@@ -141,7 +143,7 @@ export function productsRoutes() {
 
             // if no pc with printer connected, do nothing
             if (printLabelCheck && io.sockets.adapter.rooms.get("printer") !== undefined) {
-                const productsToPrint = await Product.find({ _id: { $in: doneProducts.map(p => p._id) } }).select('name code barcode sizes wholesalePrice');
+                const productsToPrint = await Product.find({ _id: { $in: doneProducts.map(p => p._id) } }).select('name code barcode sizes wholesalePrice multiplier');
 
                 // set the quantity to what we just restocked before sending to print
                 for (const product of productsToPrint) {
