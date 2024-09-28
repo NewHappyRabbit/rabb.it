@@ -41,7 +41,7 @@ export function loadRoutes() {
     woocommerceRoutes();
 
     //TODO Run this only the first time when the ecommerce is created to fill with data
-    FirstInitWooCommerce();
+    // FirstInitWooCommerce();
 
     // Set default 404 for all routes
     app.all('*', (req, res) => {

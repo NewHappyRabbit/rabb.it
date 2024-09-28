@@ -43,7 +43,7 @@ export async function WooCheckProductAttributesINIT() {
                     found = true;
 
                     // Check if attribute exists in mongodb
-                    const inMongo = mongoAttributes.findOne(m => 'pa_' + m.slug == existingAttribute.slug);
+                    const inMongo = mongoAttributes.find(m => 'pa_' + m.slug == existingAttribute.slug);
 
                     if (inMongo) {
                         inMongo.woocommerce.id = existingAttribute.id;
@@ -92,99 +92,11 @@ export async function WooCheckProductAttributesINIT() {
 export async function WooCreateProductsINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    console.log('Getting products...')
-    const products = await Product.find({ hidden: { $ne: true }, woocommerce: { $eq: undefined } }).populate('category');
-    console.log('Got products')
-
+    const products = await Product.find({});
     //TODO Use https://woocommerce.github.io/woocommerce-rest-api-docs/#batch-update-products instead of for each product
-
-    const mongoAttributes = await ProductAttribute.find({});
-    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-
-    console.log('Preparing products data');
-    const batchArray = { create: [] };
-    for (let product of products) {
-        const data = {
-            name: product.name,
-            slug: "p" + product.code,
-            description: product.description,
-            regular_price: product.wholesalePrice.toString(),
-            sku: product.code,
-            categories: [{ id: product.category.woocommerce.id }],
-            stock_quantity: product.quantity,
-            "manage_stock": true, // enables the stock management
-        }
-
-        if (product.sizes.length > 0) {
-            const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
-
-            data.attributes = [
-                { // pcs
-                    id: pcsId,
-                    visible: true,
-                    variation: false,
-                    options: (product.sizes.length * product.multiplier).toString(),
-                },
-                { // size
-                    id: sizeId,
-                    visible: true,
-                    variation: false,
-                    options: simpleSizes
-                },
-                { // viber size
-                    id: viberSizeId,
-                    visible: false,
-                    variation: false,
-                    options: viberSizes// Get the first and last size and do 'X-Y'
-                },
-                { // piecePrice
-                    id: piecePriceId,
-                    visible: true,
-                    variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-                },
-            ]
-        }
-
-        if (product.image) {
-            data.images = [{ src: product.image.url }];
-
-            if (product.additionalImages) {
-                for (const image of product.additionalImages)
-                    data.images.push({ src: image.url });
-            }
-        }
-
-        batchArray.create.push(data);
+    for (const product of products) {
+        WooCreateProduct(product);
     }
-
-    // The batch accepts max 100 products per request. Run it enought times so that all products are created
-    console.log("Starting batch loop...")
-    for (let i = 0; i < batchArray.create.length; i += 100) {
-        console.log('Creating batch ' + (i / 100 + 1) + ' of ' + Math.ceil(batchArray.create.length / 100))
-
-        const batchArraySliced = { create: batchArray.create.slice(i, i + 100) };
-        await WooCommerce.post("products/batch", batchArraySliced).then(async (response) => {
-            // Success
-            // Add data to products
-            const returnedProducts = response.data.create;
-
-            for (let product of returnedProducts)
-                await Product.findOneAndUpdate({ code: product.sku }, { woocommerce: { id: product.id, permalink: product.permalink } });
-
-            console.log('Batch ' + (i / 100 + 1) + ' of ' + Math.ceil(batchArray.create.length / 100) + ' successfully created in WooCommerce!')
-        }).catch((error) => {
-            // Invalid request, for 4xx and 5xx statuses
-            console.error("Response Status:", error.response.status);
-            console.error("Response Headers:", error.response.headers);
-            console.error("Response Data:", error.response.data);
-        });
-    }
-    console.log('Batch loop done')
 }
 
 //TODO Add this to README.md and make a section woocommerce setup
@@ -267,6 +179,7 @@ export async function WooCreateProduct(product) {
                 visible: true,
                 variation: false,
                 options: (product.sizes.length * product.multiplier).toString(),
+                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
             { // size
                 id: sizeId,
@@ -285,27 +198,28 @@ export async function WooCreateProduct(product) {
                 visible: true,
                 variation: false,
                 options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
         ]
     }
 
     if (process.env.ENV !== 'dev' && product.image) {
-        data.images = [{ src: product.image.url }];
+        data.images = [{ src: `${process.env.URL}${product.image}` }];
 
         if (product.additionalImages) {
             for (const image of product.additionalImages)
-                data.images.push({ src: image.url });
+                data.images.push({ src: `${process.env.URL}${image}` });
         }
     }
 
-    WooCommerce.post("products", data).then(async (response) => {
+    WooCommerce.post("products", data).then((response) => {
         // Success
         console.log("Product successfully created in WooCommerce!")
         product.woocommerce = {
             id: response.data.id,
             permalink: response.data.permalink
         }
-        await product.save();
+        product.save();
     }).catch((error) => {
         // Invalid request, for 4xx and 5xx statuses
         console.error("Response Status:", error.response.status);
