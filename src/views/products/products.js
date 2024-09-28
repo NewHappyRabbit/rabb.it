@@ -177,15 +177,18 @@ async function applyFilters(e) {
     if (data.onlyHidden)
         data.onlyHidden = true;
 
+    if (data.onlyOutOfStock)
+        data.onlyOutOfStock = true;
+
     // remove empty fields
     Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
 
     if (Object.keys(data).length === 0)
         page('/products')
     else if (data.length === 1)
-        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]} `);
+        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
     else {
-        const uri = Object.keys(data).map(key => `${key}=${data[key]} `).join('&');
+        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
         page(`/products?${uri} `);
     }
 }
@@ -203,14 +206,20 @@ export function productsPage(ctx, next) {
     selectedProduct = null;
 
     const filters = () => html`
-    <div class="col-6 col-sm" >
+    <div class="col-12 col-sm" >
         <label for="search">Продукт:</label>
-        <input @keyup=${delay(applyFilters, 300)} .value = ${selectedFilters?.search || ''} placeholder = "Въведи име или код" id = "search" name = "search" class="form-control" autocomplete = "off" >
+        <input @keyup=${delay(applyFilters, 300)} value=${selectedFilters?.search ? selectedFilters.search : ''} placeholder = "Въведи име или код" id="search" name="search" class="form-control" autocomplete="off">
     </div>
     <div class="col-6 col-sm">
         <div class="form-check form-switch p-0">
             <label class="form-check-label d-block" for="onlyHidden">Само скрити:</label>
             <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyHidden" ?checked=${selectedFilters?.onlyHidden} name="onlyHidden">
+        </div>
+    </div>
+    <div class="col-6 col-sm">
+        <div class="form-check form-switch p-0">
+            <label class="form-check-label d-block" for="onlyOutOfStock">Само изчерпани:</label>
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOutOfStock" ?checked=${selectedFilters?.onlyOutOfStock} name="onlyOutOfStock">
         </div>
     </div>
 `;
@@ -223,8 +232,8 @@ export function productsPage(ctx, next) {
     <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
     <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
     <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
-    ${filters()}
-</form>
+        ${filters()}
+    </form>
             ${until(loadProducts(), spinner)}
         </div >
     `;

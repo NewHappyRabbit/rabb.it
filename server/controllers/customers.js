@@ -45,7 +45,7 @@ export const CustomerController = {
 
         const customers = await Customer.find(query).limit(limit).select('name vat phone discount deleted');
 
-        if (!customers || customers.length === 0) return { customers: [], prevCursor, nextCursor };
+        if (!customers || customers.length === 0) return { status: 200, customers: [], prevCursor, nextCursor };
 
         if (!search) {
             // get next customer to generate cursor for traversing
@@ -69,6 +69,8 @@ export const CustomerController = {
             const prevCustomers = await Customer.find(prevQuery).limit(limit).select('_id').sort({ _id: -1 });
             prevCursor = prevCustomers.length > 0 ? prevCustomers.slice(-1)[0]._id : null;
         }
+
+        console.log(customers)
 
         return { status: 200, customers, prevCursor, nextCursor };
     },

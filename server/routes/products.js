@@ -6,6 +6,7 @@ import fs from 'fs';
 import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
+import { AutoIncrement } from "../models/autoincrement.js";
 
 export function productSockets(socket) {
     socket.on('disconnect', () => {
@@ -50,9 +51,9 @@ export function productsRoutes() {
 
     productsRouter.get('/products', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { cursor, search, onlyHidden, page } = req.query;
+            const { cursor, search, onlyHidden, onlyOutOfStock, page } = req.query;
 
-            const { count, products, prevCursor, nextCursor, status, message } = await ProductController.get({ page, cursor, search, onlyHidden });
+            const { count, products, prevCursor, nextCursor, status, message } = await ProductController.get({ page, cursor, search, onlyHidden, onlyOutOfStock });
             if (status !== 200)
                 return res.status(status).send(message);
 

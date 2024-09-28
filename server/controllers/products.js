@@ -66,7 +66,7 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
-    get: async ({ page, cursor, search, onlyHidden }) => {
+    get: async ({ page, cursor, search, onlyHidden, onlyOutOfStock }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -81,8 +81,10 @@ export const ProductController = {
             return { products, status: 200 };
         }
 
+        onlyOutOfStock = onlyOutOfStock && onlyOutOfStock === 'true' ? true : false;
+
         let query = {
-            $and: [{ outOfStock: { $ne: true } }, { deleted: { $ne: true } }],
+            $and: [{ outOfStock: { $eq: onlyOutOfStock } }, { deleted: { $ne: true } }],
         };
 
         var prevCursor = null;
@@ -168,9 +170,9 @@ export const ProductController = {
             } else data.additionalImages = [];
         }
 
-        if (data.code) {
+        if (data.code && data.code.trim() !== '') {
             const codeExists = await Product.findOne({ code: data.code });
-            if (codeExists) return { status: 400, message: 'Вече съществува продукт с този код' };
+            if (codeExists) return { status: 400, message: 'Вече съществува продукт с код: ' + data.code };
         } else {
             var seq = await AutoIncrement.findOneAndUpdate({ name: 'product' }, { $inc: { seq: 1 } }, { new: true }).select('seq');
 
@@ -311,7 +313,7 @@ export const ProductController = {
 
         if (data.code && data.code !== product.code) { // New product code was entered
             const codeExists = await Product.findOne({ code: data.code });
-            if (codeExists) return { status: 400, message: 'Вече съществува продукт с този код', property: 'code' };
+            if (codeExists) return { status: 400, message: 'Вече съществува продукт с код: ' + data.code, property: 'code' };
         }
 
         if (data.barcode && data.barcode !== product.barcode) { // New product barcode was entered

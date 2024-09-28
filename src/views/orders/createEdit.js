@@ -323,7 +323,7 @@ const addProductRow = () => html`
             <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
         </div>
     </td>
-    <td colspan="6">
+    <td colspan="8">
         <div id="barcodeVideo"></div>
     </td>
 </tr>
@@ -347,8 +347,9 @@ function updateSelectedSizes(e) {
 }
 
 const checkboxSizes = (product) => html`
+<div class="fw-bold text-center">${product.selectedSizes.length}</div>
     ${product?.product?.sizes?.map(size => html`
-        <div class="form-check">
+        <div class="form-check form-check-inline">
             <input class="form-check-input" @change=${updateSelectedSizes} name="${product.index}-${size.size}" type="checkbox" value=${size.size} ?checked=${product?.selectedSizes?.includes(size.size)} ?disabled=${!order && product.product.sizes.find(s => s.size === size.size).quantity === 0} id="${product.index}-${size.size}">
             <label class="form-check-label" for="${product.index}-${size.size}">
                 ${size.size}
@@ -374,13 +375,14 @@ const wholesaleProductsTable = (products) => html`
     <table id="orders" class="table mt-3 table-striped">
         <thead>
             <tr>
+                <td>№</td>
                 <th>Продукт</th>
-                <th>Повтарящи бр. от размер</th>
-                <th>Брой в пакет</th>
-                <th>Цена за брой</th>
                 <th>Мярка</th>
-                <th>Количество</th>
-                <th>Цена</th>
+                <th>Цена за брой</th>
+                <th class="text-primary">Повтарящи бр. от размер</th>
+                <th class="text-primary">Брой в пакет</th>
+                <th class="text-primary">Количество</th>
+                <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
                 <th>Сума</th>
                 <th>Действия</th>
@@ -389,7 +391,13 @@ const wholesaleProductsTable = (products) => html`
         <tbody class="table-group-divider">
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
+                    <td>${product.index + 1}</td>
+
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
+
+                    <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
+
+                    <td class="text-nowrap">${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
 
                     <td>
                         ${product?.product?.sizes?.length
@@ -399,10 +407,6 @@ const wholesaleProductsTable = (products) => html`
                     ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
-
-                    <td>${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
-
-                    <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
 
                     <td>
                         <div class="input-group">
@@ -414,7 +418,7 @@ const wholesaleProductsTable = (products) => html`
                     <td><input @change=${updatePrice} @keyup=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
-                    <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+                    <td name="subtotal"  class="text-nowrap">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
                     <td style="text-align: end">
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>
@@ -429,6 +433,7 @@ const retailProductsTable = (products) => html`
     <table class="table mt-3 table-striped">
         <thead>
             <tr>
+                <td>№</td>
                 <th>Продукт</th>
                 <th>Размер</th>
                 <th>Мярка</th>
@@ -442,6 +447,8 @@ const retailProductsTable = (products) => html`
         <tbody>
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
+                    <td>${product.index + 1}</td>
+                    
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
 
                     <td>
@@ -1152,7 +1159,8 @@ export async function createEditOrderPage(ctx, next) {
             order = req.data;
             orderType = order.orderType;
             addedProducts = order.products;
-            documentType = order.documentType;
+            documentType = order.type;
+            console.log(order);
 
             for (let product of addedProducts) {
                 product.index = addedProductsIndex++;

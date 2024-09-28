@@ -15,6 +15,7 @@ export function customersRoutes() {
 
             res.json({ customers, prevCursor, nextCursor });
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

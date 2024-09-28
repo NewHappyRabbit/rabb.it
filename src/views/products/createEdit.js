@@ -10,6 +10,7 @@ import { submitBtn, toggleSubmitBtn } from '@/views/components';
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
+import { socket } from '@/api';
 
 var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
 
@@ -70,10 +71,13 @@ function calculateProductPrices(e) {
     const retailPrice = document.getElementById('retailPrice');
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
     const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
+    const upsaleAmountEl = document.getElementById('upsaleAmount');
 
+    fixInputPrice({ target: upsaleAmountEl });
     fixInputPrice({ target: deliveryPriceEl, roundPrice: true });
 
     const deliveryPrice = deliveryPriceEl.value;
+    const upsaleAmount = Number(upsaleAmountEl.value) || 0;
 
     if (deliveryPriceEl.value === '') {
         wholesaleUnitPrice.value = '';
@@ -93,9 +97,10 @@ function calculateProductPrices(e) {
     //Retail price is calculated per piece, hencefore the price is divided by amount of sizes
     const retail = roundPrice(deliveryPrice * (1 + retailMarkup / 100) / parseInt(sizesLength * multiplier));
 
-    wholesalePrice.value = roundPrice(wholesale);
-    wholesaleUnitPrice.value = (wholesale / parseInt(sizesLength * multiplier)).toFixed(2);
-    retailPrice.value = roundPrice(retail);
+    wholesalePrice.value = roundPrice(wholesale + upsaleAmount * sizesLength * multiplier);
+    wholesaleUnitPrice.value = (wholesale / parseInt(sizesLength * multiplier) + upsaleAmount).toFixed(2);
+    retailPrice.value = roundPrice(retail + upsaleAmount);
+
 }
 
 function calculatePriceWholesale() {
@@ -235,16 +240,19 @@ const quantityTemplate = () => html`
         </div>
     `;
 
+//TODO GET FROM DB
+const lastUpsaleAmount = 5;
+
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPricePerUnit" class="form-label">Доставна цена за брой</label>
-                <input @change=${calculateUnitPrice} @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" ?disabled=${selectedSizes.length === 0} inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / (product.sizes.length * (product.multiplier || 1)))} autocomplete="off">
+                <input @keyup=${calculateUnitPrice} class="form-control border-primary" type="text" name="deliveryPricePerUnit" id="deliveryPricePerUnit" ?disabled=${selectedSizes.length === 0} inputmode="decimal" .value=${product && product.sizes?.length && roundPrice(product.deliveryPrice / (product.sizes.length * (product.multiplier || 1)))} autocomplete="off">
             </div>
 
             <div class="col ${!['both', 'whole'].includes(deliveryPriceFields) ? 'd-none' : ''}">
                 <label for="deliveryPrice" class="form-label">Доставна цена за пакет</label>
-                <input @change=${calculateProductPrices} @keyup=${calculateProductPrices} class="form-control border-primary" type="text" inputmode="decimal" name="deliveryPrice" id="deliveryPrice" required .value=${product && product.deliveryPrice} autocomplete="off">
+                <input @keyup=${calculateProductPrices} class="form-control border-primary" type="text" inputmode="decimal" name="deliveryPrice" id="deliveryPrice" required .value=${product && product.deliveryPrice} autocomplete="off">
             </div>
 
             <div class="col pe-0 ${!['both', 'unit'].includes(wholesalePriceFields) ? 'd-none' : ''}"">
@@ -259,8 +267,13 @@ const pricesTemplate = () => html`
             </div>
 
             <div class="col ${retailPriceField === 'true' ? '' : 'd-none'}">
-            <label for="retailPrice" class= "form-label" > Цена на дребно <span class="text-primary"> (+${retailMarkup}%)</span></label >
-            <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+                <label for="retailPrice" class= "form-label" > Цена на дребно <span class="text-primary"> (+${retailMarkup}%)</span></label >
+                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+            </div>
+
+            <div class="col">
+                <label for="upsaleAmount" class="form-label">Добавена стойност към всеки брой <span class="text-primary">(лв.)</span></label>
+                <input @keyup=${() => calculateProductPrices()} class="form-control border-primary" type="text" name="upsaleAmount" id="upsaleAmount" inputmode="decimal" .value=${lastUpsaleAmount || ''} autocomplete="off">
             </div>
         </div>
     `;
@@ -596,7 +609,7 @@ export async function createEditProductPage(ctx, next) {
 
                 <div class="row mb-3">
                     <label for="code" class="form-label">Код</label>
-                    <input class="form-control" type="text" name="code" id="code" .value=${product && product.code || ''} autocomplete="off">
+                    <input class="form-control" type="text" name="code" id="code" .value=${product?.code || ''} autocomplete="off">
                 </div>
 
                 <div class="row mb-3">
@@ -624,7 +637,13 @@ export async function createEditProductPage(ctx, next) {
                     </label>
                 </div>
 
-                ${editPage ? "" : html`
+                ${editPage ?
+            html`
+                <div class="input-group mb-3 mt-3 w-25">
+                    <input id="printLabelQty" @keyup=${(e) => fixInputPrice({ target: e.target, int: true })} class="form-control" type="text" name="printLabel" id="printLabel">
+                    <button @click=${(e) => socket.emit('send-print', product, Number(document.getElementById("printLabelQty").value))} class="btn btn-outline-primary" type="button">Принтирай етикети</button>
+                </div>`
+            : html`
                     <div class="mb-3">
                         <input class="form-check-input" type="checkbox" value="" name="printLabel" id="printLabel" checked>
                         <label class="form-check-label" for="printLabel">
@@ -634,8 +653,8 @@ export async function createEditProductPage(ctx, next) {
 
                 <div id="alert" class="d-none alert" role="alert"></div>
                 ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'submit', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3' }) : ''}
-            </form>
-        </div>`;
+            </form >
+        </div > `;
 
     render(template(), container);
     render(sizesTemplate(selectedSizes), document.getElementById('addedSizes'));
