@@ -4,9 +4,23 @@ import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
 import { WooUpdateOrder } from "../woocommerce/orders.js";
+import { AutoIncrement } from "../models/autoincrement.js";
 
 export async function ordersRoutes() {
     const ordersRouter = express.Router();
+
+    ordersRouter.get('/orders/number', permit('user', 'manager', 'admin'), async (req, res) => {
+        try {
+            const { documentType, company } = req.query;
+            let newDocumentNumber = await AutoIncrement.findOne({ name: documentType, company });
+
+            newDocumentNumber = newDocumentNumber?.seq + 1 || 1;
+            res.json(newDocumentNumber);
+        } catch (error) {
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
 
     ordersRouter.get('/orders/params', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
