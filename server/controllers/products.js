@@ -2,6 +2,7 @@ import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
+import { Setting } from "../models/setting.js";
 import { roundPrice, uploadImg } from "./common.js";
 import fs from 'fs';
 
@@ -196,6 +197,9 @@ export const ProductController = {
         else if (!data.description)
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 
+        // Update upsaleAmount in settings
+        await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
+
         const product = await Product.create(data);
         return { product, status: 201 };
     },
@@ -336,6 +340,9 @@ export const ProductController = {
 
         else if (!data.description)
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
+
+        // Update upsaleAmount in settings
+        await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
 
         await product.updateOne(data, { new: true });
         return { status: 201, product };

@@ -12,7 +12,7 @@ import Quagga from 'quagga';
 import page from 'page';
 import { socket } from '@/api';
 
-var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false;
+var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false, lastUpsaleAmount;
 
 async function loadCategories() {
     const req = await axios.get('/categories');
@@ -240,9 +240,6 @@ const quantityTemplate = () => html`
         </div>
     `;
 
-//TODO GET FROM DB
-const lastUpsaleAmount = 5;
-
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">
@@ -273,7 +270,7 @@ const pricesTemplate = () => html`
 
             <div class="col">
                 <label for="upsaleAmount" class="form-label">Добавена стойност към всеки брой <span class="text-primary">(лв.)</span></label>
-                <input @keyup=${() => calculateProductPrices()} class="form-control border-primary" type="text" name="upsaleAmount" id="upsaleAmount" inputmode="decimal" .value=${lastUpsaleAmount || ''} autocomplete="off">
+                <input @keyup=${() => calculateProductPrices()} class="form-control border-primary" type="text" name="upsaleAmount" id="upsaleAmount" inputmode="decimal" .value=${lastUpsaleAmount} autocomplete="off">
             </div>
         </div>
     `;
@@ -558,13 +555,14 @@ export async function createEditProductPage(ctx, next) {
             selectedSizes = [];
         }
 
-        const keys = ['wholesaleMarkup', 'retailMarkup', 'deliveryPriceFields', 'wholesalePriceFields', 'retailPriceField'];
+        const keys = ['wholesaleMarkup', 'retailMarkup', 'deliveryPriceFields', 'wholesalePriceFields', 'retailPriceField', 'upsaleAmount'];
         const req = await axios.get('/settings', { params: { keys } });
-        wholesaleMarkup = req.data.filter(s => s.key === 'wholesaleMarkup')[0].value;
-        retailMarkup = req.data.filter(s => s.key === 'retailMarkup')[0].value;
-        deliveryPriceFields = req.data.filter(s => s.key === 'deliveryPriceFields')[0].value;
-        wholesalePriceFields = req.data.filter(s => s.key === 'wholesalePriceFields')[0].value;
-        retailPriceField = req.data.filter(s => s.key === 'retailPriceField')[0].value;
+        wholesaleMarkup = req.data.find(s => s.key === 'wholesaleMarkup').value;
+        retailMarkup = req.data.find(s => s.key === 'retailMarkup').value;
+        deliveryPriceFields = req.data.find(s => s.key === 'deliveryPriceFields').value;
+        wholesalePriceFields = req.data.find(s => s.key === 'wholesalePriceFields').value;
+        retailPriceField = req.data.find(s => s.key === 'retailPriceField').value;
+        lastUpsaleAmount = product.upsaleAmount || req.data.find(s => s.key === 'upsaleAmount').value;
     } catch (err) {
         console.error(err);
         alert('Възникна грешка')

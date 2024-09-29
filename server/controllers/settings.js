@@ -12,7 +12,8 @@ export async function createDefaultSettings() {
         deliveryPriceFields: 'unit', // which input field to show in product create page (can be whole - only whole package, unit - only unit price, both - both)
         wholesalePriceFields: 'unit', // which input field to show in product create page (can be whole - only whole package, unit - only unit price, both - both)
         retailPriceField: 'true', // show retail price in product create page
-        wooDocumentType: Object.keys(documentTypes)[0] // default type to assign to wooOrder when importing to app
+        wooDocumentType: Object.keys(documentTypes)[0], // default type to assign to wooOrder when importing to app
+        upsaleAmount: 0,
     }
 
     for (const [key, value] of Object.entries(defaultSettings)) {

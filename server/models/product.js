@@ -82,6 +82,10 @@ const productSchema = new Schema({
             }
         },
     ],
+    upsaleAmount: {
+        type: Number,
+        default: 0,
+    },
     deliveryPrice: {
         type: Number,
         match: [/^\d{1,}(\.\d{1,2})?$/, 'Цената трябва да е: пример 5.0, 3, 1.20!'],
