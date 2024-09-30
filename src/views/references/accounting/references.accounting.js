@@ -14,6 +14,10 @@ let selectedFilters = {}, path, total = {
     total: 0,
 };
 
+// set selectedFilters.from to start of month
+const today = new Date();
+selectedFilters.from = new Date(today.getFullYear(), today.getMonth(), 2).toISOString().split('T')[0];
+
 const table = ({ orders }) => html`
     <table class="mt-3 table table-bordered table-striped table-hover text-center d-print-block">
         <thead>
@@ -57,6 +61,8 @@ async function loadReferences() {
     try {
         const req = await axios.get(path)
         const { orders } = req.data;
+
+        console.log({ path })
 
         total = {
             vat: 0,
@@ -110,6 +116,7 @@ export function accountingReferencesPage(ctx, next) {
     path = ctx.path;
     if (ctx.querystring)
         selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
+    else page(path + `?from=${selectedFilters.from}`); // if no filters (from or to), auto set page as start of month
 
     const template = () => html`
         ${nav()}
