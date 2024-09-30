@@ -8,7 +8,8 @@ export async function FirstInitWooCommerce() {
     console.log("Starting WooCommerce initialization...")
 
     // Check if all products attributes exist in WooCommerce, if not - create them
-    WooCheckProductAttributesINIT();
-    WooCreateCategoriesINIT();
-    WooCreateProductsINIT();
+
+    // WooCheckProductAttributesINIT();
+    // WooCreateCategoriesINIT();
+    // WooCreateProductsINIT();
 }

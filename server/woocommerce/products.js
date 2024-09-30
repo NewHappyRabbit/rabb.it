@@ -89,15 +89,6 @@ export async function WooCheckProductAttributesINIT() {
         console.error("Response Data:", error.response.data);
     });
 }
-export async function WooCreateProductsINIT() {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-
-    const products = await Product.find({});
-    //TODO Use https://woocommerce.github.io/woocommerce-rest-api-docs/#batch-update-products instead of for each product
-    for (const product of products) {
-        WooCreateProduct(product);
-    }
-}
 
 //TODO Add this to README.md and make a section woocommerce setup
 /* NOTE this is a custom filter, must be added to snippets or functions.php file:
@@ -138,6 +129,112 @@ export async function WooUpdateQuantityProducts(products) {
         console.error("Response Headers:", error.response.headers);
         console.error("Response Data:", error.response.data);
     });
+}
+
+export async function WooCreateProductsINIT() {
+    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+
+    const mongoAttributes = await ProductAttribute.find({});
+    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
+    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+    const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
+
+    const doneProducts = [];
+    for (let product of products) {
+        const category = await Category.findById(product.category);
+        const data = {
+            name: product.name,
+            slug: "p" + product.code,
+            description: product.description,
+            regular_price: product.wholesalePrice.toString(),
+            sku: product.code,
+            categories: [{ id: category.woocommerce.id }],
+            stock_quantity: product.quantity,
+            "manage_stock": true, // enables the stock management
+        }
+
+        // If not in live environment, set product status as private to not show it for clients
+        if (process.env.ENV === 'dev') {
+            data.status = 'private';
+            data.catalog_visibility = 'hidden';
+        }
+
+        if (product.sizes.length > 0) {
+            const simpleSizes = product.sizes.map(s => s.size);
+            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+
+            data.attributes = [
+                { // pcs
+                    id: pcsId,
+                    visible: true,
+                    variation: false,
+                    options: (product.sizes.length * product.multiplier).toString(),
+                },
+                { // size
+                    id: sizeId,
+                    visible: true,
+                    variation: false,
+                    options: simpleSizes
+                },
+                { // viber size
+                    id: viberSizeId,
+                    visible: false,
+                    variation: false,
+                    options: viberSizes// Get the first and last size and do 'X-Y'
+                },
+                { // piecePrice
+                    id: piecePriceId,
+                    visible: true,
+                    variation: false,
+                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                },
+            ]
+        }
+
+        if (process.env.ENV !== 'dev' && product.image) {
+            data.images = [{ src: product.image.url }];
+
+            if (product.additionalImages) {
+                for (const image of product.additionalImages)
+                    data.images.push({ src: image.url });
+            }
+        }
+
+        doneProducts.push(data);
+    }
+
+    if (doneProducts.length > 0) {
+        // Batch accepts max 100 products per request
+        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+            const productsToSave = [];
+            const batch = doneProducts.slice(i, i + 100);
+            await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
+                // Success
+                for (let product of response.data.create) {
+                    const productInDb = products.find(p => p.code === product.sku);
+
+                    productInDb.woocommerce = {
+                        id: product.id,
+                        permalink: product.permalink
+                    }
+
+                    productsToSave.push(productInDb);
+                }
+
+                await Promise.all(productsToSave.map(p => p.save()));
+                console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
+            }).catch((error) => {
+                console.error(error);
+                // Invalid request, for 4xx and 5xx statuses
+                console.error("Response Status:", error.response.status);
+                console.error("Response Headers:", error.response.headers);
+                console.error("Response Data:", error.response.data);
+            });
+        }
+    }
 }
 
 export async function WooCreateProduct(product) {
