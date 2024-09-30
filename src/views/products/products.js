@@ -120,6 +120,7 @@ const table = ({ count, products, pageCount }) => html`
                         <th scope="col">Категория</th>
                         <th scope="col">Код</th>
                         <th scope="col">Име</th>
+                        <th scope="col">Описание</th>
                         <th scope="col" class="text-nowrap">Брой пакети</th>
                         <th scope="col">Размери</th>
                         <th scope="col" class="text-nowrap">Доставна</th>
@@ -135,6 +136,7 @@ const table = ({ count, products, pageCount }) => html`
                             <td>${product.category.path ? `${uslugifyPath(product.category.path)} > ${product.category.name}` : product.category.name}</td>
                             <td>${product.code}</td>
                             <td>${product.name}</td>
+                            <td>${product.description || ''}</td>
                             <td class="text-nowrap">${product.quantity} бр.</td>
                             <td>${product.sizes.length > 0 ? sizesTemplate(product.sizes) : ''}</td>
                             <td class="text-nowrap">
