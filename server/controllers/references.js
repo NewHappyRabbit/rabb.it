@@ -62,5 +62,18 @@ export const ReferencesController = {
         if (!orders || orders.length === 0) return { orders: [], count, pageCount };
 
         return { orders, count, pageCount };
+    },
+    getAccounting: async ({ from, to }) => {
+        const query = { type: 'invoice', deleted: { $ne: true } };
+
+        if (from || to) {
+            query.date = {
+                ...(from && { $gte: new Date(from).toISOString() }),
+                ...(to && { $lte: new Date(to).toISOString() })
+            }
+        }
+
+        const orders = await Order.find(query).select('number customer company total date').sort({ _id: -1 }).populate('customer company');
+        return { orders };
     }
 }

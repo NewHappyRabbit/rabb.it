@@ -4,16 +4,20 @@
 	}
 }
 
-#printContainer * {
+#printContainer *,
+.printTable,
+.printTable * {
 	color: black !important;
 	border-color: black !important;
 }
 
-#printContainer table#printProductWholesaleTable thead {
+#printContainer table#printProductWholesaleTable thead,
+.printTable thead {
 	font-size: 0.7rem !important;
 }
 
-#printContainer table#printProductWholesaleTable tbody {
+#printContainer table#printProductWholesaleTable tbody,
+.printTable tbody {
 	font-size: 0.8rem !important;
 }
 

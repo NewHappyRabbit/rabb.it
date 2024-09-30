@@ -4,9 +4,9 @@ import express from 'express';
 import { ReferencesController } from "../controllers/references.js";
 
 export function referencesSalesRoutes() {
-    const salesRouter = express.Router();
+    const referencesRouter = express.Router();
 
-    salesRouter.get('/references/orders', permit('manager', 'admin'), async (req, res) => {
+    referencesRouter.get('/references/orders', permit('manager', 'admin'), async (req, res) => {
         try {
             const { pageSize = 15, pageNumber = 1, print = false, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product } = req.query;
 
@@ -14,11 +14,22 @@ export function referencesSalesRoutes() {
 
             res.json({ orders, count, pageCount });
         } catch (error) {
-            console.log(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
 
-    app.use(basePath, salesRouter);
+    referencesRouter.get('/references/accounting', permit('manager', 'admin'), async (req, res) => {
+        try {
+            const { from, to } = req.query;
+            const { orders } = await ReferencesController.getAccounting({ from, to });
+            res.json({ orders });
+        } catch (error) {
+            console.log(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    })
+
+    app.use(basePath, referencesRouter);
 }

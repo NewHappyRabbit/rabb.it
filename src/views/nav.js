@@ -61,12 +61,13 @@ export const nav = () => html`
                     </li>
                     ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`
                         <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-file-earmark-text"></i> Справки
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-md-end">
-                            <li><a class="dropdown-item" href="/references/orders"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
-                        </ul>
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-file-earmark-text"></i> Справки
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-md-end">
+                                <li><a class="dropdown-item" href="/references/orders"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
+                                <li><a class="dropdown-item" href="/references/accounting"><i class="bi bi-file-earmark-text"></i> Експорт към счетоводство</a></li>
+                            </ul>
                     </li>` : ''}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">

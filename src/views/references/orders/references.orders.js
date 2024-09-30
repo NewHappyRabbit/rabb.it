@@ -253,8 +253,6 @@ export function referencesOrdersPage(ctx, next) {
     pageCtx = ctx;
     temp = undefined;
 
-    // check if filters are applied
-    //TODO Use this way to get params from filters everywhere
     if (ctx.querystring)
         selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
     else
