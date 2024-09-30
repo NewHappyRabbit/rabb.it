@@ -1,7 +1,7 @@
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
 import axios from "axios";
-import { addQuery, delay, removeQuery } from "@/api";
+import { delay } from "@/api";
 import page from 'page';
 import { nav } from '../nav.js';
 import { until } from "lit/directives/until.js";
@@ -9,7 +9,7 @@ import { spinner } from "../components.js";
 import { loggedInUser } from "../login.js";
 
 
-var selectedCustomer, path, pageCtx;
+var selectedCustomer, path, selectedFilters = {}, pageCount;
 
 async function deleteCustomer() {
     try {
@@ -65,8 +65,6 @@ async function loadQuickView(_id) {
         const customer = req.data;
         const modal = document.querySelector('#quickViewModal .modal-body');
 
-
-
         render(quickViewTemplate(customer), modal);
     } catch (err) {
         console.error(err);
@@ -89,7 +87,8 @@ const customerRow = (customer) => html`
     </tr>
 `;
 
-const table = (customers, prevCursor, nextCursor) => html`
+const table = (customers, count) => html`
+    <div class="mt-2 mb-2">Брой клиенти: ${count}</div>
     <div class="table-responsive">
         <table class="mt-3 table table-striped table-hover text-center">
             <thead>
@@ -106,65 +105,86 @@ const table = (customers, prevCursor, nextCursor) => html`
             </tbody>
         </table>
     </div>
-    <div class="d-flex justify-content-center">
-        ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
-        ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
+    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
+        ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
+        ${pageCount < 2 ? '' : html`
+            <div class="input-group w-25">
+                <input @change=${goToPage} class="form-control" type="text" name="pageNumber" id="pageNumber" value=${selectedFilters.pageNumber || 1}>
+                <span class="input-group-text">/${pageCount || 1}</span>
+            </div>`}
+        ${Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2) ? '' : html`<button class="btn btn-primary" value="nextPage" @click=${nextPage}><i  class="bi bi-arrow-right"></i></button>`}
     </div>
 `;
-
-function switchPage(cursor) {
-    var uri;
-
-    uri = addQuery(pageCtx, 'cursor', cursor);
-
-    page(uri);
-}
 
 async function loadCustomers() {
     try {
         const req = await axios.get(path)
-        const customers = req.data.customers;
-        const prevCursor = req.data.prevCursor;
-        const nextCursor = req.data.nextCursor;
+        const { customers, count, pageCount: pgCount } = req.data;
 
-        return table(customers, prevCursor, nextCursor);
+        pageCount = pgCount;
+        return table(customers, count);
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
     }
 }
 
+function goToPage(e) {
+    const pageNumber = Number(e.target.value);
+
+    if (!pageNumber || pageNumber < 1) selectedFilters.pageNumber = 1;
+    else if (pageNumber > pageCount) selectedFilters.pageNumber = pageCount;
+    else selectedFilters.pageNumber = pageNumber;
+
+    applyFilters();
+}
+
+function prevPage() {
+    if (!selectedFilters.pageNumber || selectedFilters.pageNumber === 1) return;
+    else selectedFilters.pageNumber = selectedFilters.pageNumber - 1;
+    applyFilters();
+}
+
+function nextPage() {
+    if (Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2)) return;
+    else if (!selectedFilters.pageNumber && pageCount > 1) selectedFilters.pageNumber = 2;
+    else selectedFilters.pageNumber = Number(selectedFilters.pageNumber) + 1;
+    applyFilters();
+}
+
+async function applyFilters(e) {
+    const formData = new FormData(document.getElementById('filters'));
+    const data = Object.fromEntries(formData.entries());
+
+    selectedFilters.search = data.search;
+
+    if (data.showDeleted)
+        selectedFilters.showDeleted = true;
+    else selectedFilters.showDeleted = ''
+
+
+    if (e) // if coming from filters and not pagination
+        delete selectedFilters.pageNumber;
+
+    Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
+
+    const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
+
+    if (uri.length)
+        page('/customers?' + uri);
+    else
+        page('/customers');
+
+}
+
 export async function customersPage(ctx, next) {
     path = ctx.path;
-    pageCtx = ctx;
 
-    function findCustomer(e) {
-        const search = e.target.value;
-        const lastSearch = ctx.querystring.split('search=')[1]?.split('&')[0];
-
-        if (lastSearch === search) // Skip
-            return;
-
-        var uri;
-        if (search.length == 0) // Remove from query
-            uri = removeQuery(ctx, 'search');
-        else
-            uri = addQuery(ctx, 'search', search);
-
-        page(uri);
-    }
-
-    function toggleDeleted(e) {
-        const showDeleted = e.target.checked;
-        var uri;
-
-        if (showDeleted)
-            uri = addQuery(ctx, 'showDeleted', true);
-        else
-            uri = removeQuery(ctx, 'showDeleted');
-
-        page(uri);
-    }
+    // check if filters are applied
+    if (ctx.querystring)
+        selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
+    else
+        selectedFilters = {};
 
     const quickViewModal = () => html`
     <div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true" >
@@ -201,13 +221,13 @@ export async function customersPage(ctx, next) {
 
     const filters = () => html`
         <div class="col-9 col-sm">
-            <label for="customer">Клиент:</label>
-            <input @keyup=${delay(findCustomer, 300)} list="customersList" placeholder="Въведи име, булстат или телефон" id="customer" class="form-control" autocomplete="off">
+            <label for="search">Клиент:</label>
+            <input @keyup=${delay(applyFilters, 300)} list="customersList" placeholder="Въведи име, булстат или телефон" id="search" name="search" value=${selectedFilters?.search} class="form-control" autocomplete="off">
         </div>
         <div class="col-3 col-sm">
             <div class="form-check form-switch p-0">
                 <label class="form-check-label d-block" for="showHidden">Покажи изтрити:</label>
-                <input @change=${toggleDeleted} class="form-check-input ms-0 fs-4 pe-cursor" type="checkbox" role="switch" name="showDeleted" id="showDeleted">
+                <input @change=${applyFilters} ?checked=${selectedFilters?.showDeleted} class="form-check-input ms-0 fs-4 pe-cursor" type="checkbox" role="switch" name="showDeleted" id="showDeleted">
             </div>
         </div>
     `;
@@ -218,9 +238,9 @@ export async function customersPage(ctx, next) {
         ${nav()}
         <div class="container-fluid">
             <a href='/customers/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай партньор</a>
-            <div id="filters" class="row align-items-end w-100">
+            <form id="filters" class="row align-items-end w-100">
                 ${filters()}
-            </div>
+            </form>
             ${until(loadCustomers(), spinner)}
         </div>
     `;

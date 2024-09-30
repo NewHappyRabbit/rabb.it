@@ -67,7 +67,7 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
-    get: async ({ page, cursor, search, onlyHidden, onlyOutOfStock }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -88,39 +88,20 @@ export const ProductController = {
             $and: [{ outOfStock: { $eq: onlyOutOfStock } }, { deleted: { $ne: true } }],
         };
 
-        var prevCursor = null;
-        var nextCursor = null;
-        var limit = 15;
-
-        cursor && query.$and.push({ _id: { $lte: cursor } });
-
         if (onlyHidden && onlyHidden === 'true')
             query.$and.push({ hidden: true });
 
         if (search)
             query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
 
-        const products = await Product.find(query).limit(limit).sort({ _id: -1 }).populate('category', 'name path');
+        const products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ _id: -1 }).populate('category', 'name path');
         const count = await Product.countDocuments(query);
+        const pageCount = Math.ceil(count / pageSize);
 
         if (!products || products.length === 0)
-            return { count, products: [], prevCursor, nextCursor, status: 200 };
+            return { count, pageCount, products: [], status: 200 };
 
-        // get next product to generate cursor for traversing
-        if (products.length === limit)
-            nextCursor = products[products.length - 1]._id;
-
-        if (cursor) {
-            const prevQuery = query;
-            prevQuery.$and.map(q => {
-                if (q._id) q._id = { $gt: cursor };
-            })
-
-            const prevProducts = await Product.find(query).sort({ _id: -1 });
-            prevCursor = prevProducts[prevProducts.length - limit + 1]?._id || null;
-        }
-
-        return { count, products, prevCursor, nextCursor, status: 200 };
+        return { count, pageCount, products, status: 200 };
     },
     getById: async (id) => {
         const product = await Product.findById(id);

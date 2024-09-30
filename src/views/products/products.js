@@ -5,12 +5,12 @@ import { html, render } from 'lit/html.js';
 import { nav } from '@/views/nav.js';
 import { until } from 'lit/directives/until.js';
 import axios from 'axios';
-import { addQuery, delay, unslugify, formatPrice } from '@/api';
+import { delay, unslugify, formatPrice } from '@/api';
 import { spinner } from '@/views/components';
 import { loggedInUser } from '@/views/login';
 import { socket } from '@/api';
 
-var path, pageCtx, selectedFilters = {};
+var path, selectedFilters = {}, pageCount;
 
 
 var selectedProduct;
@@ -18,9 +18,10 @@ var selectedProduct;
 async function loadProducts() {
     try {
         const req = await axios.get(path)
-        const { products, prevCursor, nextCursor, count } = req.data
+        const { products, count, pageCount: pgCount } = req.data
+        pageCount = pgCount;
 
-        return table({ count, products, prevCursor, nextCursor });
+        return table({ count, products, pageCount });
     } catch (err) {
         console.error(err);
         alert('Грешка при зареждане на продуктите');
@@ -109,7 +110,7 @@ function uslugifyPath(path) {
     return newPath.join(' > ');
 }
 
-const table = ({ count, products, prevCursor, nextCursor }) => html`
+const table = ({ count, products, pageCount }) => html`
     <div class="mt-2 mb-2">Брой артикули: ${count}</div>
     <div class="table-responsive mt-2">
         <table class="table table-striped table-hover text-center">
@@ -154,48 +155,70 @@ const table = ({ count, products, prevCursor, nextCursor }) => html`
                     `)}
                 </tbody >
             </table >
-    <div class="d-flex justify-content-center">
-        ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
-        ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
+    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
+        ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
+        ${pageCount < 2 ? '' : html`
+            <div class="input-group w-25">
+                <input @change=${goToPage} class="form-control" type="text" name="pageNumber" id="pageNumber" value=${selectedFilters.pageNumber || 1}>
+                <span class="input-group-text">/${pageCount || 1}</span>
+            </div>`}
+        ${Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2) ? '' : html`<button class="btn btn-primary" value="nextPage" @click=${nextPage}><i  class="bi bi-arrow-right"></i></button>`}
     </div>
     </div > `;
 
-function switchPage(cursor) {
-    var uri;
+function goToPage(e) {
+    const pageNumber = Number(e.target.value);
 
-    uri = addQuery(pageCtx, 'cursor', cursor);
+    if (!pageNumber || pageNumber < 1) selectedFilters.pageNumber = 1;
+    else if (pageNumber > pageCount) selectedFilters.pageNumber = pageCount;
+    else selectedFilters.pageNumber = pageNumber;
 
-    page(uri);
+    applyFilters();
+}
+
+function prevPage() {
+    if (!selectedFilters.pageNumber || selectedFilters.pageNumber === 1) return;
+    else selectedFilters.pageNumber = selectedFilters.pageNumber - 1;
+    applyFilters();
+}
+
+function nextPage() {
+    if (Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2)) return;
+    else if (!selectedFilters.pageNumber && pageCount > 1) selectedFilters.pageNumber = 2;
+    else selectedFilters.pageNumber = Number(selectedFilters.pageNumber) + 1;
+    applyFilters();
 }
 
 async function applyFilters(e) {
-    e.preventDefault();
-
     const formData = new FormData(document.getElementById('filters'));
     const data = Object.fromEntries(formData.entries());
 
+    selectedFilters.search = data.search;
+
     if (data.onlyHidden)
-        data.onlyHidden = true;
+        selectedFilters.onlyHidden = true;
+    else selectedFilters.onlyHidden = ''
 
     if (data.onlyOutOfStock)
-        data.onlyOutOfStock = true;
+        selectedFilters.onlyOutOfStock = true;
+    else selectedFilters.onlyOutOfStock = ''
 
-    // remove empty fields
-    Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
+    if (e) // if coming from filters and not pagination
+        delete selectedFilters.pageNumber;
 
-    if (Object.keys(data).length === 0)
-        page('/products')
-    else if (data.length === 1)
-        page(`/products?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
-    else {
-        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
-        page(`/products?${uri} `);
-    }
+    Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
+
+    const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
+
+    if (uri.length)
+        page('/products?' + uri);
+    else
+        page('/products');
+
 }
 
 export function productsPage(ctx, next) {
     path = ctx.path;
-    pageCtx = ctx;
 
     // check if filters are applied
     if (ctx.querystring)
@@ -228,14 +251,14 @@ export function productsPage(ctx, next) {
         ${deleteModal()}
         ${printModal()}
         ${nav()}
-<div class="container-fluid">
-    <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
-    <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
-    <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
-        ${filters()}
-    </form>
-            ${until(loadProducts(), spinner)}
-        </div >
+        <div class="container-fluid">
+            <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
+            <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
+            <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
+                ${filters()}
+            </form>
+                    ${until(loadProducts(), spinner)}
+        </div>
     `;
 
     render(template(), container);

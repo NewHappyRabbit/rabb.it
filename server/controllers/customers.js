@@ -17,7 +17,7 @@ function validateCustomer(data) {
 }
 
 export const CustomerController = {
-    get: async ({ search, cursor, showDeleted, page }) => {
+    get: async ({ search, pageSize, pageNumber, showDeleted, page }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all customers
         if (page && (page === 'orders' || page === 'references')) {
@@ -31,48 +31,21 @@ export const CustomerController = {
         }
 
         let query = {}
-        var prevCursor = null;
-        var nextCursor = null;
-        var limit = 15;
 
         // Either run search or normal pagination, tried but cant get both to work together
         if (search) { // search in vat or name
             query.$or = [{ vat: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }];
-            limit = 0;
-        } else if (!search && cursor) query._id = { $gte: cursor };
+        }
 
         if (!showDeleted) query.deleted = { $ne: true };
 
-        const customers = await Customer.find(query).limit(limit).select('name vat phone discount deleted');
+        const customers = await Customer.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('name vat phone discount deleted');
+        const count = await Customer.countDocuments(query);
+        const pageCount = Math.ceil(count / pageSize);
 
-        if (!customers || customers.length === 0) return { status: 200, customers: [], prevCursor, nextCursor };
+        if (!customers || customers.length === 0) return { status: 200, customers: [], pageCount, count };
 
-        if (!search) {
-            // get next customer to generate cursor for traversing
-            const nextQuery = {
-                _id: { $gt: customers[customers.length - 1]._id },
-            }
-            if (!showDeleted)
-                nextQuery.deleted = { $ne: true };
-
-            const nextCustomer = await Customer.find(nextQuery).limit(limit).select('_id').sort({ _id: 1 });
-            nextCursor = (nextCustomer.length > 0) ? nextCustomer[0]._id : null;
-
-            // get previous customers to generate cursor for traversing
-            const prevQuery = {
-                _id: { $lt: cursor },
-            }
-
-            if (!showDeleted)
-                prevQuery.deleted = { $ne: true };
-
-            const prevCustomers = await Customer.find(prevQuery).limit(limit).select('_id').sort({ _id: -1 });
-            prevCursor = prevCustomers.length > 0 ? prevCustomers.slice(-1)[0]._id : null;
-        }
-
-        console.log(customers)
-
-        return { status: 200, customers, prevCursor, nextCursor };
+        return { status: 200, customers, pageCount, count };
     },
     findById: async (id) => {
         const customer = await Customer.findById(id);

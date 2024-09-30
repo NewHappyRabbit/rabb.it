@@ -261,37 +261,6 @@ export function delay(fn, ms) {
     }
 }
 
-export function addQuery(ctx, name, value) {
-    var uri = ctx.path;
-
-    if (!name || value === undefined)
-        return uri;
-
-    if (!ctx.querystring)
-        return uri += `?${name}=${value}`;
-
-    if (ctx.querystring && !ctx.querystring.includes(name))
-        return uri += `&${name}=${value}`;
-
-    const regex = new RegExp(`${name}=[^&]*`);
-
-    return uri = uri.replace(regex, `${name}=${value}`);
-}
-
-export function removeQuery(ctx, name) {
-    var uri = ctx.path;
-
-    const removeRegex = new RegExp(`(\\?)?(&)?${name}=[^&]*`);
-    uri = uri.replace(removeRegex, '');
-
-    // Check if url is bugged (../url&name=value) and convert to (../url?name=value)
-    const bugfixRegex = /\/.+(&).+=/;
-    if (bugfixRegex.test(uri))
-        uri = uri.replace(/&/, '?');
-
-    return uri;
-}
-
 // replace cyrillic characters with latin
 const alphabet = { "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "j", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh", "щ": "sht", "ъ": "u", "ь": "y", "ю": "yu", "я": "ya" };
 

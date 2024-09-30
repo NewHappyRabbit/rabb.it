@@ -8,12 +8,12 @@ export function customersRoutes() {
 
     customersRouter.get('/customers', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { cursor, search, showDeleted, page } = req.query;
-            const { customers, prevCursor, nextCursor, status, message } = await CustomerController.get({ cursor, search, showDeleted, page });
+            const { pageSize = 15, pageNumber = 1, search, showDeleted, page } = req.query;
+            const { customers, count, pageCount, status, message } = await CustomerController.get({ pageSize, pageNumber, search, showDeleted, page });
 
             if (status !== 200) return res.status(status).send(message);
 
-            res.json({ customers, prevCursor, nextCursor });
+            res.json({ customers, count, pageCount });
         } catch (error) {
             console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
