@@ -7,10 +7,7 @@ const customerSchema = new Schema({
         type: String,
         required: true,
     },
-    mol: {
-        type: String,
-        required: true,
-    },
+    mol: String,
     phone: String,
     email: {
         type: String,
@@ -18,15 +15,12 @@ const customerSchema = new Schema({
     },
     vat: {
         type: String,
-        required: true,
+        sparse: true,
         unique: true,
         match: /^[0-9]{9,10}$/,
     },
     taxvat: String, // example: BG123123123
-    address: {
-        type: String,
-        required: true,
-    },
+    address: String,
     deliveryAddress: String,
     discount: {
         type: Number,

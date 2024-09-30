@@ -378,9 +378,9 @@ const wholesaleProductsTable = (products) => html`
                 <td>№</td>
                 <th>Продукт</th>
                 <th>Мярка</th>
+                <th class="text-primary">Брой в пакет</th>
                 <th>Цена за брой</th>
                 <th class="text-primary">Повтарящи бр. от размер</th>
-                <th class="text-primary">Брой в пакет</th>
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
@@ -397,12 +397,13 @@ const wholesaleProductsTable = (products) => html`
 
                     <td>${product?.product?.unitOfMeasure || html`<input @change=${updateUnitOfMeasure} type="text" class="form-control" required name="unitOfMeasure" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.unitOfMeasure}/>`}</td>
 
-                    <td class="text-nowrap">${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
-
                     <td>
                         ${product?.product?.sizes?.length
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}
+
+                    <td class="text-nowrap">${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+
                     </td>
                     ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
@@ -1160,7 +1161,6 @@ export async function createEditOrderPage(ctx, next) {
             orderType = order.orderType;
             addedProducts = order.products;
             documentType = order.type;
-            console.log(order);
 
             for (let product of addedProducts) {
                 product.index = addedProductsIndex++;

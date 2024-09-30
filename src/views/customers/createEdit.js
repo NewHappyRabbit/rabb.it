@@ -15,17 +15,9 @@ function validateCustomer(data) {
         invalidFlag = markInvalid('name');
     else markValid('name');
 
-    if (!data.mol)
-        invalidFlag = markInvalid('mol');
-    else markValid('mol');
-
-    if (!data.vat || data.vat.length > 10 || data.vat.length < 9)
+    if (data.vat && (data.vat.length > 10 || data.vat.length < 9))
         invalidFlag = markInvalid('vat');
     else markValid('vat');
-
-    if (!data.address)
-        invalidFlag = markInvalid('address');
-    else markValid('address');
 
     // if discount entered, check if format is X or X.Y or XY.Z (ex. 1 or 1.5 or 12.5)
     if (data.discount && (data.discount < 0 || data.discount > 100 || !priceRegex.test(data.discount)))
@@ -124,13 +116,13 @@ export async function createEditCustomerPage(ctx, next) {
 
                 <div class="col-sm-6">
                     <label for="mol" class="form-label">МОЛ/Име</label>
-                    <input class="form-control border-primary" type="text" id="mol" name="mol" .value=${customer && customer.mol} placeholder="пример: Иван Иванов" required autocomplete="off">
+                    <input class="form-control" type="text" id="mol" name="mol" .value=${customer && customer.mol} placeholder="пример: Иван Иванов" autocomplete="off">
                 </div>
 
                 <div class="col-sm-6">
                     <label for="vat" class="form-label">ЕИК/ЕГН</label>
                     <div class="input-group">
-                        <input class="form-control border-primary" type="text" id="vat" name="vat" .value=${customer && customer.vat} placeholder="9/10 цифри" pattern="[0-9]{9,10}" inputmode="numeric" maxlength="10" required autocomplete="off">
+                        <input class="form-control" type="text" id="vat" name="vat" .value=${customer && customer.vat} placeholder="9/10 цифри" pattern="[0-9]{9,10}" inputmode="numeric" maxlength="10" autocomplete="off">
                     </div>
                 </div>
 
@@ -143,7 +135,7 @@ export async function createEditCustomerPage(ctx, next) {
 
                 <div class="col-sm-6">
                     <label for="address" class="form-label">Адрес</label>
-                    <input class="form-control border-primary" type="text" id="address" name="address" placeholder="пример: гр. Русе, ул. Шипка 44" .value=${customer && customer.address} required autocomplete="off">
+                    <input class="form-control" type="text" id="address" name="address" placeholder="пример: гр. Русе, ул. Шипка 44" .value=${customer && customer.address} autocomplete="off">
                 </div>
 
                 <div class="col-sm-6">
