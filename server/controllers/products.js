@@ -71,8 +71,13 @@ export const ProductController = {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
-        if (page && page === 'orders' || page === 'references') {
+        if (page && page === 'orders') {
             const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
+            return { products, status: 200 };
+        }
+
+        if (page && page === 'references') {
+            const products = await Product.find().select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
             return { products, status: 200 };
         }
 

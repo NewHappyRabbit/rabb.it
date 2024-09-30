@@ -9,25 +9,68 @@ import { spinner } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login.js";
 
-var selectedSale, pageCtx, path, params, selectedFilters = {};
+var selectedSale, path, params, pageCount, selectedFilters = {};
 var temp;
 
-function switchPage(cursor) {
-    const query = pageCtx.querystring;
+function goToPage(e) {
+    const pageNumber = Number(e.target.value);
 
-    if (query.length === 0)
-        page('/orders/?cursor=' + cursor);
-    else if (query.includes('cursor')) {
-        // replace cursor value in query
-        const newQuery = query.split('&').map(q => q.includes('cursor') ? 'cursor=' + cursor : q).join('&');
-        page('/orders/?' + newQuery);
-    } else {
-        // add cursor to query
-        page('/orders/?' + query + '&cursor=' + cursor);
-    }
+    if (!pageNumber || pageNumber < 1) selectedFilters.pageNumber = 1;
+    else if (pageNumber > pageCount) selectedFilters.pageNumber = pageCount;
+    else selectedFilters.pageNumber = pageNumber;
+
+    applyFilters();
 }
 
-const table = ({ count, orders, prevCursor, nextCursor }) => html`
+function prevPage() {
+    if (!selectedFilters.pageNumber || selectedFilters.pageNumber === 1) return;
+    else selectedFilters.pageNumber = selectedFilters.pageNumber - 1;
+    applyFilters();
+}
+
+function nextPage() {
+    if (Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2)) return;
+    else if (!selectedFilters.pageNumber && pageCount > 1) selectedFilters.pageNumber = 2;
+    else selectedFilters.pageNumber = Number(selectedFilters.pageNumber) + 1;
+    applyFilters();
+}
+
+async function applyFilters(e) {
+    const formData = new FormData(document.getElementById('filters'));
+    const data = Object.fromEntries(formData.entries());
+    data.pageNumber = selectedFilters.pageNumber;
+
+    if (data.customer)
+        data.customer = data.customer?.split('[')[1]?.split(']')[0];
+
+    if (data.company)
+        data.company = data.company?.split('[')[1]?.split(']')[0];
+
+    if (!data.customer)
+        data.customer = '';
+
+    if (!data.company)
+        data.company = '';
+
+    selectedFilters = data;
+
+    if (data.unpaid)
+        selectedFilters.unpaid = true;
+
+    if (e) // if coming from filters and not pagination
+        delete selectedFilters.pageNumber;
+
+    Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
+
+    const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
+
+    if (uri.length)
+        page('/orders?' + uri);
+    else
+        page('/orders');
+}
+
+const table = ({ count, orders, pageCount }) => html`
     <div class="mt-2 mb-2">Брой документи: ${count}</div>
     <div class="table-responsive">
         <table class="mt-3 table table-striped table-hover text-center align-middle">
@@ -66,53 +109,30 @@ const table = ({ count, orders, prevCursor, nextCursor }) => html`
             </tbody>
         </table>
     </div>
-    <div class="d-flex justify-content-center">
-        ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
-        ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
+    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
+        ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
+        ${pageCount < 2 ? '' : html`
+            <div class="input-group w-25">
+                <input @change=${goToPage} class="form-control" type="text" name="pageNumber" id="pageNumber" value=${selectedFilters.pageNumber || 1}>
+                <span class="input-group-text">/${pageCount || 1}</span>
+            </div>`}
+        ${Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2) ? '' : html`<button class="btn btn-primary" value="nextPage" @click=${nextPage}><i  class="bi bi-arrow-right"></i></button>`}
     </div>
 `;
-
-async function applyFilters(e) {
-    e.preventDefault();
-
-    const formData = new FormData(document.getElementById('filters'));
-    const data = Object.fromEntries(formData.entries());
-
-    if (data.customer)
-        data.customer = data.customer.split('[')[1].split(']')[0];
-
-    if (data.company)
-        data.company = data.company.split('[')[1].split(']')[0];
-
-    if (data.unpaid)
-        data.unpaid = true;
-
-    // remove empty fields
-    Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
-
-    if (Object.keys(data).length === 0)
-        page('/orders')
-    else if (data.length === 1)
-        page(`/orders?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
-    else {
-        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
-        page(`/orders?${uri}`);
-    }
-}
 
 // TODO Add filter for only woocommerce or only app orderes
 const filters = ({ customers, companies, params }) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
             <div class="col-6 col-sm">
                 <label for="customer">Партньор:</label>
-                <input .value=${(temp = customers.filter(c => c.vat === selectedFilters?.customer)[0]) ? `${temp.name} [${temp.vat}] ${temp.phone ? `(${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
+                <input value=${(temp = customers.filter(c => c.vat === selectedFilters?.customer)[0]) ? `${temp.name} [${temp.vat}] ${temp.phone ? `(${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
                 <datalist id="customersList">
                     ${customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}] ${customer.phone ? `(${customer.phone})` : ''}`}>`)}
                 </datalist>
             </div>
             <div class="col-6 col-sm">
                 <label for="company">Обект:</label>
-                <input .value=${(temp = companies.filter(c => c.vat === selectedFilters?.company)[0]) ? `${temp.name} [${temp.vat}]` : ''} list="companiesList" placeholder="Всички" name="company" id="company" class="form-control" autocomplete="off">
+                <input value=${(temp = companies.filter(c => c.vat === selectedFilters?.company)[0]) ? `${temp.name} [${temp.vat}]` : ''} list="companiesList" placeholder="Всички" name="company" id="company" class="form-control" autocomplete="off">
                 <datalist id="companiesList">
                     ${companies.map(company => html`<option value=${`${company.name} [${company.vat}]`}>`)}
                 </datalist>
@@ -161,7 +181,9 @@ const filters = ({ customers, companies, params }) => html`
 
 async function loadSales() {
     try {
-        const { count, orders, prevCursor, nextCursor } = (await axios.get(path)).data;
+        const req = await axios.get(path);
+        const { count, orders, pageCount: pgCount } = req.data;
+        pageCount = pgCount;
 
         params = (await axios.get('/orders/params')).data;
         const customers = (await axios.get('/customers', { params: { page: 'orders' } })).data.customers;
@@ -169,7 +191,7 @@ async function loadSales() {
 
         return html`
         ${filters({ customers, companies, params })}
-        ${table({ count, orders, prevCursor, nextCursor })}`
+        ${table({ count, orders, pageCount })}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
@@ -191,7 +213,6 @@ async function deleteSale() {
 
 export function salesPage(ctx, next) {
     path = ctx.path;
-    pageCtx = ctx;
     temp = undefined;
 
     // check if filters are applied

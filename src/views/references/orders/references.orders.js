@@ -8,24 +8,81 @@ import { spinner } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login";
 
-var pageCtx, path, params, selectedFilters = {};
+var pageCtx, path, params, pageCount, selectedFilters = {};
 var temp;
 
-function switchPage(cursor) {
-    const query = pageCtx.querystring;
+function goToPage(e) {
+    const pageNumber = Number(e.target.value);
 
-    if (query.length === 0)
-        page('/references/orders/?cursor=' + cursor);
-    else if (query.includes('cursor')) {
-        // replace cursor value in query
-        const newQuery = query.split('&').map(q => q.includes('cursor') ? 'cursor=' + cursor : q).join('&');
-        page('/references/orders/?' + newQuery);
-    } else
-        page('/references/orders/?' + query + '&cursor=' + cursor); // add cursor to query
+    if (!pageNumber || pageNumber < 1) selectedFilters.pageNumber = 1;
+    else if (pageNumber > pageCount) selectedFilters.pageNumber = pageCount;
+    else selectedFilters.pageNumber = pageNumber;
+
+    applyFilters();
 }
 
-// TODO Remove certain columns when print = true
-const table = ({ print = false, orders, prevCursor, nextCursor }) => html`
+function prevPage() {
+    if (!selectedFilters.pageNumber || selectedFilters.pageNumber === 1) return;
+    else selectedFilters.pageNumber = selectedFilters.pageNumber - 1;
+    applyFilters();
+}
+
+function nextPage() {
+    if (Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2)) return;
+    else if (!selectedFilters.pageNumber && pageCount > 1) selectedFilters.pageNumber = 2;
+    else selectedFilters.pageNumber = Number(selectedFilters.pageNumber) + 1;
+    applyFilters();
+}
+
+async function applyFilters(e) {
+    const formData = new FormData(document.getElementById('filters'));
+    const data = Object.fromEntries(formData.entries());
+    data.pageNumber = selectedFilters.pageNumber;
+
+    if (data.customer)
+        data.customer = data.customer?.split('[')[1]?.split(']')[0];
+
+    if (data.company)
+        data.company = data.company?.split('[')[1]?.split(']')[0];
+
+    if (data.user)
+        data.user = data.user.split('[')[1].split(']')[0];
+
+    if (data.product)
+        data.product = data.product.split('[')[1].split(']')[0];
+
+    if (!data.customer)
+        data.customer = '';
+
+    if (!data.company)
+        data.company = '';
+
+    if (!data.user)
+        data.user = '';
+
+    if (!data.product)
+        data.product = '';
+
+    selectedFilters = data;
+
+    if (data.unpaid)
+        selectedFilters.unpaid = true;
+
+    if (e) // if coming from filters and not pagination
+        delete selectedFilters.pageNumber;
+
+    Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
+
+    const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
+
+    if (uri.length)
+        page('/references/orders?' + uri);
+    else
+        page('/references/orders');
+}
+
+const table = ({ orders, count, pageCount }) => html`
+    <div class="mt-2 mb-2">Брой редове: ${count}</div>
     <table class="mt-3 table table-bordered table-striped table-hover text-center">
         <thead>
             <tr>
@@ -70,42 +127,16 @@ const table = ({ print = false, orders, prevCursor, nextCursor }) => html`
             `)}
         </tbody>
     </table>
-    <div class="d-flex justify-content-center">
-        ${prevCursor ? html`<button @click=${() => switchPage(prevCursor)} class="btn btn-primary"><i class="bi bi-arrow-left"></i> Предишна страница</button>` : ''}
-        ${nextCursor ? html`<button @click=${() => switchPage(nextCursor)} class="btn btn-primary">Следваща страница <i class="bi bi-arrow-right"></i></button>` : ''}
+    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
+        ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
+        ${pageCount < 2 ? '' : html`
+            <div class="input-group w-25">
+                <input @change=${goToPage} class="form-control" type="text" name="pageNumber" id="pageNumber" value=${selectedFilters.pageNumber || 1}>
+                <span class="input-group-text">/${pageCount || 1}</span>
+            </div>`}
+        ${Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2) ? '' : html`<button class="btn btn-primary" value="nextPage" @click=${nextPage}><i  class="bi bi-arrow-right"></i></button>`}
     </div>
 `;
-
-async function applyFilters(e) {
-    e.preventDefault();
-
-    const formData = new FormData(document.getElementById('filters'));
-    const data = Object.fromEntries(formData.entries());
-
-    if (data.customer)
-        data.customer = data.customer.split('[')[1].split(']')[0];
-
-    if (data.company)
-        data.company = data.company.split('[')[1].split(']')[0];
-
-    if (data.user)
-        data.user = data.user.split('[')[1].split(']')[0];
-
-    if (data.product)
-        data.product = data.product.split('[')[1].split(']')[0];
-
-    // remove empty fields
-    Object.keys(data).forEach(key => data[key] === '' && delete data[key]);
-
-    if (data.length === 0)
-        page('/references/orders')
-    else if (data.length === 1)
-        page(`/references/orders?${Object.keys(data)[0]}=${Object.values(data)[0]}`);
-    else {
-        const uri = Object.keys(data).map(key => `${key}=${data[key]}`).join('&');
-        page(`/references/orders?${uri}`);
-    }
-}
 
 const filters = (customers, companies, users, products, params) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
@@ -195,9 +226,8 @@ async function print() {
 async function loadReferences() {
     try {
         const req = await axios.get(path)
-        const orders = req.data.orders;
-        const prevCursor = req.data.prevCursor;
-        const nextCursor = req.data.nextCursor;
+        const { orders, count, pageCount: pgCount } = req.data;
+        pageCount = pgCount;
 
         //TODO When all controlers done, do a one route to get all params
         params = (await axios.get('/orders/params')).data;
@@ -208,7 +238,7 @@ async function loadReferences() {
 
         return html`
         ${filters(customers, companies, users, products, params)}
-        ${table({ orders, prevCursor, nextCursor })}`
+        ${table({ orders, count, pageCount })}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');

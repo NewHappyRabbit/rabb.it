@@ -155,6 +155,7 @@ const table = ({ count, products, pageCount }) => html`
                     `)}
                 </tbody >
             </table >
+    </div>
     <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
         ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
         ${pageCount < 2 ? '' : html`
@@ -164,7 +165,7 @@ const table = ({ count, products, pageCount }) => html`
             </div>`}
         ${Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2) ? '' : html`<button class="btn btn-primary" value="nextPage" @click=${nextPage}><i  class="bi bi-arrow-right"></i></button>`}
     </div>
-    </div > `;
+    `;
 
 function goToPage(e) {
     const pageNumber = Number(e.target.value);
@@ -214,7 +215,6 @@ async function applyFilters(e) {
         page('/products?' + uri);
     else
         page('/products');
-
 }
 
 export function productsPage(ctx, next) {

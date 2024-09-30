@@ -234,16 +234,10 @@ async function returnProductsQuantities(order) {
 }
 
 export const OrderController = {
-    get: async ({ cursor, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {
+    get: async ({ pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {
         let query = {
             $and: [{ deleted: { $ne: true } }]
         };
-
-        var prevCursor = null;
-        var nextCursor = null;
-        var limit = 15;
-
-        cursor && query.$and.push({ _id: { $lte: cursor } });
 
         number && query.$and.push({ number });
 
@@ -269,26 +263,13 @@ export const OrderController = {
             query.$and.push({ 'company': comp._id });
         }
 
-        const orders = await Order.find(query).limit(limit).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
+        const orders = await Order.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
         const count = await Order.countDocuments(query);
+        const pageCount = Math.ceil(count / pageSize);
 
-        if (!orders || orders.length === 0) return { count, orders: [], prevCursor, nextCursor };
+        if (!orders || orders.length === 0) return { count, pageCount, orders: [] };
 
-        // get next order to generate cursor for traversing
-        if (orders.length === limit)
-            nextCursor = orders[orders.length - 1]._id;
-
-        if (cursor) {
-            const prevQuery = query;
-            prevQuery.$and.map(q => {
-                if (q._id) q._id = { $gt: cursor };
-            })
-
-            const prevOrders = await Order.find(query).sort({ _id: -1 });
-            prevCursor = prevOrders[prevOrders.length - limit + 1]?._id || null;
-        }
-
-        return { count, orders, prevCursor, nextCursor };
+        return { count, pageCount, orders };
     },
     getParams: () => {
         var data = {

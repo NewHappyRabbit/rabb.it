@@ -8,11 +8,14 @@ export function referencesSalesRoutes() {
 
     salesRouter.get('/references/orders', permit('manager', 'admin'), async (req, res) => {
         try {
-            const { print, orders, prevCursor, nextCursor } = await ReferencesController.get(req.query);
+            const { pageSize = 15, pageNumber = 1, print = false, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product } = req.query;
 
-            res.json({ print, orders, prevCursor, nextCursor });
+            const { orders, count, pageCount } = await ReferencesController.get({ pageSize, pageNumber, print, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product });
+
+            res.json({ orders, count, pageCount });
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            console.log(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });

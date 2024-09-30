@@ -35,11 +35,13 @@ export async function ordersRoutes() {
 
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { count, orders, prevCursor, nextCursor } = await OrderController.get({ ...req.query });
+            const { from, to, type, orderType, customer, company, paymentType, unpaid, number, pageSize = 15, pageNumber = 1 } = req.query;
+            const { orders, count, pageCount } = await OrderController.get({ pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number });
 
-            res.json({ count, orders, prevCursor, nextCursor });
+            res.json({ count, orders, pageCount });
         } catch (error) {
-            req.log.debug({ body: req.body }) // Log the body of the request
+            console.log(error);
+            // req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
