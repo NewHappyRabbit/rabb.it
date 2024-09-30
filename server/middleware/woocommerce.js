@@ -14,8 +14,10 @@ export function WooHookAuth(req, res, next) {
         .digest("base64");
 
     if (incomingSignature === calculatedSignature) {
+        console.log('Woo hook accepted')
         next();
     } else {
-        res.status(200).send();
+        console.log('Woo hook secret incorrect!')
+        res.status(401).send();
     }
 }

@@ -136,6 +136,7 @@ export async function WooHookCreateOrder(data) {
         wooData.coupons = data.coupon_lines;
 
     // Products
+    let index = 0;
     for (let product of data.line_items) {
         const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString() });
         if (!productInDb) return { status: 404, message: 'Продуктът не е намерен' };
@@ -152,14 +153,23 @@ export async function WooHookCreateOrder(data) {
             price = productInDb.wholesalePrice;
         }
 
-        wooData.products.push({
+        const productData = {
+            index: index++,
             id: product.product_id,
             product: productInDb._id,
             unitOfMeasure: productInDb.unitOfMeasure,
             quantity: Number(product.quantity),
             price: Number(price),
             discount,
-        })
+        }
+
+        if (productInDb.sizes.length)
+            productData.selectedSizes = productInDb.sizes.map(s => s.size)
+
+        if (productInDb.multiplier)
+            productData.multiplier = productInDb.multiplier;
+
+        wooData.products.push(productData);
     }
 
     // Check if existing customer
