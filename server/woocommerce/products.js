@@ -204,11 +204,11 @@ export async function WooCreateProduct(product) {
     }
 
     if (process.env.ENV !== 'dev' && product.image) {
-        data.images = [{ src: `${process.env.URL}${product.image}` }];
+        data.images = [{ src: product.image.url }];
 
         if (product.additionalImages) {
             for (const image of product.additionalImages)
-                data.images.push({ src: `${process.env.URL}${image}` });
+                data.images.push({ src: image.url });
         }
     }
 
