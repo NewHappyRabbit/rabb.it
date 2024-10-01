@@ -12,10 +12,12 @@ const btnSpinner = html`
     </div>
 `;
 
-export function toggleSubmitBtn() {
-    const submitBtn = document.getElementById('submitBtn');
-    const submitBtnText = document.querySelector('#submitBtn span');
-    const submitBtnSpinner = document.getElementById('btnSpinner');
+export function toggleSubmitBtn(target) {
+    // if target is span, target parent
+    if (target && target.tagName === 'SPAN') target = target.parentNode;
+    const submitBtn = target || document.getElementById('submitBtn');
+    const submitBtnText = target ? target.querySelector('span') : document.querySelector('#submitBtn span');
+    const submitBtnSpinner = target ? target.querySelector('#btnSpinner') : document.getElementById('btnSpinner');
 
     if (submitBtn.disabled === false) {
         submitBtn.disabled = true;

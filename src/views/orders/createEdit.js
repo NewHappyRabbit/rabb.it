@@ -9,6 +9,7 @@ import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
 import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
+import { customerForm } from '@/views/customers/createEdit';
 
 var order, defaultValues, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
 
@@ -43,10 +44,11 @@ function rerenderTable() {
 }
 
 function selectCustomer(e) {
-    if (e.target.value.split('[').length < 2) return;
-    const selectedVat = e.target.value.split('[')[1].split(']')[0];
+    var selectedId = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
 
-    selectedCustomer = customers.find(customer => customer.vat === selectedVat);
+    selectedCustomer = customers.find(customer => customer._id === selectedId);
+
+    console.log(selectedCustomer)
 
     addedProducts.forEach(product => product.discount = selectedCustomer.discount || 0);
     rerenderTable();
@@ -74,13 +76,16 @@ function setDiscount() {
     rerenderTable();
 }
 
+
 const topRow = (params, customers) => html`
-    <div class="row align-items-end g-3">
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
-            <input @change=${selectCustomer} .value=${order ? `${order.customer.name} [${order.customer.vat}] ${order.customer.phone ? `(${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+            <div class="input-group">
+                <input @change=${selectCustomer} .value=${order ? `${order.customer.name} ${order.customer.vat ? `[${order.customer.vat}]` : ''} ${order.customer.phone ? `(${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+                <button data-bs-toggle="modal" data-bs-target="#createCustomerModal" class="btn btn-outline-primary" type="button"><i class="bi bi-plus-lg"></i></button>
+            </div>
             <datalist id="customersList">
-                ${customers && customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}] ${customer.phone ? `(${customer.phone})` : ''}`}></option>`)};
+                ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`}></option>`)};
             </datalist>
         </div>
         <div class="col-6 col-sm">
@@ -106,7 +111,6 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <button @click=${setDiscount} type="button" class="btn btn-secondary" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>Задай обща отстъпка</button>
         </div>
-    </div>
 `;
 
 const senderTemplate = () => html`
@@ -808,14 +812,13 @@ function validateOrder(data) {
     return invalidFlag;
 }
 
-async function createEditOrder() {
+async function createEditOrder(e) {
     if (order && !['manager', 'admin'].includes(loggedInUser.role)) // normal user editing, just print because they cant edit anything
         return printSale(order);
 
-    toggleSubmitBtn();
+    toggleSubmitBtn(e.target);
 
     const form = document.querySelector('form');
-    const formData = new FormData(form);
     var filteredProducts = [];
 
     // transform addedProducts to the type used in backend
@@ -891,7 +894,7 @@ async function createEditOrder() {
         orderType: document.getElementById('orderType').value,
         products: filteredProducts,
         paymentType: document.getElementById('paymentType').value,
-        paidAmount: +(formData.get('paidAmount').replace(',', '.')),
+        paidAmount: +(document.getElementById('paidAmount').value.replace(',', '.')),
         company: document.getElementById('company').value,
         receiver: document.getElementById('receiver').value,
         sender: document.getElementById('sender').value,
@@ -908,7 +911,7 @@ async function createEditOrder() {
 
     if (invalidData) {
         form.classList.remove('was-validated');
-        return toggleSubmitBtn();
+        return toggleSubmitBtn(e.target);
     }
 
     form.classList.add('was-validated');
@@ -919,7 +922,7 @@ async function createEditOrder() {
         const req = order ? await axios.put(`/orders/${order._id}`, data) : await axios.post('/orders', data);
 
         if (req.status === 201) {
-            toggleSubmitBtn();
+            toggleSubmitBtn(e.target);
 
             page(`/orders/${req.data}?print`);
         }
@@ -1126,11 +1129,46 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
     </table>
 `;
 
-const template = (params, customers) => html`
+async function loadNewCustomer(customer) {
+    console.log(customer);
+    // close modal
+    document.getElementById('closeModalBtn').click();
+
+    // add customer to customers list
+    customers = [...customers, customer];
+
+    // rerender table
+    render(topRow(params, customers), document.getElementById('topRowContainer'));
+
+    // put new customer value in input field
+    document.getElementById('customer').value = `${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`;
+    selectedCustomer = customer;
+
+}
+
+const createCustomerModal = () => html`
+<div class="modal fade d-print-none" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Създай партньор</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModalBtn"></button>
+            </div>
+            <div class="modal-body">
+                ${customerForm({ modal: true, alertElId: 'modalError', functionToRunOnSuccess: loadNewCustomer })}
+                <div id="modalError" class="d-none alert" role="alert"></div>
+            </div>
+        </div>
+    </div>
+</div>
+`;
+
+const template = () => html`
     ${nav()}
+    ${createCustomerModal()}
     <div class="container-fluid d-print-none">
         <form novalidate class="mt-3">
-            ${topRow(params, customers)}
+            <div class="row align-items-end g-3" id="topRowContainer"></div>
             <div id="table" class="table-responsive"></div>
             <div id="bottomRow" class="row g-3 align-items-end"></div>
             <div id="woocommerce" class="row g-3 align-items-end mt-1 ${order && order.woocommerce ? '' : 'd-none'}"></div>
@@ -1216,6 +1254,7 @@ export async function createEditOrderPage(ctx, next) {
         }
 
         render(template(params, customers), container);
+        render(topRow(params, customers), document.getElementById('topRowContainer'));
         rerenderTable();
         render(senderTemplate(), document.getElementById('senderDiv'));
         render(receiverTemplate(), document.getElementById('receiverDiv'));

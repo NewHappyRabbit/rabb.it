@@ -27,7 +27,7 @@ function validateCustomer(data) {
     return invalidFlag;
 }
 
-async function createEditCustomer(e) {
+async function createEditCustomer({ e, modal = false, alertElId = 'alert', functionToRunOnSuccess }) {
     e.preventDefault();
     toggleSubmitBtn();
 
@@ -41,10 +41,13 @@ async function createEditCustomer(e) {
     if (invalidData)
         return toggleSubmitBtn();
 
-    const alertEl = document.getElementById('alert');
+    const alertEl = document.getElementById(alertElId);
     try {
         const req = customer ? await axios.put(`/customers/${customer._id}`, data) : await axios.post('/customers', data);
         if (req.status === 201) {
+            if (modal === true)
+                functionToRunOnSuccess && functionToRunOnSuccess(req.data);
+
             toggleSubmitBtn();
 
             if (!customer)
@@ -90,6 +93,62 @@ async function createEditCustomer(e) {
     }
 }
 
+export const customerForm = ({ customer, modal = false, alertElId, functionToRunOnSuccess }) => html`
+<form novalidate @submit=${(e) => createEditCustomer({ e, modal, alertElId, functionToRunOnSuccess })} class="row g-3 needs-validation">
+    <div class="col-sm-6">
+        <label for="name" class="form-label">Фирма/Име</label>
+        <input class="form-control border-primary" type="text" id="name" name="name" .value=${customer?.name || ''} placeholder="пример: Сиско Трейд ЕТ" required autocomplete="off">
+    </div>
+
+    <div class="col-sm-6">
+        <label for="mol" class="form-label">МОЛ/Име</label>
+        <input class="form-control" type="text" id="mol" name="mol" .value=${customer?.mol || ''} placeholder="пример: Иван Иванов" autocomplete="off">
+    </div>
+
+    <div class="col-sm-6">
+        <label for="vat" class="form-label">ЕИК/ЕГН</label>
+        <div class="input-group">
+            <input class="form-control" type="text" id="vat" name="vat" .value=${customer?.vat || ''} placeholder="9/10 цифри" pattern="[0-9]{9,10}" inputmode="numeric" maxlength="10" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <label for="taxvat" class="form-label">ДДС ЕИК</label>
+        <div class="input-group">
+            <input class="form-control" type="text" id="taxvat" name="taxvat" placeholder="пример: BG117...." .value=${customer?.taxvat || ''} autocomplete="off">
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <label for="address" class="form-label">Адрес</label>
+        <input class="form-control" type="text" id="address" name="address" placeholder="пример: гр. Русе, ул. Шипка 44" .value=${customer?.address || ''} autocomplete="off">
+    </div>
+
+    <div class="col-sm-6">
+        <label for="deliveryAddress" class="form-label">Адрес за доставка</label>
+        <input class="form-control" type="text" id="deliveryAddress" name="deliveryAddress" placeholder="пример: гр. Русе, ул. Шипка 44, офис на Спиди" .value=${customer?.deliveryAddress || ''} autocomplete="off">
+    </div>
+
+    <div class="col-sm-6">
+        <label for="phone" class="form-label">Телефон</label>
+        <input class="form-control" type="tel" id="phone" name="phone" maxlength="15" .value=${customer?.phone || ''} placeholder="пример: 0891234567" autocomplete="off">
+    </div>
+
+    <div class="col-sm-6">
+        <label for="email" class="form-label">Имейл</label>
+        <input class="form-control" type="email" id="email" name="email" .value=${customer?.email || ''} placeholder="пример: rado@abv.bg" autocomplete="off">
+    </div>
+
+    <div class="mb-3">
+        <label for="discount" class="form-label">Отстъпка %</label>
+        <input @keyup=${(e) => fixInputPrice({ target: e.target })} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer?.discount || ''} autocomplete="off">
+    </div>
+
+    <div id="alert" class="d-none alert" role="alert"></div>
+    ${submitBtn({ classes: 'd-block m-auto col-sm-3', icon: 'bi-check-lg', type: "submit" })}
+</form>
+`;
+
 export async function createEditCustomerPage(ctx, next) {
     const id = ctx.params.id;
     if (id) {
@@ -108,59 +167,7 @@ export async function createEditCustomerPage(ctx, next) {
     const template = () => html`
         ${nav()}
         <div class="container-fluid">
-            <form novalidate @submit=${createEditCustomer} class="row g-3 needs-validation">
-                <div class="col-sm-6">
-                    <label for="name" class="form-label">Фирма/Име</label>
-                    <input class="form-control border-primary" type="text" id="name" name="name" .value=${customer && customer.name} placeholder="пример: Сиско Трейд ЕТ" required autocomplete="off">
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="mol" class="form-label">МОЛ/Име</label>
-                    <input class="form-control" type="text" id="mol" name="mol" .value=${customer && customer.mol} placeholder="пример: Иван Иванов" autocomplete="off">
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="vat" class="form-label">ЕИК/ЕГН</label>
-                    <div class="input-group">
-                        <input class="form-control" type="text" id="vat" name="vat" .value=${customer && customer.vat} placeholder="9/10 цифри" pattern="[0-9]{9,10}" inputmode="numeric" maxlength="10" autocomplete="off">
-                    </div>
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="taxvat" class="form-label">ДДС ЕИК</label>
-                    <div class="input-group">
-                        <input class="form-control" type="text" id="taxvat" name="taxvat" placeholder="пример: BG117...." .value=${customer?.taxvat || ''} autocomplete="off">
-                    </div>
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="address" class="form-label">Адрес</label>
-                    <input class="form-control" type="text" id="address" name="address" placeholder="пример: гр. Русе, ул. Шипка 44" .value=${customer && customer.address} autocomplete="off">
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="deliveryAddress" class="form-label">Адрес за доставка</label>
-                    <input class="form-control" type="text" id="deliveryAddress" name="deliveryAddress" placeholder="пример: гр. Русе, ул. Шипка 44, офис на Спиди" .value=${customer?.deliveryAddress || ''} autocomplete="off">
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="phone" class="form-label">Телефон</label>
-                    <input class="form-control" type="tel" id="phone" name="phone" maxlength="15" .value=${customer?.phone || ''} placeholder="пример: 0891234567" autocomplete="off">
-                </div>
-
-                <div class="col-sm-6">
-                    <label for="email" class="form-label">Имейл</label>
-                    <input class="form-control" type="email" id="email" name="email" .value=${customer?.email || ''} placeholder="пример: rado@abv.bg" autocomplete="off">
-                </div>
-
-                <div class="mb-3">
-                    <label for="discount" class="form-label">Отстъпка %</label>
-                    <input @keyup=${(e) => fixInputPrice({ target: e.target })} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer.discount ? customer.discount : ''} autocomplete="off">
-                </div>
-
-                <div id="alert" class="d-none alert" role="alert"></div>
-                ${submitBtn({ classes: 'd-block m-auto col-sm-3', icon: 'bi-check-lg', type: "submit" })}
-            </form>
+            ${customerForm({ customer })}
         </div>
     `;
 

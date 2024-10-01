@@ -15,7 +15,6 @@ export function customersRoutes() {
 
             res.json({ customers, count, pageCount });
         } catch (error) {
-            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -35,10 +34,10 @@ export function customersRoutes() {
 
     customersRouter.post('/customers', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { status, message } = await CustomerController.post({ ...req.body });
+            const { status, message, customer } = await CustomerController.post({ ...req.body });
             if (status !== 201) return res.status(status).send(message);
 
-            res.status(201).send();
+            res.status(201).json(customer);
         } catch (error) {
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);

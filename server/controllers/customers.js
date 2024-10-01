@@ -67,6 +67,11 @@ export const CustomerController = {
         // Add MOL to receivers so it autofills of first order
         data.receivers = [data.mol || data.name];
 
+        // delete empty keys
+        Object.keys(data).forEach((key) => {
+            if (!data[key] || data.key === "") delete data[key];
+        });
+
         const customer = await new Customer(data).save();
 
         return { status: 201, customer };

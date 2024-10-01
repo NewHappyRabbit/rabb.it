@@ -40,8 +40,7 @@ export async function ordersRoutes() {
 
             res.json({ count, orders, pageCount });
         } catch (error) {
-            console.log(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     });
@@ -70,7 +69,6 @@ export async function ordersRoutes() {
 
             res.status(201).send(order._id.toString());
         } catch (error) {
-            console.log(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -90,7 +88,6 @@ export async function ordersRoutes() {
 
             res.status(201).send(id);
         } catch (error) {
-            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -106,7 +103,6 @@ export async function ordersRoutes() {
 
             res.status(204).send();
         } catch (error) {
-            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
