@@ -101,7 +101,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
                 const quantityToRemove = product.quantity * product.multiplier;
                 // Check if there is enough quantity of selected size
                 if (existingProduct.sizes.find(s => s.size === size).quantity < quantityToRemove)
-                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(s => s.size === size.size).quantity}` };
+                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(s => s.size === size).quantity}` };
 
                 existingProduct.sizes.find(s => s.size === size).quantity -= quantityToRemove;
             }
@@ -184,7 +184,7 @@ async function returnProductsQuantities(order) {
             // Return quantity to each selected size (can be all of them, or just some (sell open package))
 
             let sizesToReturn;
-            const quantityToReturn = product.quantity * product.multiplier;
+            const quantityToReturn = product.quantity * (product.multiplier || 1);
 
             // If in original order the product was simple (had no sizes selected)
             if (product.selectedSizes.length === 0) {
@@ -316,9 +316,6 @@ export const OrderController = {
 
         if (status) return { status, message };
 
-        // Update all products in paralel with promies
-        await Promise.all(updatedProducts.map(product => product.save()));
-
         data.total = total;
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
@@ -342,6 +339,9 @@ export const OrderController = {
         }
 
         const order = await new Order(data).save();
+
+        // Update all products in paralel with promies
+        await Promise.all(updatedProducts.map(product => product.save()));
 
         return { status: 201, order, updatedProducts };
     },
@@ -381,21 +381,29 @@ export const OrderController = {
         let { total, updatedProducts, status, message } = await removeProductsQuantities({ data, returnedProducts });
         if (status) return { status, message };
 
-        // Update all products in paralel with promies
-        await Promise.all(updatedProducts.map(product => product.save()));
-
         data.total = total;
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
-        // Update sequence number if document number > current sequence number
-        // Else, probably customer skipped a document number before and now fills the empty numbers
-        let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
-        if (seq) {
-            await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
-        } else if (!seq) {
-            seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
-            data.number = seq.seq;
+        // New logic for editing document number
+        // Check if document number already exists
+        if (data.number) {
+            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number });
+
+            if (order && order._id.toString() !== id) return { status: 409, message: 'Документ с такъв номер вече съществува' };
+        }
+
+        // Only if number changed
+        if (data.number !== order.number) {
+            // Update sequence number if document number > current sequence number
+            // Else, probably customer skipped a document number before and now fills the empty numbers
+            let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+            if (seq) {
+                await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
+            } else if (!seq) {
+                seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
+                data.number = seq.seq;
+            }
         }
 
         if (order.woocommerce && data.woocommerce) {
@@ -406,6 +414,9 @@ export const OrderController = {
         }
 
         await Order.findByIdAndUpdate(id, data);
+
+        // Update all products in paralel with promies
+        await Promise.all(updatedProducts.map(product => product.save()));
 
         return { status: 201, updatedProducts };
     },
