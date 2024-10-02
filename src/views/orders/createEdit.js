@@ -927,7 +927,7 @@ async function createEditOrder(e) {
             page(`/orders/${req.data}?print`);
         }
     } catch (err) {
-        toggleSubmitBtn();
+        toggleSubmitBtn(e.target);
         console.error(err);
         if (err.response.status === 400 || err.response.status === 409) {
             alertEl.classList.remove('d-none', 'alert-success');
@@ -1155,7 +1155,7 @@ const createCustomerModal = () => html`
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModalBtn"></button>
             </div>
             <div class="modal-body">
-                ${customerForm({ modal: true, alertElId: 'modalError', functionToRunOnSuccess: loadNewCustomer })}
+                ${customerForm({ modal: true, alertElId: "modalError", functionToRunOnSuccess: loadNewCustomer })}
                 <div id="modalError" class="d-none alert" role="alert"></div>
             </div>
         </div>

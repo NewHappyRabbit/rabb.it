@@ -144,7 +144,6 @@ export const customerForm = ({ customer, modal = false, alertElId, functionToRun
         <input @keyup=${(e) => fixInputPrice({ target: e.target })} class="form-control" type="text" id="discount" name="discount" inputmode="decimal" .value=${customer?.discount || ''} autocomplete="off">
     </div>
 
-    <div id="alert" class="d-none alert" role="alert"></div>
     ${submitBtn({ classes: 'd-block m-auto col-sm-3', icon: 'bi-check-lg', type: "submit" })}
 </form>
 `;
@@ -168,6 +167,7 @@ export async function createEditCustomerPage(ctx, next) {
         ${nav()}
         <div class="container-fluid">
             ${customerForm({ customer })}
+            <div id="alert" class="d-none alert" role="alert"></div>
         </div>
     `;
 

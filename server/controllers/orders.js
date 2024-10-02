@@ -323,7 +323,7 @@ export const OrderController = {
         // New logic for editing document number
         // Check if document number already exists
         if (data.number) {
-            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number });
+            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
 
             if (order) return { status: 409, message: 'Документ с такъв номер вече съществува' };
         }
@@ -388,7 +388,7 @@ export const OrderController = {
         // New logic for editing document number
         // Check if document number already exists
         if (data.number) {
-            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number });
+            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
 
             if (order && order._id.toString() !== id) return { status: 409, message: 'Документ с такъв номер вече съществува' };
         }
