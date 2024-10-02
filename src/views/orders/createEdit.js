@@ -45,10 +45,7 @@ function rerenderTable() {
 
 function selectCustomer(e) {
     var selectedId = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
-
     selectedCustomer = customers.find(customer => customer._id === selectedId);
-
-    console.log(selectedCustomer)
 
     addedProducts.forEach(product => product.discount = selectedCustomer.discount || 0);
     rerenderTable();
@@ -58,7 +55,7 @@ function selectCustomer(e) {
 function selectCompany(e) {
     const company = e.target.value;
     selectedCompany = companies.find(c => c._id === company);
-    render(senderTemplate(), document.getElementById('senderDiv'));
+    render(senderTemplate(selectedCompany.senders), document.getElementById('senderDiv'));
 }
 
 function setDiscount() {
@@ -81,11 +78,11 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
             <div class="input-group">
-                <input @change=${selectCustomer} .value=${order ? `${order.customer.name} ${order.customer.vat ? `[${order.customer.vat}]` : ''} ${order.customer.phone ? `(${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+                <input @change=${selectCustomer} .value=${order ? `${order.customer.name}${order.customer.vat ? ` [${order.customer.vat}]` : ''}${order.customer.phone ? ` (${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
                 <button data-bs-toggle="modal" data-bs-target="#createCustomerModal" class="btn btn-outline-primary" type="button"><i class="bi bi-plus-lg"></i></button>
             </div>
             <datalist id="customersList">
-                ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`}></option>`)};
+                ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.name}${customer.vat ? ` [${customer.vat}]` : ''}${customer.phone ? ` (${customer.phone})` : ''}`}></option>`)};
             </datalist>
         </div>
         <div class="col-6 col-sm">
@@ -113,9 +110,9 @@ const topRow = (params, customers) => html`
         </div>
 `;
 
-const senderTemplate = () => html`
+const senderTemplate = (senders) => html`
     <label for="sender" class="form-label">Предал:</label>
-    <input list="sendersList" class="form-control" name="sender" id="sender" type="text" .value=${order?.sender || selectedCompany?.senders?.slice(-1)[0] || ''} ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} autocomplete="off" required/>
+    <input list="sendersList" class="form-control" name="sender" id="sender" type="text" .value=${senders?.slice(-1)[0] || ''} ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} autocomplete="off" required/>
     <datalist id="sendersList">
         ${selectedCompany && selectedCompany?.senders?.map(sender => html`<option value=${sender}></option>`)}
     </datalist>
@@ -1256,7 +1253,7 @@ export async function createEditOrderPage(ctx, next) {
         render(template(params, customers), container);
         render(topRow(params, customers), document.getElementById('topRowContainer'));
         rerenderTable();
-        render(senderTemplate(), document.getElementById('senderDiv'));
+        render(senderTemplate(selectedCompany?.senders || []), document.getElementById('senderDiv'));
         render(receiverTemplate(selectedCustomer?.receivers || []), document.getElementById('receiverDiv'));
 
         // Set date in field

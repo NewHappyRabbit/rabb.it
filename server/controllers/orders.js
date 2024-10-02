@@ -253,15 +253,9 @@ export const OrderController = {
 
         unpaid && query.$and.push({ unpaid: true });
 
-        if (customer) {
-            const cust = await Customer.findOne({ vat: { $regex: customer, $options: 'i' } }).select('_id');
-            query.$and.push({ 'customer': cust._id });
-        }
+        customer && query.$and.push({ 'customer': customer });
 
-        if (company) {
-            const comp = await Company.findOne({ vat: { $regex: company, $options: 'i' } }).select('_id');
-            query.$and.push({ 'company': comp._id });
-        }
+        company && query.$and.push({ 'company': company });
 
         const orders = await Order.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
         const count = await Order.countDocuments(query);

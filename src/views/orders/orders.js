@@ -40,11 +40,15 @@ async function applyFilters(e) {
     const data = Object.fromEntries(formData.entries());
     data.pageNumber = selectedFilters.pageNumber;
 
-    if (data.customer)
-        data.customer = data.customer?.split('[')[1]?.split(']')[0];
+    if (data.customer) {
+        var selectedId = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
+        data.customer = selectedId;
+    }
 
-    if (data.company)
-        data.company = data.company?.split('[')[1]?.split(']')[0];
+    if (data.company) {
+        var selectedId2 = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
+        data.company = selectedId2;
+    }
 
     if (!data.customer)
         data.customer = '';
@@ -125,16 +129,16 @@ const filters = ({ customers, companies, params }) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
             <div class="col-6 col-sm">
                 <label for="customer">Партньор:</label>
-                <input value=${(temp = customers.filter(c => c.vat === selectedFilters?.customer)[0]) ? `${temp.name} [${temp.vat}] ${temp.phone ? `(${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
+                <input value=${(temp = customers.find(c => selectedFilters?.customer === c._id)) ? `${temp.name}${temp.vat ? ` [${temp.vat}]` : ''}${temp.phone ? ` (${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
                 <datalist id="customersList">
-                    ${customers.map(customer => html`<option value=${`${customer.name} [${customer.vat}] ${customer.phone ? `(${customer.phone})` : ''}`}>`)}
+                    ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.name}${customer.vat ? ` [${customer.vat}]` : ''}${customer.phone ? ` (${customer.phone})` : ''}`}></option>`)};
                 </datalist>
             </div>
             <div class="col-6 col-sm">
                 <label for="company">Обект:</label>
-                <input value=${(temp = companies.filter(c => c.vat === selectedFilters?.company)[0]) ? `${temp.name} [${temp.vat}]` : ''} list="companiesList" placeholder="Всички" name="company" id="company" class="form-control" autocomplete="off">
+                <input value=${(temp = companies.find(c => selectedFilters?.company === c._id)) ? `${temp.name} [${temp.vat}]` : ''} list="companiesList" placeholder="Всички" name="company" id="company" class="form-control" autocomplete="off">
                 <datalist id="companiesList">
-                    ${companies.map(company => html`<option value=${`${company.name} [${company.vat}]`}>`)}
+                    ${companies.map(company => html`<option _id="${company._id}" value=${`${company.name} [${company.vat}]`}>`)}
                 </datalist>
             </div>
             <div class="col-6 col-sm">
