@@ -232,18 +232,14 @@ export function numberToBGText(number) {
     return text;
 }
 
-export function getVat(price, vat) {
-    if (vat === undefined)
-        vat = 20;
+export function getVat(price, vat = 20) {
     // Extract vat from price (price already includes vat)
-    return (price * vat) / 100;
+    return price - deductVat(price, vat);
 }
 
-export function deductVat(price, vat) {
-    if (vat === undefined)
-        vat = 20;
+export function deductVat(price, vat = 20) {
     // Return the original price with deducted vat
-    return price - ((price * vat) / 100);
+    return price / ((100 + vat) / 100);
 }
 
 export function roundPrice(price) {
