@@ -30,6 +30,8 @@ jobs:
                   # Run commands (e.g., git pull, build, restart services, etc.)
                   git checkout .
                   git clean -df
+                  git fetch --all
+                  git reset --hard origin/live
                   git pull origin live
                   npm install
                   npm run web-prod
