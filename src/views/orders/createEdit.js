@@ -123,7 +123,7 @@ const senderTemplate = () => html`
 
 const receiverTemplate = (receivers) => html`
     <label for="receiver" class="form-label">Получил:</label>
-    <input list="receiversList" class="form-control" name="receiver" id="receiver" type="text" .value=${order?.receiver || receivers?.slice(-1)[0] || ''} autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required/>
+    <input list="receiversList" class="form-control" name="receiver" id="receiver" type="text" .value=${receivers?.slice(-1)[0] || ''} autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required/>
     <datalist id="receiversList">
         ${receivers?.map(receiver => html`<option value=${receiver}></option>`)}
     </datalist>
@@ -1257,7 +1257,7 @@ export async function createEditOrderPage(ctx, next) {
         render(topRow(params, customers), document.getElementById('topRowContainer'));
         rerenderTable();
         render(senderTemplate(), document.getElementById('senderDiv'));
-        render(receiverTemplate(), document.getElementById('receiverDiv'));
+        render(receiverTemplate(selectedCustomer?.receivers || []), document.getElementById('receiverDiv'));
 
         // Set date in field
         document.getElementById('date').valueAsDate = order ? new Date(order.date) : new Date();
