@@ -78,7 +78,7 @@ async function applyFilters(e) {
 }
 
 const table = ({ orders, count, pageCount }) => html`
-    <div class="mt-2 mb-2">Брой редове: ${count}</div>
+    <div class="mt-2 mb-2 d-print-none">Брой редове: ${count}</div>
     <table class="mt-3 table table-bordered table-striped table-hover text-center">
         <thead>
             <tr>
@@ -123,7 +123,7 @@ const table = ({ orders, count, pageCount }) => html`
             `)}
         </tbody>
     </table>
-    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3">
+    <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3 d-print-none">
         ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
         ${pageCount < 2 ? '' : html`
             <div class="input-group w-25">
