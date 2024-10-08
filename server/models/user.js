@@ -51,7 +51,10 @@ const userSchema = new Schema({
         default: Object.keys(userRoles)[0],
         required: true
     },
-    deleted: Boolean
+    deleted: {
+        type: Boolean,
+        default: false,
+    }
 })
 
 export const User = mongoose.model('User', userSchema);

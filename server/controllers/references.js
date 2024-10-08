@@ -26,25 +26,13 @@ export const ReferencesController = {
 
         numberTo && dbQuery.$and.push({ number: { $lte: numberTo } });
 
-        if (product) {
-            const prod = await Product.findOne({ code: { $regex: product, $options: 'i' } }).select('_id');
-            dbQuery.$and.push({ 'products.product': prod._id });
-        }
+        customer && dbQuery.$and.push({ customer });
 
-        if (customer) {
-            const cust = await Customer.findOne({ vat: { $regex: customer, $options: 'i' } }).select('_id');
-            dbQuery.$and.push({ 'customer': cust._id });
-        }
+        company && dbQuery.$and.push({ company });
 
-        if (company) {
-            const comp = await Company.findOne({ vat: { $regex: company, $options: 'i' } }).select('_id');
-            dbQuery.$and.push({ 'company': comp._id });
-        }
+        user && dbQuery.$and.push({ user });
 
-        if (user) {
-            const usr = await User.findById(user).select('_id');
-            dbQuery.$and.push({ 'user': usr._id });
-        }
+        product && dbQuery.$and.push({ 'products.product': product });
 
         let orders;
         if (print)

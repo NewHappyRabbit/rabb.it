@@ -78,7 +78,7 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
             <div class="input-group">
-                <input @change=${selectCustomer} .value=${order ? `${order.customer.name}${order.customer.vat ? ` [${order.customer.vat}]` : ''}${order.customer.phone ? ` (${order.customer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+                <input @change=${selectCustomer} .value=${selectedCustomer ? `${selectedCustomer.name}${selectedCustomer.vat ? ` [${selectedCustomer.vat}]` : ''}${selectedCustomer.phone ? ` (${selectedCustomer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
                 <button data-bs-toggle="modal" data-bs-target="#createCustomerModal" class="btn btn-outline-primary" type="button"><i class="bi bi-plus-lg"></i></button>
             </div>
             <datalist id="customersList">
@@ -1127,19 +1127,19 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
 `;
 
 async function loadNewCustomer(customer) {
-    console.log(customer);
     // close modal
     document.getElementById('closeModalBtn').click();
 
     // add customer to customers list
     customers = [...customers, customer];
 
+    selectedCustomer = customer;
+
     // rerender table
     render(topRow(params, customers), document.getElementById('topRowContainer'));
 
     // put new customer value in input field
-    document.getElementById('customer').value = `${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`;
-    selectedCustomer = customer;
+    // document.getElementById('customer').value = `${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`;
 
 }
 

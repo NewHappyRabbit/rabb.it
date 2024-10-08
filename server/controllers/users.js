@@ -28,7 +28,7 @@ export async function createDefaultUsers() {
 const jwtSecret = process.env.JWT_SECRET;
 export const UserController = {
     get: async () => {
-        const users = await User.find().select("-password");
+        const users = await User.find({ deleted: { $ne: true } }).select("-password");
         return users;
     },
     getRoles: () => {
@@ -96,10 +96,8 @@ export const UserController = {
 
         if (!user) return { status: 404, message: "Потребителят не е намерен" };
 
-        const inSale = await Order.findOne({ user: id });
-        if (inSale) return { status: 400, message: "Потребителят има продажби и не може да бъде изтрит" };
-
-        await user.deleteOne();
+        user.deleted = true;
+        await user.save();
 
         return { status: 204 };
     },
@@ -110,7 +108,7 @@ export const UserController = {
 
         username = username.toLowerCase();
 
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ username, deleted: { $ne: true } });
 
         if (!user) return { status: 404, message: "Потребителят не е намерен" }
 

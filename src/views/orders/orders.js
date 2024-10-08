@@ -41,20 +41,14 @@ async function applyFilters(e) {
     data.pageNumber = selectedFilters.pageNumber;
 
     if (data.customer) {
-        var selectedId = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
+        var selectedId = document.querySelector(`datalist option[value='${data.customer}']`).getAttribute('_id');
         data.customer = selectedId;
     }
 
     if (data.company) {
-        var selectedId2 = document.querySelector(`datalist option[value='${e.target.value}']`).getAttribute('_id');
+        var selectedId2 = document.querySelector(`datalist option[value='${data.company}']`).getAttribute('_id');
         data.company = selectedId2;
     }
-
-    if (!data.customer)
-        data.customer = '';
-
-    if (!data.company)
-        data.company = '';
 
     selectedFilters = data;
 
