@@ -10,6 +10,7 @@ import { salesRoutes } from '@/views/orders/routes.js';
 import { settingsRoutes } from '@/views/admin/settings/routes.js';
 import { companiesRoutes } from '@/views/admin/companies/routes.js';
 import { referencesSalesRoutes } from '@/views/references/orders/routes.js';
+import { statisticsRoutes } from '@/views/admin/statistics/routes.js';
 import { toggleDarkMode, initSocket } from '@/api';
 import { printerSetup } from '@/printer';
 
@@ -46,10 +47,11 @@ productsRoutes(auth);
 customersRoutes(auth);
 categoriesRoutes(auth);
 salesRoutes(auth);
+referencesSalesRoutes(auth);
 usersRoutes();
 settingsRoutes();
 companiesRoutes();
-referencesSalesRoutes(auth);
+statisticsRoutes();
 page('*', () => page('/')); // Everything else, redirect to home page
 
 page();

@@ -36,14 +36,17 @@ export const nav = () => html`
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbar">
                 <ul class="navbar-nav gap-1 text-center mb-lg-0 align-items-md-end">
-                    ${loggedInUser && loggedInUser.role === 'admin' ? html`<li class="nav-item dropdown">
+                    ${loggedInUser && loggedInUser.role === 'admin' ? html`
+                        <li class="nav-item dropdown">
                         <a class="nav-link link-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-shield-lock"></i> Админ</a>
                         <ul class="dropdown-menu dropdown-menu-md-end">
+                            <li><a class="dropdown-item link-primary" href="/admin/statistics"><i class="bi bi-pie-chart"></i> Статистики</a></li>
                             <li><a class="dropdown-item link-primary" href="/admin/users"><i class="bi bi-people"></i> Потребители</a></li>
                             <li><a class="dropdown-item link-primary" href="/admin/companies"><i class="bi bi-building"></i> Обекти</a></li>
                             <li><a class="dropdown-item link-primary" href="/admin/settings"><i class="bi bi-gear"></i> Настройки</a></li>
                         </ul>
-                    </li>` : ''}
+                        </li>
+                    ` : ''}
                     <li class="nav-item">
                         <a class="nav-link" href="/products/create"><i class="bi bi-plus"></i> Създай продукт</a>
                     </li>
@@ -68,7 +71,8 @@ export const nav = () => html`
                                 <li><a class="dropdown-item" href="/references/orders"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
                                 <li><a class="dropdown-item" href="/references/accounting"><i class="bi bi-file-earmark-text"></i> Експорт към счетоводство</a></li>
                             </ul>
-                    </li>` : ''}
+                        </li>
+                    ` : ''}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Други
@@ -76,8 +80,10 @@ export const nav = () => html`
                         <ul class="dropdown-menu dropdown-menu-md-end">
                             <li><button class="dropdown-item" @click=${toggleDarkMode}><i class="bi bi-moon"></i> Тъмен режим</button></li>
                             <li><a class="dropdown-item" href="/categories"><i class="bi bi-tags"></i> Категории</a></li>
-                            ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`<li><button class="dropdown-item" @click=${downloadProductsURLS}><i class="bi bi-download"></i> Линкове за продуктите</button></li>` : ''}
-                            ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`<li><button class="dropdown-item" @click=${(e) => downloadProductsURLS(e, true)}><i class="bi bi-download"></i> Линкове за скрити продукти</button></li>` : ''}
+                            ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`
+                                <li><button class="dropdown-item" @click=${downloadProductsURLS}><i class="bi bi-download"></i> Линкове за продуктите</button></li>
+                                <li><button class="dropdown-item" @click=${(e) => downloadProductsURLS(e, true)}><i class="bi bi-download"></i> Линкове за скрити продукти</button></li>
+                            ` : ''}
                         </ul>
                     </li>
                     <li class="nav-item">

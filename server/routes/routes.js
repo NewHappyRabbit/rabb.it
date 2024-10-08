@@ -11,6 +11,7 @@ import { referencesSalesRoutes } from './references.js';
 import { rateLimit } from 'express-rate-limit'
 import { FirstInitWooCommerce } from '../woocommerce/init.js';
 import { woocommerceRoutes } from './woocommerce.js';
+import { statisticsRoutes } from './statistics.js';
 
 const limiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
@@ -39,9 +40,10 @@ export function loadRoutes() {
     companiesRoutes();
     referencesSalesRoutes();
     woocommerceRoutes();
+    statisticsRoutes();
 
     //TODO Run this only the first time when the ecommerce is created to fill with data
-    FirstInitWooCommerce();
+    // FirstInitWooCommerce();
 
     // Set default 404 for all routes
     app.all('*', (req, res) => {
