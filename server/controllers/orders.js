@@ -314,16 +314,28 @@ export const OrderController = {
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
-        // New logic for editing document number
-        // Check if document number already exists
-        if (data.number) {
-            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
+        //DELETE
+        data.woocommerce = 'test';
 
-            if (order) return { status: 409, message: 'Документ с такъв номер вече съществува' };
+        if (!data.number) { // If no number assigned, grab latest from sequence
+            let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+            if (seq)
+                data.number = Number(seq.seq) + 1;
+            else if (!seq) {
+                await AutoIncrement.create({ name: data.type, company: company, seq: 1 });
+                data.number = 1;
+            }
         }
 
-        // Update sequence number if document number > current sequence number
-        // Else, probably customer skipped a document number before and now fills the empty numbers
+        // Check if document number already exists
+        const numberExists = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
+        if (numberExists && !data.woocommerce) return { status: 409, message: 'Документ с такъв номер вече съществува' }; // if creating order normally
+        else if (numberExists && data.woocommerce) {
+            // if creating order from woocommerce hook, Find latest document number and increment by 1
+            const latestOrderNumber = await Order.findOne({ company: company._id, type: data.type, deleted: false }).sort({ number: -1 });
+            data.number = Number(latestOrderNumber.number) + 1;
+        }
+
         let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
         if (seq) {
             await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');

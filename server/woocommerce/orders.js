@@ -29,7 +29,6 @@ export async function WooHookCreateOrder(data) {
     });
 
     const wooData = {
-        number: data.number,
         date: data.date_created,
         orderType: 'wholesale', //TODO change when retail website is created
         type: defaultData.find(setting => setting.key === 'wooDocumentType').value,
