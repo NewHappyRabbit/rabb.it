@@ -1038,6 +1038,11 @@ const printContainer = ({ data, param, flags }) => html`
             <div>Получил: ${data.receiver}</div>
             <div>Съставил: ${data.sender}</div>
         </div>
+
+        ${(param?.stokova === true || data.type === 'stokova') && data.customer.deliveryAddress ? html`
+            <div>
+                <span>Адрес за доставка: ${data.customer.deliveryAddress}</span>
+            </div>` : ''}
     </div>
 `;
 
