@@ -36,8 +36,8 @@ export async function WooHookCreateOrder(data) {
             id: data.id,
             status: data.status,
             total: Number(data.total),
-            payment_method: data.payment_method,
-            payment_method_title: data.payment_method_title,
+            payment_method: data.payment_method || 'cod',
+            payment_method_title: data.payment_method_title || 'Наложен платеж',
         },
         customer: {
             name: "ПРОМЕНИ ИМЕТО НА КЛИЕНТА",
@@ -129,7 +129,7 @@ export async function WooHookCreateOrder(data) {
 
     //TODO Implement normal shipping (get customer address instead of this. This is used in emo-sklad only, because they dont offer shipping to address, only econt and speedy)
     if (!wooData.woocommerce.speedy && !wooData.woocommerce.econt)
-        wooData.woocommerce.shipping = data.shipping_lines[0].method_title;
+        wooData.woocommerce.shipping = data.shipping_lines[0]?.method_title || 'Бърза поръчка по телефон';
 
     if (data.coupon_lines.length > 0)
         wooData.coupons = data.coupon_lines;

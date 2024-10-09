@@ -13,7 +13,6 @@ export function woocommerceRoutes() {
     woocommerceRoutes.post('/woocommerce/hooks/order', async (req, res) => {
         // Use this URL for the WooCommerce hook. Example: https://example.com/server/woocommerce/hooks/order
         try {
-            // TODO Add secret check as middleware
             const data = req.body;
 
             const { status, message } = await WooHookCreateOrder(data);

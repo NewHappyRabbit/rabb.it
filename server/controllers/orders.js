@@ -314,9 +314,6 @@ export const OrderController = {
 
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
-        //DELETE
-        data.woocommerce = 'test';
-
         if (!data.number) { // If no number assigned, grab latest from sequence
             let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
             if (seq)
