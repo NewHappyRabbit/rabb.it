@@ -35,7 +35,6 @@ export function printerSockets() {
     });
 }
 
-
 export async function printerSetup() {
     if (!loggedInUser) return;
 

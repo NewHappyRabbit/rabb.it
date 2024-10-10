@@ -46,6 +46,10 @@ const orderSchema = new Schema({
         type: Date,
         required: true,
     },
+    taxEventDate: {
+        type: Date,
+        required: true,
+    },
     type: {
         type: String,
         enum: Object.keys(documentTypes),

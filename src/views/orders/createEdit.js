@@ -96,6 +96,10 @@ const topRow = (params, customers) => html`
             <input type="date" name="date" id="date" class="form-control" ?disabled=${!['manager', 'admin'].includes(loggedInUser.role)} required>
         </div>
         <div class="col-6 col-sm">
+            <label for="taxEventDate" class="form-label">Дата на данъчно събитие:</label>
+            <input type="date" name="taxEventDate" id="taxEventDate" class="form-control" ?disabled=${!['manager', 'admin'].includes(loggedInUser.role)} required>
+        </div>
+        <div class="col-6 col-sm">
             <label for="number" class="form-label">Документ номер:</label>
             <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? order.number : documentNumber}>
         </div>
@@ -886,6 +890,7 @@ async function createEditOrder(e) {
     const data = {
         number: document.getElementById('number').value,
         date: document.getElementById('date').value,
+        taxEventDate: document.getElementById('taxEventDate').value,
         type: document.getElementById('type').value,
         customer: selectedCustomer?._id,
         orderType: document.getElementById('orderType').value,
@@ -1034,6 +1039,7 @@ const printContainer = ({ data, param, flags }) => html`
                 <div>Банка: ${data.company.bank.name}</div>
                 <div>Банков код: ${data.company.bank.code}</div>` : ''}
         </div>
+        <div>Дата на данъчно събитие: ${new Date(data.taxEventDate).toLocaleDateString('bg')}</div>
         <div class="d-flex justify-content-between">
             <div>Получил: ${data.receiver}</div>
             <div>Съставил: ${data.sender}</div>
@@ -1042,9 +1048,10 @@ const printContainer = ({ data, param, flags }) => html`
         ${(param?.stokova === true || data.type === 'stokova') && data.customer.deliveryAddress ? html`
             <div>
                 <span>Адрес за доставка: ${data.customer.deliveryAddress}</span>
-            </div>` : ''}
-    </div>
-`;
+            </div>` : ''
+    }
+    </div >
+    `;
 
 const printTableWholesale = ({ tax, products, type, flags }) => html`
     <table id="printProductWholesaleTable" class="table table-bordered table-striped">
@@ -1090,12 +1097,12 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
                 </tr>
             `)}
         </tbody>
-    </table>
-`;
+    </table >
+    `;
 
 // Add same styling as wholesale table
 const printTableRetail = ({ tax, products, type, flags }) => html`
-<table id="printProductRetailTable" class="table table-bordered table-striped">
+    <table id="printProductRetailTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
                 <td>№</td>
@@ -1128,8 +1135,8 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
                 </tr>
             `)}
         </tbody>
-    </table>
-`;
+    </table >
+    `;
 
 async function loadNewCustomer(customer) {
     // close modal
@@ -1142,28 +1149,24 @@ async function loadNewCustomer(customer) {
 
     // rerender table
     render(topRow(params, customers), document.getElementById('topRowContainer'));
-
-    // put new customer value in input field
-    // document.getElementById('customer').value = `${customer.name} ${customer.vat ? `[${customer.vat}]` : ''} ${customer.phone ? `(${customer.phone})` : ''}`;
-
 }
 
 const createCustomerModal = () => html`
-<div class="modal fade d-print-none" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Създай партньор</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModalBtn"></button>
-            </div>
-            <div class="modal-body">
-                ${customerForm({ modal: true, alertElId: "modalError", functionToRunOnSuccess: loadNewCustomer })}
-                <div id="modalError" class="d-none alert" role="alert"></div>
+    <div class="modal fade d-print-none" id="createCustomerModal" tabindex = "-1" aria-labelledby="createCustomerModal" aria-hidden="true" >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Създай партньор</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModalBtn"></button>
+                </div>
+                <div class="modal-body">
+                    ${customerForm({ modal: true, alertElId: "modalError", functionToRunOnSuccess: loadNewCustomer })}
+                    <div id="modalError" class="d-none alert" role="alert"></div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-`;
+</div >
+    `;
 
 const template = () => html`
     ${nav()}
@@ -1263,6 +1266,7 @@ export async function createEditOrderPage(ctx, next) {
 
         // Set date in field
         document.getElementById('date').valueAsDate = order ? new Date(order.date) : new Date();
+        document.getElementById('taxEventDate').valueAsDate = order ? new Date(order?.taxEventDate || order?.date) : new Date();
 
         // Add listener for barcode scanner
         const barcodeInput = document.getElementById('product');
