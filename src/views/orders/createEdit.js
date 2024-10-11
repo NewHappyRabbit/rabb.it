@@ -173,7 +173,10 @@ const bottomRow = (params, companies) => html`
 
     <div class="col-12 col-sm text-center">
         <div >Общо: <span id="total"></span></div>
-        ${submitBtn({ func: createEditOrder, text: "Запази и принтирай", type: "button" })}
+        <div class="d-flex gap-3">
+            ${submitBtn({ func: createEditOrder, text: "Запази", type: "button" })}
+            ${submitBtn({ func: createEditOrder, id: "submitWithPrint", text: "Запази и принтирай", type: "button" })}
+        </div>
     </div>
 `;
 
@@ -926,7 +929,10 @@ async function createEditOrder(e) {
         if (req.status === 201) {
             toggleSubmitBtn(e.target);
 
-            page(`/orders/${req.data}?print`);
+            if (e.target.id === 'submitWithPrint')
+                return page(`/orders/${req.data}?print`);
+
+            page(`/orders/${req.data}`);
         }
     } catch (err) {
         toggleSubmitBtn(e.target);

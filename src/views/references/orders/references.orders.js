@@ -77,52 +77,65 @@ async function applyFilters(e) {
         page('/references/orders');
 }
 
-const table = ({ orders, count, pageCount }) => html`
+const table = ({ orders, count, pageCount, total, print = false }) => html`
     <div class="mt-2 mb-2 d-print-none">Брой редове: ${count}</div>
-    <table class="mt-3 table table-bordered table-striped table-hover text-center">
-        <thead>
-            <tr>
-                <th scope="col">Снимка</th>
-                <th scope="col">Тип</th>
-                <th scope="col">Номер</th>
-                <th scope="col">Партньор</th>
-                <th scope="col">Обект</th>
-                <th scope="col">Потребител</th>
-                <th scope="col">Дата</th>
-                <th scope="col">Артикул</th>
-                <th scope="col">Цена</th>
-                <th scope="col">Пакети/Бройки</th>
-                <th scope="col">Бройки в пакет/Размер</th>
-                <th scope="col">Отстъпка %</th>
-                <th scope="col">Сума</th>
-                <th scope="col">Начин на плащане</th>
-                <th scope="col">Тип на продажба</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${orders?.map(order => html`
-                ${order.products.map(product => html`
+    <div class="${print ? '' : 'table-responsive'}">
+        <table class="mt-3 table table-bordered table-striped table-hover text-center">
+            <thead>
                 <tr>
-                    <td>${product?.product?.image?.url ? html`<img class="img-thumbnail" src=${product.product.image.url}/>` : ''}</td>
-                    <td>${params.documentTypes[order.type]}</td>
-                    <td>${order.number}</td>
-                    <td>${order.customer.name}</td>
-                    <td>${order.company.name}</td>
-                    <td>${order.user?.username || 'Изтрит потребител'}</td>
-                    <td>${new Date(order.date).toLocaleDateString('bg')}</td>
-                    <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
-                    <td>${formatPrice(product.price)}</td>
-                    <td>${product.quantity}</td>
-                    <td>${product?.qtyInPackage || product?.selectedSizes?.length || ''}</td>
-                    <td>${product?.discount}</td>
-                    <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
-                    <td>${params.paymentTypes[order.paymentType]}</td>
-                    <td>${params.orderTypes[order.orderType]}</td>
+                    <th scope="col">Снимка</th>
+                    <th scope="col">Тип</th>
+                    <th scope="col">Номер</th>
+                    <th scope="col">Партньор</th>
+                    <th scope="col">Обект</th>
+                    <th scope="col">Потребител</th>
+                    <th scope="col">Дата</th>
+                    <th scope="col">Артикул</th>
+                    <th scope="col">Доставна цена</th>
+                    <th scope="col">Продажна цена</th>
+                    <th scope="col">Пакети/Бройки</th>
+                    <th scope="col">Бройки в пакет/Размер</th>
+                    <th scope="col">Отстъпка %</th>
+                    <th scope="col">Сума доставна</th>
+                    <th scope="col">Сума продажна</th>
+                    <th scope="col">Начин на плащане</th>
+                    <th scope="col">Тип на продажба</th>
                 </tr>
+            </thead>
+            <tbody>
+                ${orders?.map(order => html`
+                    ${order.products.map(product => html`
+                    <tr>
+                        <td>${product?.product?.image?.url ? html`<img class="img-thumbnail" src=${product.product.image.url}/>` : ''}</td>
+                        <td>${params.documentTypes[order.type]}</td>
+                        <td>${order.number}</td>
+                        <td>${order.customer.name}</td>
+                        <td>${order.company.name}</td>
+                        <td>${order.user?.username || 'Изтрит потребител'}</td>
+                        <td>${new Date(order.date).toLocaleDateString('bg')}</td>
+                        <td>${product.product ? `${product.product.name} [${product.product.code}]` : product.name}</td>
+                        <td>${product?.product?.deliveryPrice ? formatPrice(product?.product?.deliveryPrice) : ''}</td>
+                        <td>${formatPrice(product.price)}</td>
+                        <td>${product.quantity}</td>
+                        <td>${product?.qtyInPackage || product?.selectedSizes?.length || ''}</td>
+                        <td>${product?.discount}</td>
+                        <td>${product?.product?.deliveryPrice ? formatPrice((product.product.deliveryPrice * product.quantity) * (1 - product.discount / 100)) : ''}</td>
+                        <td>${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+                        <td>${params.paymentTypes[order.paymentType]}</td>
+                        <td>${params.orderTypes[order.orderType]}</td>
+                    </tr>
+                    `)}
                 `)}
-            `)}
-        </tbody>
-    </table>
+                <tr class="fw-bold">
+                    <td colspan="10"></td>
+                    <td>Общо количество: ${total.quantity} бр.</td>
+                    <td colspan="2"></td>
+                    <td>Общо доставна цена: ${formatPrice(total.delivery)}</td>
+                    <td>Общо продажна цена: ${formatPrice(total.price)}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <div class="d-flex justify-content-center w-50 m-auto gap-3 mb-3 d-print-none">
         ${!selectedFilters.pageNumber || selectedFilters.pageNumber === 1 ? '' : html`<button class="btn btn-primary" value="prevPage" @click=${prevPage}><i class="bi bi-arrow-left"></i></button>`}
         ${pageCount < 2 ? '' : html`
@@ -204,6 +217,25 @@ const filters = (customers, companies, users, products, params) => html`
         </form>
 `;
 
+function calculateTotals(orders) {
+    const total = {
+        quantity: 0,
+        delivery: 0,
+        price: 0,
+    };
+
+    for (const order of orders) {
+        for (const product of order.products) {
+            total.quantity += product.quantity;
+            total.price += (product.price * product.quantity) * (1 - product.discount / 100);
+            product?.product?.deliveryPrice && (total.delivery += (product.product.deliveryPrice * product.quantity) * (1 - product.discount / 100));
+        }
+    }
+
+    console.log(total);
+    return total;
+}
+
 async function print() {
     const printContainer = document.getElementById('printContainer');
 
@@ -215,7 +247,9 @@ async function print() {
     // Get all references without pagination
     const req = await axios.get(pageCtx.pathname + '?' + newURL);
     const { orders } = req.data;
-    render(table({ orders, print: true }), printContainer);
+    const total = calculateTotals(orders);
+
+    render(table({ orders, print: true, total }), printContainer);
     window.print();
 }
 
@@ -232,9 +266,11 @@ async function loadReferences() {
         const users = (await axios.get('/users')).data;
         const products = (await axios.get('/products', { params: { page: 'references' } })).data.products;
 
+        const total = calculateTotals(orders);
+
         return html`
         ${filters(customers, companies, users, products, params)}
-        ${table({ orders, count, pageCount })}`
+        ${table({ orders, count, pageCount, total })}`
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
