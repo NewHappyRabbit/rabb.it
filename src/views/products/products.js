@@ -206,6 +206,10 @@ async function applyFilters(e) {
         selectedFilters.onlyOutOfStock = true;
     else selectedFilters.onlyOutOfStock = ''
 
+    if (data.onlyOpenedPackages)
+        selectedFilters.onlyOpenedPackages = true;
+    else selectedFilters.onlyOpenedPackages = ''
+
     if (e) // if coming from filters and not pagination
         delete selectedFilters.pageNumber;
 
@@ -245,6 +249,12 @@ export function productsPage(ctx, next) {
         <div class="form-check form-switch p-0">
             <label class="form-check-label d-block" for="onlyOutOfStock">Само изчерпани:</label>
             <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOutOfStock" ?checked=${selectedFilters?.onlyOutOfStock} name="onlyOutOfStock">
+        </div>
+    </div>
+    <div class="col-6 col-sm">
+        <div class="form-check form-switch p-0">
+            <label class="form-check-label d-block" for="onlyOpenedPackages">Само разбутани пакети:</label>
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOpenedPackages" ?checked=${selectedFilters?.onlyOpenedPackages} name="onlyOpenedPackages">
         </div>
     </div>
 `;

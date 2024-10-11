@@ -67,7 +67,7 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -99,12 +99,23 @@ export const ProductController = {
         if (search)
             query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
 
-        const products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ _id: -1 }).populate('category', 'name path');
-        const count = await Product.countDocuments(query);
-        const pageCount = Math.ceil(count / pageSize);
+        if (onlyOpenedPackages && onlyOpenedPackages === 'true')
+            pageSize = 0;
+
+        var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ _id: -1 }).populate('category', 'name path');
+        var count = await Product.countDocuments(query);
+        var pageCount = Math.ceil(count / pageSize);
 
         if (!products || products.length === 0)
             return { count, pageCount, products: [], status: 200 };
+
+        if (onlyOpenedPackages && onlyOpenedPackages === 'true') {
+            // filter only products with sizes and where each size.quantity is equal to its siblings
+            products = products.filter(product => product.sizes.length > 0 && product.sizes.every((size, index, arr) => size.quantity === arr[0].quantity));
+
+            count = products.length;
+            pageCount = 1;
+        }
 
         return { count, pageCount, products, status: 200 };
     },
