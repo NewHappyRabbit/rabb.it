@@ -309,7 +309,6 @@ function updateUnitPrice(e) {
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
 
-    console.log(addedProducts[arrayIndex]);
     addedProducts[arrayIndex].price = +(value * ((addedProducts[arrayIndex].selectedSizes?.length || addedProducts[arrayIndex].qtyInPackage || 0) * (addedProducts[arrayIndex].multiplier || 1))).toFixed(2);
     rerenderTable();
 }

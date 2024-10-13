@@ -62,8 +62,6 @@ async function loadReferences() {
         const req = await axios.get(path)
         const { orders } = req.data;
 
-        console.log({ path })
-
         total = {
             vat: 0,
             totalNoVat: 0,

@@ -232,7 +232,6 @@ function calculateTotals(orders) {
         }
     }
 
-    console.log(total);
     return total;
 }
 
