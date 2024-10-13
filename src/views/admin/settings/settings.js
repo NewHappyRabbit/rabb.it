@@ -76,8 +76,13 @@ function validateSettings(data) {
 export async function settingsPage() {
     var settings, orderParams;
     try {
-        settings = (await axios.get('/settings')).data;
-        orderParams = (await axios.get('/orders/params')).data;
+        const [settingsReq, orderParamsReq] = await Promise.all([
+            axios.get('/settings'),
+            axios.get('/orders/params')
+        ])
+
+        settings = settingsReq.data;
+        orderParams = orderParamsReq.data;
     } catch (error) {
         console.error(error);
         alert('Възникна грешка')

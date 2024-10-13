@@ -3,7 +3,7 @@ import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
 import { Setting } from "../models/setting.js";
-import { roundPrice, uploadImg } from "./common.js";
+import { uploadImg } from "./common.js";
 import fs from 'fs';
 
 async function validateProduct(data) {

@@ -179,14 +179,18 @@ const filters = ({ customers, companies, params }) => html`
 
 async function loadSales() {
     try {
-        const req = await axios.get(path);
+        const [req, paramsReq, customersReq, companiesReq] = await Promise.all([
+            axios.get(path),
+            axios.get('/orders/params'),
+            axios.get('/customers', { params: { page: 'orders' } }),
+            axios.get('/companies'),
+        ]);
         const { count, orders, pageCount: pgCount } = req.data;
         pageCount = pgCount;
 
-        params = (await axios.get('/orders/params')).data;
-        const customers = (await axios.get('/customers', { params: { page: 'orders' } })).data.customers;
-        const companies = (await axios.get('/companies')).data.companies;
-
+        params = paramsReq.data;
+        const customers = customersReq.data.customers;
+        const companies = companiesReq.data.companies;
         return html`
         ${filters({ customers, companies, params })}
         ${table({ count, orders, pageCount })}`
