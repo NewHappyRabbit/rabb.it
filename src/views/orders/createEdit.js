@@ -300,6 +300,20 @@ function updatePrice(e) {
     rerenderTable();
 }
 
+function updateUnitPrice(e) {
+    const target = e.target;
+    fixInputPrice({ target, roundPrice: true });
+    const value = target.value;
+
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+
+    console.log(addedProducts[arrayIndex]);
+    addedProducts[arrayIndex].price = +(value * ((addedProducts[arrayIndex].selectedSizes?.length || addedProducts[arrayIndex].qtyInPackage || 0) * (addedProducts[arrayIndex].multiplier || 1))).toFixed(2);
+    rerenderTable();
+}
+
 function updateQtyInPackage(e) {
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
@@ -410,7 +424,7 @@ const wholesaleProductsTable = (products) => html`
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}
 
-                    <td class="text-nowrap">${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+                    <td>${product?.product?.sizes?.length || !product?.product ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>` : ''}</td>
 
                     </td>
                     ${product.product ?
