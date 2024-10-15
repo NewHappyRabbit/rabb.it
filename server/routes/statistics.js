@@ -17,6 +17,7 @@ export function statisticsRoutes() {
 
             res.json(data);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

@@ -14,6 +14,7 @@ export function referencesSalesRoutes() {
 
             res.json({ orders, count, pageCount });
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -26,7 +27,8 @@ export function referencesSalesRoutes() {
             res.json({ orders });
         } catch (error) {
             console.log(error);
-            // req.log.debug({ body: req.body }) // Log the body of the request
+            // console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
     })

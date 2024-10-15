@@ -36,7 +36,8 @@ const fileOnly = {
     options: { destination: path.join(dirname(fileURLToPath(import.meta.url)), '../logs/live.log') },
 }
 
-const destination = process.env.ENV === 'dev' ? consoleOnly : fileOnly; // where to display logs (file, console or both)
+const destination = fileOnly; // where to display logs (file, console or both)
+// const destination = process.env.ENV === 'dev' ? consoleOnly : fileOnly; // where to display logs (file, console or both)
 const level = process.env.ENV === 'dev' ? 'trace' : 'info'; // default level if not set
 
 /* LEVELS:

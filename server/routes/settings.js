@@ -13,6 +13,7 @@ export function settingsRoutes() {
 
             res.json(settings);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -26,6 +27,7 @@ export function settingsRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

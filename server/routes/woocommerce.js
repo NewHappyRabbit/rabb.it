@@ -24,6 +24,7 @@ export function woocommerceRoutes() {
 
             res.status(200).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

@@ -58,6 +58,7 @@ export function productsRoutes() {
 
             res.json({ count, products, pageCount });
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -88,6 +89,7 @@ export function productsRoutes() {
 
             res.status(200).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -101,6 +103,7 @@ export function productsRoutes() {
 
             res.json(product);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -126,6 +129,7 @@ export function productsRoutes() {
         } catch (error) {
             console.log(error);
 
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -159,6 +163,7 @@ export function productsRoutes() {
 
             res.status(status).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -180,6 +185,7 @@ export function productsRoutes() {
             res.status(status).json(product);
         } catch (error) {
             console.log(error);
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -196,6 +202,7 @@ export function productsRoutes() {
 
             res.status(status).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

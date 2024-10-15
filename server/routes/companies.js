@@ -12,6 +12,7 @@ export function companiesRoutes() {
 
             res.json(companies);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -25,6 +26,7 @@ export function companiesRoutes() {
 
             res.json(company);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -38,6 +40,7 @@ export function companiesRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -51,6 +54,7 @@ export function companiesRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -65,6 +69,7 @@ export function companiesRoutes() {
 
             res.status(204).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -77,6 +82,7 @@ export function companiesRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

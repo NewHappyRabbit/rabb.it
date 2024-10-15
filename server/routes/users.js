@@ -13,6 +13,7 @@ export function usersRoutes() {
             const users = await UserController.get();
             res.status(200).json(users);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -22,6 +23,7 @@ export function usersRoutes() {
         try {
             res.json(UserController.getRoles());
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -32,6 +34,7 @@ export function usersRoutes() {
             const user = await UserController.getById(req.params.id);
             res.status(200).json(user);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -45,6 +48,7 @@ export function usersRoutes() {
 
             res.status(status).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -58,6 +62,7 @@ export function usersRoutes() {
 
             res.status(status).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -70,6 +75,7 @@ export function usersRoutes() {
 
             res.status(status).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }
@@ -93,6 +99,7 @@ export function usersRoutes() {
                 maxAge,
             });
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

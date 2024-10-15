@@ -14,6 +14,7 @@ export function categoriesRoutes() {
 
             res.json(categories);
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
@@ -32,6 +33,7 @@ export function categoriesRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
@@ -51,6 +53,7 @@ export function categoriesRoutes() {
 
             res.status(201).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
@@ -68,6 +71,7 @@ export function categoriesRoutes() {
 
             res.status(204).send();
         } catch (error) {
+            console.error(error);
             req.log.debug({ body: req.body })
             res.status(500).send(error);
         }
