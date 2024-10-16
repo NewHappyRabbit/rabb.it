@@ -300,6 +300,19 @@ function updatePrice(e) {
     rerenderTable();
 }
 
+function updateUnitPrice(e) {
+    const target = e.target;
+    fixInputPrice({ target, roundPrice: true });
+    const value = target.value;
+
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+
+    addedProducts[arrayIndex].price = +(value * ((addedProducts[arrayIndex].selectedSizes?.length || addedProducts[arrayIndex].qtyInPackage || 0) * (addedProducts[arrayIndex].multiplier || 1))).toFixed(2);
+    rerenderTable();
+}
+
 function updateQtyInPackage(e) {
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
@@ -410,7 +423,7 @@ const wholesaleProductsTable = (products) => html`
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}
 
-                    <td class="text-nowrap">${product?.product?.sizes?.length ? formatPrice(product.product.wholesalePrice / (product.product.sizes.length * product.product.multiplier)) : product.qtyInPackage ? formatPrice(product.price / product.qtyInPackage) : ''}</td>
+                    <td>${product?.product?.sizes?.length || !product?.product ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>` : ''}</td>
 
                     </td>
                     ${product.product ?
@@ -1197,11 +1210,20 @@ async function getDocumentTypeNumber() {
 export async function createEditOrderPage(ctx, next) {
     try {
         //TODO When all routes are converted to controllers, create single routes for this kind of requests. Instead of using 4 seperate requests to get companies, products, etc. do one single request to for example "/ordersInfo" and use the controllers to get all the info.
-        params = (await axios.get('/orders/params')).data;
-        companies = (await axios.get('/companies')).data.companies;
-        customers = (await axios.get('/customers', { params: { page: 'createOrder' } })).data.customers;
-        products = (await axios.get('/products', { params: { page: 'orders' } })).data.products;
-        defaultValues = (await axios.get('/settings', { params: { keys: ['orderType', 'paymentType', 'documentType', 'orderPrint'], } })).data;
+        const promises = [
+            axios.get('/orders/params'),
+            axios.get('/companies'),
+            axios.get('/customers', { params: { page: 'createOrder' } }),
+            axios.get('/products', { params: { page: 'orders' } }),
+            axios.get('/settings', { params: { keys: ['orderType', 'paymentType', 'documentType', 'orderPrint'], } }),
+        ];
+        const [paramsRes, companiesRes, customersRes, productsRes, defaultValuesRes] = await Promise.all(promises);
+        params = paramsRes.data;
+        companies = companiesRes.data.companies;
+        customers = customersRes.data.customers;
+        products = productsRes.data.products;
+        defaultValues = defaultValuesRes.data;
+
         addedProductsIndex = 0;
 
         if (ctx.params.id) {

@@ -232,7 +232,6 @@ function calculateTotals(orders) {
         }
     }
 
-    console.log(total);
     return total;
 }
 
@@ -255,16 +254,21 @@ async function print() {
 
 async function loadReferences() {
     try {
-        const req = await axios.get(path)
+        const [req, paramsReq, customersReq, companiesReq, usersReq, productsReq] = await Promise.all([
+            axios.get(path),
+            axios.get('/orders/params'),
+            axios.get('/customers', { params: { page: 'references' } }),
+            axios.get('/companies'),
+            axios.get('/users'),
+            axios.get('/products', { params: { page: 'references' } }),
+        ]);
         const { orders, count, pageCount: pgCount } = req.data;
         pageCount = pgCount;
-
-        //TODO When all controlers done, do a one route to get all params
-        params = (await axios.get('/orders/params')).data;
-        const customers = (await axios.get('/customers', { params: { page: 'references' } })).data.customers;
-        const companies = (await axios.get('/companies')).data.companies;
-        const users = (await axios.get('/users')).data;
-        const products = (await axios.get('/products', { params: { page: 'references' } })).data.products;
+        params = paramsReq.data;
+        const customers = customersReq.data.customers;
+        const companies = companiesReq.data.companies;
+        const users = usersReq.data;
+        const products = productsReq.data.products;
 
         const total = calculateTotals(orders);
 
