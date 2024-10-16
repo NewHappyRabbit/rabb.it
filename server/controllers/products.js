@@ -111,8 +111,7 @@ export const ProductController = {
 
         if (onlyOpenedPackages && onlyOpenedPackages === 'true') {
             // filter only products with sizes and where each size.quantity is equal to its siblings
-            products = products.filter(product => product.sizes.length > 0 && product.sizes.every((size, index, arr) => size.quantity === arr[0].quantity));
-
+            products = products.filter(p => p.sizes && p.sizes.some(s => s.quantity !== p.quantity))
             count = products.length;
             pageCount = 1;
         }
