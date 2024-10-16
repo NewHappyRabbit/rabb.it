@@ -8,9 +8,8 @@ export function woocommerceRoutes() {
     if (!WooCommerce) return;
 
     const woocommerceRoutes = express.Router();
-    woocommerceRoutes.use(WooHookAuth);
 
-    woocommerceRoutes.post('/woocommerce/hooks/order', async (req, res) => {
+    woocommerceRoutes.post('/woocommerce/hooks/order', WooHookAuth, async (req, res) => {
         // Use this URL for the WooCommerce hook. Example: https://example.com/server/woocommerce/hooks/order
         try {
             const data = req.body;

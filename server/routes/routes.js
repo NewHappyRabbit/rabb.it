@@ -39,9 +39,9 @@ export function loadRoutes() {
     ordersRoutes();
     companiesRoutes();
     referencesSalesRoutes();
-    woocommerceRoutes();
     statisticsRoutes();
 
+    woocommerceRoutes();
     //TODO Run this only the first time when the ecommerce is created to fill with data
     // FirstInitWooCommerce();
 
