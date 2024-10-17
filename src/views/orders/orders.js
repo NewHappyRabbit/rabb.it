@@ -5,7 +5,7 @@ import { formatPrice } from '@/api.js';
 import { nav } from "@/views/nav";
 import axios from "axios";
 import { until } from "lit/directives/until.js";
-import { spinner } from "@/views/components";
+import { spinner, toggleSubmitBtn, submitBtn } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login.js";
 
@@ -68,6 +68,26 @@ async function applyFilters(e) {
         page('/orders');
 }
 
+async function markPaid(e, id) {
+    toggleSubmitBtn(e.target);
+    try {
+        const req = await axios.put(`/orders/${id}/markPaid`);
+
+        if (req.status === 201) {
+            toggleSubmitBtn(e.target);
+
+            // delete button, remove red glow from row and set amount to 0
+            e.target.parentNode.parentNode.querySelector('.paidAmount').innerText = '';
+            e.target.parentNode.parentNode.classList.remove('table-danger');
+            e.target.remove();
+        }
+    } catch (error) {
+        toggleSubmitBtn(e.target);
+        console.error(error);
+        alert('Възникна грешка!');
+    }
+}
+
 const table = ({ count, orders, pageCount }) => html`
     <div class="mt-2 mb-2">Брой документи: ${count}</div>
     <div class="table-responsive">
@@ -97,9 +117,10 @@ const table = ({ count, orders, pageCount }) => html`
                         <td>${formatPrice(order.total)}</td>
                         <td>${params.paymentTypes[order.paymentType]}</td>
                         <td>${params.orderTypes[order.orderType]}</td>
-                        <td>${order.unpaid === true ? formatPrice(order.total - order.paidAmount) : ""}</td>
+                        <td class="paidAmount">${order.unpaid === true ? formatPrice(order.total - order.paidAmount) : ""}</td>
                         <td>
                             <a href="/orders/${order._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</a>
+                            ${loggedInUser.role === 'admin' && order.unpaid ? submitBtn({ func: (e) => markPaid(e, order._id), icon: 'bi bi-cash', text: 'Маркирай като платена', type: 'button', classes: 'btn-success' }) : ''}
                             ${loggedInUser.role === 'admin' ? html`<button @click=${() => selectedSale = order._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
                         </td>
                     </tr>

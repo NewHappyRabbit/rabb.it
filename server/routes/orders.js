@@ -99,6 +99,22 @@ export async function ordersRoutes() {
         }
     });
 
+    ordersRouter.put('/orders/:id/markPaid', permit('manager', 'admin'), async (req, res) => {
+        try {
+            const id = req.params.id;
+            const userId = JSON.parse(req.cookies.user).id;
+
+            const { status, message } = await OrderController.markPaid({ id, userId });
+            if (status !== 201) return res.status(status).send(message);
+
+            res.status(201).send(id);
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
             const { status, message, returnedProducts } = await OrderController.delete(req.params.id);

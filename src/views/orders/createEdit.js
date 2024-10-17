@@ -706,6 +706,8 @@ function addProduct(e) {
 
     e.target.value = '';
     e.target.focus();
+    // scroll to button
+    e.target.scrollIntoView({ behavior: 'smooth' });
 }
 
 function validateOrder(data) {

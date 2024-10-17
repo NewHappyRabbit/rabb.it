@@ -423,6 +423,18 @@ export const OrderController = {
 
         return { status: 201, updatedProducts };
     },
+    markPaid: async ({ id, userId }) => {
+        const order = await Order.findById(id);
+        if (!order) return { status: 404, message: 'Документът не е намерен' };
+
+        order.paidAmount = order.total;
+        order.unpaid = false;
+        order.user = userId;
+
+        await order.save();
+
+        return { status: 201 };
+    },
     delete: async (id) => {
         const order = await Order.findById(id);
 

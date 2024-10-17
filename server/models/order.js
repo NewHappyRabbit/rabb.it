@@ -49,6 +49,7 @@ const orderSchema = new Schema({
     taxEventDate: {
         type: Date,
         required: true,
+        default: new Date()
     },
     type: {
         type: String,
