@@ -171,8 +171,8 @@ export async function WooHookCreateOrder(data) {
         wooData.products.push(productData);
     }
 
-    // Check if existing customer
-    var customer = await Customer.findOne({ vat: wooData.customer.vat });
+    // Check if existing customer IF vat was entered in form and if VAT is digits only
+    var customer = wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm) ? await Customer.findOne({ vat: wooData.customer.vat }) : null;
 
     if (customer && !customer.woocommerce) { // Add woo id to existing customer
         customer.woocommerce.id = wooData.customer.id;
