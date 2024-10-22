@@ -112,6 +112,8 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             // If no quantity of any size is left, mark as out of stock
             if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
                 existingProduct.outOfStock = true;
+
+            existingProduct.openedPackages = existingProduct.sizes.some(s => s.quantity !== existingProduct.sizes[0].quantity);
         }
 
         // Wholesale + Simple product
@@ -201,6 +203,8 @@ async function returnProductsQuantities(order) {
             existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
 
             existingProduct.outOfStock = false;
+
+            existingProduct.openedPackages = existingProduct.sizes.some(s => s.quantity !== existingProduct.sizes[0].quantity);
         }
 
         // Wholesale + Simple product
@@ -232,6 +236,19 @@ async function returnProductsQuantities(order) {
 
     return savedProducts;
 }
+
+async function addOpenedPackagesToExistingProducts() {
+    //FIXME Delete this after svilen enters all his products in db
+    const products = await Product.find();
+
+    for (const product of products) {
+        product.openedPackages = product.sizes.some(s => s.quantity !== product.sizes[0].quantity);
+        await product.save();
+    }
+
+    console.log('Products fixed!')
+}
+addOpenedPackagesToExistingProducts();
 
 export const OrderController = {
     get: async ({ pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {

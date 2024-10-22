@@ -82,6 +82,12 @@ const productSchema = new Schema({
             }
         },
     ],
+    openedPackages: {
+        type: Boolean,
+        default: function () {
+            return this?.sizes?.some(s => s.quantity !== this.sizes[0].quantity);
+        }
+    },
     upsaleAmount: {
         type: Number,
         default: 0,

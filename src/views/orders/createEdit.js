@@ -52,10 +52,11 @@ function selectCustomer(e) {
     render(receiverTemplate(selectedCustomer.receivers), document.getElementById('receiverDiv'));
 }
 
-function selectCompany(e) {
+async function selectCompany(e) {
     const company = e.target.value;
     selectedCompany = companies.find(c => c._id === company);
     render(senderTemplate(selectedCompany.senders), document.getElementById('senderDiv'));
+    await getDocumentTypeNumber()
 }
 
 function setDiscount() {
@@ -952,7 +953,8 @@ async function createEditOrder(e) {
             if (e.target.id === 'submitWithPrint')
                 return page(`/orders/${req.data}?print`);
 
-            page(`/orders/${req.data}`);
+            page('/orders/create')
+            // page(`/orders/${req.data}`);
         }
     } catch (err) {
         toggleSubmitBtn(e.target);
@@ -1274,8 +1276,9 @@ export async function createEditOrderPage(ctx, next) {
             orderType = defaultValues.find(o => o.key === 'orderType').value;
             selectedCompany = companies[0];
             selectedCustomer = undefined;
+            const customerEl = document.getElementById('customer')
+            if (customerEl) customerEl.value = '';
             addedProducts = [];
-
             await getDocumentTypeNumber();
         }
 
@@ -1326,6 +1329,6 @@ export async function createEditOrderPage(ctx, next) {
             });
     } catch (err) {
         console.error(err);
-        alert('Възникна грешка')
+        alert('Възникна грешка');
     }
 }
