@@ -423,8 +423,6 @@ const wholesaleProductsTable = (products) => html`
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}</td>
 
-        ${console.log(product)}
-
                     <td>${product?.product?.sizes?.length || !product?.product
         ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes?.length ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>`
         : ''}</td>
