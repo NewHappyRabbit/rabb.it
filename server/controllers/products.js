@@ -67,6 +67,12 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
+    find: async (search) => {
+        // Find product using searh as code or barcode
+        const product = await Product.findOne({ $or: [{ code: search }, { barcode: search }] });
+
+        return { product, status: 200 };
+    },
     get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products

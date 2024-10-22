@@ -11,7 +11,7 @@ import page from 'page';
 import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
-var order, defaultValues, params, companies, documentType, orderType, products, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
+var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
 
 function changeOrderType(e) {
     orderType = e.target.value;
@@ -399,9 +399,9 @@ const wholesaleProductsTable = (products) => html`
                 <td>№</td>
                 <th>Продукт</th>
                 <th>Мярка</th>
-                <th class="text-primary">Брой в пакет</th>
-                <th>Цена за брой</th>
                 <th class="text-primary">Повтарящи бр. от размер</th>
+                <th>Цена за брой</th>
+                <th class="text-primary">Брой в пакет</th>
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
@@ -421,11 +421,14 @@ const wholesaleProductsTable = (products) => html`
                     <td>
                         ${product?.product?.sizes?.length
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
-        : ''}
+        : ''}</td>
 
-                    <td>${product?.product?.sizes?.length || !product?.product ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>` : ''}</td>
+        ${console.log(product)}
 
-                    </td>
+                    <td>${product?.product?.sizes?.length || !product?.product
+        ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes?.length ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>`
+        : ''}</td>
+
                     ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
@@ -570,7 +573,7 @@ function stopBarcode() {
     Quagga.offDetected();
 }
 
-function addProduct(e) {
+async function addProduct(e) {
     e.preventDefault();
 
     if (e.target.value === '') return;
@@ -589,8 +592,12 @@ function addProduct(e) {
         product = e.target.value.split('*')[1];
     }
 
+    e.target.value = ''
+
     // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-    const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
+    // make a query to get the product from db
+    const res = await axios.get('/products/find', { params: { search: product } });
+    const productInDB = res.data || null;
 
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
@@ -1216,14 +1223,12 @@ export async function createEditOrderPage(ctx, next) {
             axios.get('/orders/params'),
             axios.get('/companies'),
             axios.get('/customers', { params: { page: 'createOrder' } }),
-            axios.get('/products', { params: { page: 'orders' } }),
             axios.get('/settings', { params: { keys: ['orderType', 'paymentType', 'documentType', 'orderPrint'], } }),
         ];
-        const [paramsRes, companiesRes, customersRes, productsRes, defaultValuesRes] = await Promise.all(promises);
+        const [paramsRes, companiesRes, customersRes, defaultValuesRes] = await Promise.all(promises);
         params = paramsRes.data;
         companies = companiesRes.data.companies;
         customers = customersRes.data.customers;
-        products = productsRes.data.products;
         defaultValues = defaultValuesRes.data;
 
         addedProductsIndex = 0;
@@ -1303,7 +1308,12 @@ export async function createEditOrderPage(ctx, next) {
         if (barcodeInput)
             barcodeInput.addEventListener('textInput', function (e) {
                 if (e.data.length >= 10) {
-                    e.preventDefault();
+                    const now = new Date().getTime();
+                    // pause scanning for 0.1 second to skip duplicates
+                    if (now < lastScanTime + 100)
+                        return;
+
+                    lastScanTime = now;
                     // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
                     // simulate Enter key pressed on input field to activate addProduct function
                     const event = new KeyboardEvent('keyup', {
@@ -1313,7 +1323,6 @@ export async function createEditOrderPage(ctx, next) {
                         keyCode: 13,
                     });
 
-                    barcodeInput.value += e.data;
                     barcodeInput.dispatchEvent(event);
                 }
             });

@@ -48,6 +48,21 @@ export function productSockets(socket) {
 export function productsRoutes() {
     const productsRouter = express.Router();
 
+    productsRouter.get('/products/find', permit('user', 'manager', 'admin'), async (req, res) => {
+        try {
+            const { search } = req.query;
+            const { product, status, message } = await ProductController.find(search);
+            if (status !== 200)
+                return res.status(status).send(message);
+
+            res.json(product);
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    })
+
     productsRouter.get('/products', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { pageSize = 15, pageNumber = 1, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, page } = req.query;
