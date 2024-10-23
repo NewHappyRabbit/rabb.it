@@ -77,8 +77,10 @@ export const ProductController = {
             $or: [{ code: search }, { barcode: search }, { barcode: search.slice(0, -1) }]
         }
 
-        if (search.length === 12) // scanned with barcode gun, add checkdigit to barcode
+        if (search.length === 12) { // scanned with barcode gun, add checkdigit to barcode
+            query.$or.push({ barcode: `0${search}` });
             query.$or.push({ barcode: `${search}${checkDigitEAN13(search.toString())}` });
+        }
 
         const product = await Product.findOne(query);
 
