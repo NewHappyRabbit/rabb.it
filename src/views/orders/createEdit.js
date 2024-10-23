@@ -1268,7 +1268,8 @@ export async function createEditOrderPage(ctx, next) {
             // if order was just created and print was requested
             if (ctx.querystring.includes('print')) {
                 printSale(order);
-                return page(`/orders/${ctx.params.id}`);
+                return page('/orders/create')
+                // return page(`/orders/${ctx.params.id}`);
             }
         } else {
             order = undefined;
