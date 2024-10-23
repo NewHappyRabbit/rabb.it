@@ -7,6 +7,7 @@ import { User } from "../models/user.js";
 import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
+import { retry } from "./common.js";
 // TODO On start, check if import all orders from WOO to MONGO (non existing only)
 
 // DONE
@@ -252,13 +253,8 @@ export async function WooUpdateOrder(id) {
         });
     }
 
-    WooCommerce.put(`orders/${order.woocommerce.id}`, wooData).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.put(`orders/${order.woocommerce.id}`, wooData);
         console.log('Order successfully edited in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }

@@ -1,5 +1,6 @@
 import { WooCommerce } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
+import { retry } from "./common.js";
 
 export async function WooCreateCategoriesINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
@@ -31,17 +32,13 @@ export async function WooCreateCategory(category) {
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: `${process.env.URL}${category.image}` };
 
-    WooCommerce.post("products/categories", data).then((response) => {
-        // Success
+    retry(async () => {
+        const response = await WooCommerce.post("products/categories", data)
         console.log("Category successfully created in WooCommerce!")
+        //TODO TEST
         // add woo id to category
         category.woocommerce.id = response.data.id;
         category.save();
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
 
@@ -63,29 +60,19 @@ export async function WooEditCategory(category) {
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: `${process.env.URL}${category.image}` };
 
-    WooCommerce.put(`products/categories/${category.woocommerce.id}`, data).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.put(`products/categories/${category.woocommerce.id}`, data)
         console.log('Category successfully edited in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
 
 export async function WooDeleteCategory(wooId) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    WooCommerce.delete(`products/categories/${wooId}`, {
-        force: true
-    }).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.delete(`products/categories/${wooId}`, {
+            force: true
+        });
         console.log('Category successfully deleted in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
