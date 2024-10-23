@@ -69,7 +69,18 @@ function checkDigitEAN13(barcode) {
 export const ProductController = {
     find: async (search) => {
         // Find product using searh as code or barcode
-        const product = await Product.findOne({ $or: [{ code: search }, { barcode: search }] });
+
+
+        const query = {
+            noInvoice: { $ne: true },
+            outOfStock: { $ne: true },
+            $or: [{ code: search }, { barcode: search }, { barcode: search.slice(0, -1) }]
+        }
+
+        if (search.length === 12) // scanned with barcode gun, add checkdigit to barcode
+            query.$or.push({ barcode: `${search}${checkDigitEAN13(search.toString())}` });
+
+        const product = await Product.findOne(query);
 
         return { product, status: 200 };
     },
