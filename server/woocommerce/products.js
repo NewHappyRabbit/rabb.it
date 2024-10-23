@@ -2,6 +2,7 @@ import { WooCommerce } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
+import { retry } from "./common.js";
 
 // REST API Documentation: https://woocommerce.github.io/woocommerce-rest-api-docs/
 
@@ -120,14 +121,9 @@ export async function WooUpdateQuantityProducts(products) {
         update: filtered.map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity })),
     }
 
-    WooCommerce.post('products/batch', data).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.post('products/batch', data);
         console.log('Products quantity successfully updated in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
 
@@ -309,22 +305,11 @@ export async function WooCreateProduct(product) {
         }
     }
 
-    WooCommerce.post("products", data).then((response) => {
-        // Success
-        console.log("Product successfully created in WooCommerce!")
-        product.woocommerce = {
-            id: response.data.id,
-            permalink: response.data.permalink
-        }
-        product.save();
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
+    retry(async () => {
+        await WooCommerce.post("products", data);
+        console.log(`Product ${product.code} successfully created in WooCommerce!`);
     });
 }
-
 
 export async function WooEditProduct(oldProductData, newProductData) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
@@ -387,27 +372,17 @@ export async function WooEditProduct(oldProductData, newProductData) {
         }
     }
 
-    WooCommerce.put(`products/${oldProductData.woocommerce.id}`, data).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.put(`products/${oldProductData.woocommerce.id}`, data);
         console.log('Product successfully edited in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
 
 export async function WooDeleteProduct(id) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    WooCommerce.delete(`products/${id}`).then(() => {
-        // Success
+    retry(async () => {
+        await WooCommerce.delete(`products/${id}`);
         console.log('Product successfully deleted in WooCommerce!')
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
     });
 }
