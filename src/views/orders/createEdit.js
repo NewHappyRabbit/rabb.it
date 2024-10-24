@@ -401,8 +401,8 @@ const wholesaleProductsTable = (products) => html`
                 <th>Продукт</th>
                 <th>Мярка</th>
                 <th class="text-primary">Повтарящи бр. от размер</th>
-                <th>Цена за брой</th>
                 <th class="text-primary">Брой в пакет</th>
+                <th>Цена за брой</th>
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
@@ -424,13 +424,13 @@ const wholesaleProductsTable = (products) => html`
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}</td>
 
-                    <td>${product?.product?.sizes?.length || !product?.product
-        ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes?.length ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>`
-        : ''}</td>
-
-                    ${product.product ?
+        ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
+
+        <td>${product?.product?.sizes?.length || !product?.product
+        ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes?.length ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>`
+        : ''}</td>
 
                     <td>
                         <div class="input-group">

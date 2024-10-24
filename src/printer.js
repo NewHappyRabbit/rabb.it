@@ -135,7 +135,7 @@ export function printLabel(product, quantity = 1) {
 ^LS0
 ^BY3,2,72^FT87,120^BEN,,Y,N
 ^FH\^FD${product.barcode}^FS
-^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes.map(s => s.size).join(', ')}]` : ''}^FS^CI27
+^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes[0]}-${product.sizes[product.sizes.length - 1]}]` : ''}^FS^CI27
 ^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)}^FS^CI27
 ^FT303,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
 ^PQ${quantity},0

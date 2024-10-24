@@ -306,7 +306,14 @@ export async function WooCreateProduct(product) {
     }
 
     retry(async () => {
-        await WooCommerce.post("products", data);
+        const response = await WooCommerce.post("products", data);
+
+        product.woocommerce = {
+            id: response.data.id,
+            permalink: response.data.permalink
+        }
+
+        await product.save();
         console.log(`Product ${product.code} successfully created in WooCommerce!`);
     });
 }
