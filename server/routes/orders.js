@@ -37,8 +37,9 @@ export async function ordersRoutes() {
 
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { from, to, type, orderType, customer, company, paymentType, unpaid, number, pageSize = 15, pageNumber = 1 } = req.query;
-            const { orders, count, pageCount } = await OrderController.get({ pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number });
+            const { from, to, type, orderType, customer, company, paymentType, unpaid, number, pageSize = 15, pageNumber = 1, sort = { _id: -1 } } = req.query;
+
+            const { orders, count, pageCount } = await OrderController.get({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number });
 
             res.json({ count, orders, pageCount });
         } catch (error) {

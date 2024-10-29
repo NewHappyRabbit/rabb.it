@@ -238,7 +238,7 @@ async function returnProductsQuantities(order) {
 }
 
 export const OrderController = {
-    get: async ({ pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {
+    get: async ({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {
         let query = {
             $and: [{ deleted: { $ne: true } }]
         };
@@ -261,7 +261,10 @@ export const OrderController = {
 
         company && query.$and.push({ 'company': company });
 
-        const orders = await Order.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('-products -receiver -sender').sort({ _id: -1 }).populate('customer company');
+        if (typeof sort === 'string')
+            sort = JSON.parse(sort);
+
+        const orders = await Order.find(query).sort(sort).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('-products -receiver -sender').populate('customer company');
         const count = await Order.countDocuments(query);
         const pageCount = Math.ceil(count / pageSize);
 

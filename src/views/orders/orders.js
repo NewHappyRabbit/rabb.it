@@ -60,7 +60,9 @@ async function applyFilters(e) {
 
     Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
 
+
     const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
+    console.log(uri);
 
     if (uri.length)
         page('/orders?' + uri);
@@ -142,6 +144,15 @@ const table = ({ count, orders, pageCount }) => html`
 // TODO Add filter for only woocommerce or only app orderes
 const filters = ({ customers, companies, params }) => html`
         <form @change=${applyFilters} id="filters" class="row align-items-end w-100 g-3">
+            <div class="col-6 col-sm">
+                <label for="sort">Сортиране:</label>
+                <select id="sort" name="sort" class="form-control">
+                    <option ?selected=${selectedFilters?.sort === '{"_id":-1}'} value='{"_id":-1}'>Най-нови</option>
+                    <option ?selected=${selectedFilters?.sort === '{"_id":1}'} value='{"_id":1}'>Най-стари</option>
+                    <option ?selected=${selectedFilters?.sort === '{"total":1}'} value='{"total":1}'>Стойност ↑</option>
+                    <option ?selected=${selectedFilters?.sort === '{"total":-1}'} value='{"total":-1}'>Стойност ↓</option>
+                </select>
+            </div>
             <div class="col-6 col-sm">
                 <label for="customer">Партньор:</label>
                 <input value=${(temp = customers.find(c => selectedFilters?.customer === c._id)) ? `${temp.name}${temp.vat ? ` [${temp.vat}]` : ''}${temp.phone ? ` (${temp.phone})` : ''}` : ''} list="customersList" placeholder="Всички" name="customer" id="customer" class="form-control" autocomplete="off">
