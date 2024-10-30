@@ -8,7 +8,7 @@ import { spinner } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login";
 
-let selectedFilters = {}, path, total = {
+let params, selectedFilters = {}, path, total = {
     vat: 0,
     totalNoVat: 0,
     total: 0,
@@ -39,7 +39,7 @@ const table = ({ orders }) => html`
                     <td>${new Date(order.date).toLocaleDateString('bg')}</td>
                     <td>${order.customer.name} ${order.customer.vat ? `(${order.customer.vat})` : ''}</td>
                     <td>${order.company.name} (${order.company.vat})</td>
-                    <td>${new Date(order.date).toLocaleDateString('bg')}</td>
+                    <td>${params.paymentTypes[order.paymentType]}</td>
                     <td class="text-nowrap">${formatPrice(deductVat(order.total, order.company.tax))}</td>
                     <td class="text-nowrap">${formatPrice(getVat(order.total, order.company.tax))}</td>
                     <td class="text-nowrap">${formatPrice(order.total)}</td>
@@ -59,8 +59,13 @@ const table = ({ orders }) => html`
 
 async function loadReferences() {
     try {
-        const req = await axios.get(path)
+        const [req, paramsReq] = await Promise.all([
+            axios.get(path),
+            axios.get('/orders/params'),
+        ]);
+
         const { orders } = req.data;
+        params = paramsReq.data;
 
         total = {
             vat: 0,

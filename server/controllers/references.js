@@ -61,7 +61,7 @@ export const ReferencesController = {
             }
         }
 
-        const orders = await Order.find(query).select('number customer company total date').sort({ _id: -1 }).populate('customer company');
+        const orders = await Order.find(query).select('number customer company total date paymentType').sort({ _id: -1 }).populate('customer company');
         return { orders };
     }
 }
