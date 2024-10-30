@@ -1,8 +1,4 @@
-import { Company } from "../models/company.js";
-import { Customer } from "../models/customer.js";
 import { Order } from "../models/order.js";
-import { Product } from "../models/product.js";
-import { User } from "../models/user.js";
 
 export const ReferencesController = {
     get: async ({ pageNumber, pageSize, print = false, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product }) => {
