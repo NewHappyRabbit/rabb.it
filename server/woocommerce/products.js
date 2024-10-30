@@ -365,7 +365,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
                 id: piecePriceId,
                 visible: true,
                 variation: false,
-                options: (newProductData.wholesalePrice / newProductData.sizes.length).toFixed(2).toString()
+                options: (newProductData.wholesalePrice / (newProductData.sizes.length * newProductData.multiplier)).toFixed(2).toString()
             },
         ]
     } else data.attributes = [];
