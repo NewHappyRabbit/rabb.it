@@ -1297,6 +1297,7 @@ export async function createEditOrderPage(ctx, next) {
 
         render(template(params, customers), container);
         render(topRow(params, customers), document.getElementById('topRowContainer'));
+        document.querySelector('#type option[value="' + documentType + '"]').selected = true;
         rerenderTable();
         render(senderTemplate(selectedCompany?.senders || []), document.getElementById('senderDiv'));
         render(receiverTemplate(selectedCustomer?.receivers || []), document.getElementById('receiverDiv'));
