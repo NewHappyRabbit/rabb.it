@@ -1011,7 +1011,13 @@ async function printSale(data) {
         printPages.push(printContainer({ data, param: { stokova: true }, flags }));
 
     render(printPages, document.getElementById('printContainer'));
-    window.print();
+    try {
+        if (!document.execCommand('print', false, null)) {
+            window.print();
+        }
+    } catch {
+        window.print();
+    }
 }
 
 // invoice should have deducted tax in product price and shown as sum at the end

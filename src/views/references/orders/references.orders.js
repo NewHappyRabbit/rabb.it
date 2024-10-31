@@ -247,7 +247,13 @@ async function print() {
     const total = calculateTotals(orders);
 
     render(table({ orders, print: true, total }), printContainer);
-    window.print();
+    try {
+        if (!document.execCommand('print', false, null)) {
+            window.print();
+        }
+    } catch {
+        window.print();
+    }
 }
 
 async function loadReferences() {

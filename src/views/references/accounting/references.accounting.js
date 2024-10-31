@@ -90,7 +90,13 @@ async function loadReferences() {
 function print() {
     const el = document.querySelector('table');
     el.classList.add('printTable');
-    window.print();
+    try {
+        if (!document.execCommand('print', false, null)) {
+            window.print();
+        }
+    } catch {
+        window.print();
+    }
     el.classList.remove('printTable');
 }
 
