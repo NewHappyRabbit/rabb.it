@@ -371,11 +371,11 @@ export async function WooEditProduct(oldProductData, newProductData) {
     } else data.attributes = [];
 
     if (process.env.ENV !== 'dev' && newProductData.image) {
-        data.images = [{ src: `${process.env.URL}${newProductData.image}` }];
+        data.images = [{ src: newProductData.image.url }];
 
         if (newProductData.additionalImages) {
             for (const image of newProductData.additionalImages)
-                data.images.push({ src: `${process.env.URL}${image}` });
+                data.images.push({ src: image.url });
         }
     }
 

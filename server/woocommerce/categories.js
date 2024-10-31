@@ -30,7 +30,7 @@ export async function WooCreateCategory(category) {
     }
 
     if (process.env.ENV !== 'dev' && category.image)
-        data.image = { src: `${process.env.URL}${category.image}` };
+        data.image = { src: category.image.url };
 
     retry(async () => {
         const response = await WooCommerce.post("products/categories", data)
@@ -58,7 +58,7 @@ export async function WooEditCategory(category) {
     }
 
     if (process.env.ENV !== 'dev' && category.image)
-        data.image = { src: `${process.env.URL}${category.image}` };
+        data.image = { src: category.image.url };
 
     retry(async () => {
         await WooCommerce.put(`products/categories/${category.woocommerce.id}`, data)
