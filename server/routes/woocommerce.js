@@ -15,11 +15,12 @@ export function woocommerceRoutes() {
             const data = req.body;
 
             const { status, message } = await WooHookCreateOrder(data);
-            if (status !== 201) return res.status(status).send(message);
+            if (status !== 201) {
+                console.error('Error creating the woo order from hook: ' + message);
+                return res.status(status).send(message)
+            };
 
             console.log('Order from Woo transfered to app!')
-
-            // TODO Create socket event and notification on frontend or something
 
             res.status(200).send();
         } catch (error) {

@@ -111,8 +111,7 @@ function addProduct(e) {
             name: productInDB.name,
             ...(productInDB.barcode && { barcode: productInDB.barcode }),
             quantity,
-            sizes: productInDB?.sizes.map(size => size.size),
-            selectedSizes: productInDB?.sizes.map(size => size.size)
+            sizes: productInDB?.sizes.map(size => size.size)
         });
 
         rerenderTable();
@@ -137,26 +136,12 @@ function removeProduct(e) {
     rerenderTable();
 }
 
-function updateSizes(e) {
-    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
-    // find actual index in the array of addedProducts
-    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
-
-    if (!e.target.checked)
-        addedProducts[arrayIndex].selectedSizes = addedProducts[arrayIndex].selectedSizes.filter(size => size !== e.target.value);
-    else
-        addedProducts[arrayIndex].selectedSizes.push(e.target.value);
-
-    rerenderTable();
-}
-
 const table = (products) => html`
     <table class="table mt-3 table-striped">
         <thead>
             <tr>
                 <th>Продукт</th>
-                <th>Размер</th>
-                <th>Брой</th>
+                <th>Брой пакети</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -165,14 +150,6 @@ const table = (products) => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product.name} [${product.code}]</td>
                     <td>
-                        ${product.sizes.map(size => html`
-                            <input @change=${updateSizes} class="form-check-input" type="checkbox" value=${size} ?checked=${product?.selectedSizes?.includes(size)} id="${product._id}-${size}">
-                            <label class="form-check-label me-1" for="${product._id}-${size}">
-                                ${size}
-                            </label>
-                        `)}
-                    </td>
-                    <td>
                         <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" required/>
                     </td>
                     <td>
@@ -180,7 +157,7 @@ const table = (products) => html`
                     </td>
                 </tr>`)}
             <tr id="addNewProduct">
-                <td colspan="4">
+                <td colspan="3">
                     <div id="barcodeVideo"></div>
                     <div class="input-group">
                         <input @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="text" name="product" id="product" autocomplete="off">

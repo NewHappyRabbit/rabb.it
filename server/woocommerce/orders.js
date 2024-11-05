@@ -243,7 +243,7 @@ export async function WooUpdateOrder(id) {
         });
     }
 
-    retry(async () => {
+    await retry(async () => {
         await WooCommerce.put(`orders/${order.woocommerce.id}`, wooData);
         console.log('Order successfully edited in WooCommerce!')
     });
