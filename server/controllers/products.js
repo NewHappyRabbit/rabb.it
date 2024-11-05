@@ -232,7 +232,7 @@ export const ProductController = {
                         }
 
                         // set package quantity to smalles size quantity
-                        found.quantity = Math.min(...found.sizes.map(s => s.quantity));
+                        found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / product.multiplier);
                     } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
                 } else found.quantity += +product.quantity; // simple product
 
@@ -254,7 +254,7 @@ export const ProductController = {
                 } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
 
                 // set package quantity to smalles size quantity
-                dbProduct.quantity = Math.min(...dbProduct.sizes.map(s => s.quantity));
+                dbProduct.quantity = parseInt(Math.min(...dbProduct.sizes.map(s => s.quantity)) / dbProduct.multiplier);
             } else dbProduct.quantity += +product.quantity; // simple product
 
             dbProduct.outOfStock = false;
