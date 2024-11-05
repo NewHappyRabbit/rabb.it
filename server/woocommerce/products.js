@@ -118,11 +118,14 @@ export async function WooUpdateQuantityProducts(products) {
     const filtered = products.filter(p => p.woocommerce.id); // only find products that are in WooCommerce (some can be hidden)
 
     // Do it in batches of 100
+    console.log('Starting update for ' + filtered.length + ' products...')
     for (let i = 0; i < filtered.length; i += 100) {
         const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity }));
-        retry(async () => {
-            await WooCommerce.post('products/batch', batch);
-            console.log('Products quantity successfully updated in WooCommerce!')
+        await retry(async () => {
+            console.log('Starting work on batch: ' + i)
+            const req = await WooCommerce.post('products/batch', { update: batch });
+            if (req.status === 200) console.log('Products quantity successfully updated in WooCommerce!')
+            else console.error('Error batch updating products quantity in WooCommerce!')
         });
     }
 }
@@ -305,7 +308,7 @@ export async function WooCreateProduct(product) {
         }
     }
 
-    retry(async () => {
+    await retry(async () => {
         const response = await WooCommerce.post("products", data);
 
         product.woocommerce = {
@@ -379,7 +382,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
         }
     }
 
-    retry(async () => {
+    await retry(async () => {
         await WooCommerce.put(`products/${oldProductData.woocommerce.id}`, data);
         console.log('Product successfully edited in WooCommerce!')
     });
@@ -388,7 +391,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
 export async function WooDeleteProduct(id) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    retry(async () => {
+    await retry(async () => {
         await WooCommerce.delete(`products/${id}`);
         console.log('Product successfully deleted in WooCommerce!')
     });

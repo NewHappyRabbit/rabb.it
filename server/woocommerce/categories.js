@@ -32,7 +32,7 @@ export async function WooCreateCategory(category) {
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: category.image.url };
 
-    retry(async () => {
+    await retry(async () => {
         const response = await WooCommerce.post("products/categories", data)
         console.log("Category successfully created in WooCommerce!")
         //TODO TEST
@@ -60,7 +60,7 @@ export async function WooEditCategory(category) {
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: category.image.url };
 
-    retry(async () => {
+    await retry(async () => {
         await WooCommerce.put(`products/categories/${category.woocommerce.id}`, data)
         console.log('Category successfully edited in WooCommerce!')
     });
@@ -69,7 +69,7 @@ export async function WooEditCategory(category) {
 export async function WooDeleteCategory(wooId) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    retry(async () => {
+    await retry(async () => {
         await WooCommerce.delete(`products/categories/${wooId}`, {
             force: true
         });

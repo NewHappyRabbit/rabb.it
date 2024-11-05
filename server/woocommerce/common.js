@@ -11,6 +11,6 @@ export async function retry(fn, timesLeft = 10, timeout = 5000) {
         } else console.error(error);
 
         await new Promise(resolve => setTimeout(resolve, timeout));
-        retry(fn, timesLeft - 1);
+        await retry(fn, timesLeft - 1);
     }
 }
