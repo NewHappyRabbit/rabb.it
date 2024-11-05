@@ -3,8 +3,31 @@ import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
 import { Setting } from "../models/setting.js";
+import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { uploadImg } from "./common.js";
 import fs from 'fs';
+
+async function test() {
+    const products = await Product.find({ "sizes.size": { $exists: true } });
+
+    console.log('Starting products fix...');
+    for (let product of products) {
+        product.quantity = parseInt(Math.min(...product.sizes.map(s => s.quantity)) / product.multiplier);
+
+        product.outOfStock = product.sizes.every(s => s.quantity === 0);
+
+        product.openedPackages = product.sizes.some(s => s.quantity !== product.sizes[0].quantity);
+    }
+
+    await Promise.all(products.map(product => product.save()));
+    console.log('Products fix done!');
+
+    console.log('Starting update in woo...')
+    await WooUpdateQuantityProducts(products);
+    console.log('Update in woo done!')
+}
+
+// test();
 
 async function validateProduct(data) {
     const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure, multiplier } = data;

@@ -117,14 +117,14 @@ export async function WooUpdateQuantityProducts(products) {
 
     const filtered = products.filter(p => p.woocommerce.id); // only find products that are in WooCommerce (some can be hidden)
 
-    const data = {
-        update: filtered.map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity })),
+    // Do it in batches of 100
+    for (let i = 0; i < filtered.length; i += 100) {
+        const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity }));
+        retry(async () => {
+            await WooCommerce.post('products/batch', batch);
+            console.log('Products quantity successfully updated in WooCommerce!')
+        });
     }
-
-    retry(async () => {
-        await WooCommerce.post('products/batch', data);
-        console.log('Products quantity successfully updated in WooCommerce!')
-    });
 }
 
 export async function WooCreateProductsINIT() {
