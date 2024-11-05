@@ -221,19 +221,11 @@ export const ProductController = {
             const found = doneProducts.find(p => p._id.toString() == product._id.toString());
 
             if (found) {
-                if (product.sizes?.length > 0) {
-                    if (product.selectedSizes.length > 0) {
-                        for (const size of product.selectedSizes) {
-                            const foundSize = found.sizes.find(s => s.size === size);
+                if (found.sizes?.length > 0) {
+                    for (let size of found.sizes) size.quantity += +product.quantity * found.multiplier;
 
-                            if (!foundSize) return { status: 400, message: `Грешен размер за продукт с код ${product.code}`, property: 'size', product: product._id }
-
-                            foundSize.quantity += +product.quantity;
-                        }
-
-                        // set package quantity to smalles size quantity
-                        found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / product.multiplier);
-                    } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
+                    // set package quantity to smallest size quantity
+                    found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / product.multiplier);
                 } else found.quantity += +product.quantity; // simple product
 
                 continue; // start next iteration
@@ -243,15 +235,7 @@ export const ProductController = {
             if (!dbProduct) return { status: 404, message: `Продуктът с код ${product.code} не беше намерен в базата данни` };
 
             if (dbProduct.sizes.length > 0) {
-                if (product.selectedSizes.length > 0) {
-                    for (const size of product.selectedSizes) {
-                        const foundSize = dbProduct.sizes.find(s => s.size === size);
-
-                        if (!foundSize) return { status: 400, message: `Грешен размер за продукт с код ${product.code}`, property: 'size', product: product._id }
-
-                        foundSize.quantity += +product.quantity;
-                    }
-                } else return { status: 400, message: `Изберете поне един размер за продукт с код ${product.code}`, property: 'size', product: product._id }
+                for (let size of dbProduct.sizes) size.quantity += +product.quantity * dbProduct.multiplier;
 
                 // set package quantity to smalles size quantity
                 dbProduct.quantity = parseInt(Math.min(...dbProduct.sizes.map(s => s.quantity)) / dbProduct.multiplier);
