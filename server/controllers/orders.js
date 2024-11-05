@@ -107,7 +107,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             }
 
             // Update package quantity to be the lowest of all selected sizes quantity
-            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / product.multiplier);
+            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / existingProduct.multiplier);
 
             // If no quantity of any size is left, mark as out of stock
             if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
@@ -138,7 +138,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= product.quantity;
 
             // Update package quantity to be the lowest of all selected sizes quantity
-            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / product.multiplier);
+            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / existingProduct.multiplier);
 
             // If no quantity of any size is left, mark as out of stock
             if (existingProduct.sizes.filter(size => size.quantity > 0).length === 0)
@@ -218,7 +218,7 @@ async function returnProductsQuantities(order) {
             existingProduct.sizes.filter(size => size.size === product.size)[0].quantity += product.quantity;
 
             // Update package quantity to be the lowest of all selected sizes quantity
-            existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / existingProduct.multiplier);
 
             existingProduct.outOfStock = false;
         }
