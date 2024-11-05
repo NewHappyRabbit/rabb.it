@@ -8,17 +8,7 @@ import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
 import { retry } from "./common.js";
-// TODO On start, check if import all orders from WOO to MONGO (non existing only)
-
-// DONE
-// Normal order with customer address: #51553
-// Normal order with customer address + 1 product on sale and 1 normal product: #51561
-// Order with Econt office: #51543
-// Order with Econt customer address: #51542
-// Order with Speedy оffice: #51545
-// Order with Speedy customer address: #51544
-// Normal order with customer address + 1 product + 10% discount coupon used: #51562
-// Normal order with customer address + 1 product on sale + 10% discount coupon used: #51563
+import cron from 'node-cron';
 
 export async function WooHookCreateOrder(data) {
     if (!WooCommerce) return;
@@ -258,3 +248,47 @@ export async function WooUpdateOrder(id) {
         console.log('Order successfully edited in WooCommerce!')
     });
 }
+
+async function getNewOrders() {
+    // This function gets all orders of type "Processing" and checks if they are in the app.
+    if (!WooCommerce) return;
+
+    console.log('Look for new orders from WooCommerce...');
+
+    // Get latest woo order id from db
+    const latestWooOrder = await Order.findOne({ "woocommerce.id": { $exists: true } }).sort({ _id: -1 });
+
+    // Get date for that order from woocommerce
+    const orderReq = await WooCommerce.get(`orders/${latestWooOrder.woocommerce.id}`);
+    const order = orderReq.data;
+
+    const orderDate = order.date_created_gmt;
+
+    const ordersReq = await WooCommerce.get('orders', { status: 'processing', after: orderDate, "per_page": 50, "order": "asc" });
+    const orders = ordersReq.data;
+
+    if (orders.length === 0 || (orders.length === 1 && orders[0].id == latestWooOrder.woocommerce.id)) return console.log('No new orders from WooCommerce.');
+
+    // Check if orders are already in db
+    for (let order of orders) {
+        const orderInDb = await Order.findOne({ "woocommerce.id": order.id });
+        if (orderInDb) continue;
+        else {
+            console.log(`Found new order with ID: ${order.id} from WooCommerce. Attempting to create it...`);
+            const { status, message } = await WooHookCreateOrder(order);
+            if (status !== 201) {
+                console.error('Failed to created Woo order with ID: ' + order.id);
+                console.error(message);
+            } else {
+                console.log('Successfully created Woo order with ID: ' + order.id);
+            }
+        }
+    }
+}
+
+// Run this every 3 hours
+// cron.schedule('0 */3 * * *', async () => {
+//     if (!WooCommerce) return;
+//     console.log('Running WooCommerce orders CRON...')
+//     getNewOrders();
+// });
