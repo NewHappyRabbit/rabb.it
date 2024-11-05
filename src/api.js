@@ -257,6 +257,12 @@ export function delay(fn, ms) {
     }
 }
 
+export function pad(toPad, padChar, length) {
+    return (String(toPad).length < length)
+        ? new Array(length - String(toPad).length + 1).join(padChar) + String(toPad)
+        : toPad;
+}
+
 // replace cyrillic characters with latin
 const alphabet = { "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "j", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh", "щ": "sht", "ъ": "u", "ь": "y", "ю": "yu", "я": "ya" };
 

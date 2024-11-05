@@ -8,7 +8,7 @@ import { submitBtn, toggleSubmitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
-import { numberToBGText, priceRegex, fixInputPrice } from "@/api";
+import { numberToBGText, priceRegex, fixInputPrice, pad } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
 var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
@@ -102,7 +102,7 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="number" class="form-label">Документ номер:</label>
-            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? order.number : documentNumber}>
+            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? pad(order.number, 0, 9) : pad(documentNumber, 0, 9)}>
         </div>
         <div class="col-6 col-sm">
             <label for="orderType" class="form-label">Тип на продажба:</label>
@@ -1027,7 +1027,7 @@ const printContainer = ({ data, param, flags }) => html`
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
         <div class="d-flex justify-content-between">
-            ${param?.stokova ? '' : html`<div>Документ №: <span class="fw-bold">${data.number}</span></div>`}
+            ${param?.stokova ? '' : html`<div>Документ №: <span class="fw-bold">${pad(data.number, 0, 9)}</span></div>`}
             <div>Дата: <span class="fw-bold">${new Date(data.date).toLocaleDateString('bg')}</span></div>
         </div>
 
@@ -1220,7 +1220,7 @@ async function getDocumentTypeNumber() {
     const getNewDocumentNumber = await axios.get('/orders/number', { params: { documentType, company: selectedCompany._id } });
     documentNumber = getNewDocumentNumber.data;
     const numberEl = document.getElementById('number');
-    if (numberEl) numberEl.value = documentNumber;
+    if (numberEl) numberEl.value = pad(documentNumber, 0, 9);
 }
 export async function createEditOrderPage(ctx, next) {
     try {
