@@ -5,6 +5,8 @@ export function WooHookAuth(req, res, next) {
         return res.status(500).send('WooCommerce not instantiated');
 
     const incomingSignature = req.headers['x-wc-webhook-signature'];
+    if (!incomingSignature) return res.status(200).send('No signature found');
+
     // const payload = new Buffer(JSON.stringify(req.body), 'utf8');
     const payload = req.rawBody;
 
