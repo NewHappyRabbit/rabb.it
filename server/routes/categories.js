@@ -67,7 +67,7 @@ export function categoriesRoutes() {
             if (status !== 204)
                 return res.status(status).send(message);
 
-            WooDeleteCategory(wooId);
+            if (wooId) WooDeleteCategory(wooId);
 
             res.status(204).send();
         } catch (error) {

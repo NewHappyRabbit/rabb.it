@@ -3,8 +3,7 @@ import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
 import { retry } from "./common.js";
-
-// REST API Documentation: https://woocommerce.github.io/woocommerce-rest-api-docs/
+import cron from 'node-cron';
 
 export async function WooCheckProductAttributesINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
@@ -90,27 +89,6 @@ export async function WooCheckProductAttributesINIT() {
         console.error("Response Data:", error.response.data);
     });
 }
-
-//TODO Add this to README.md and make a section woocommerce setup
-/* NOTE this is a custom filter, must be added to snippets or functions.php file:
-add_filter( 'woocommerce_rest_prepare_product_object', 'my_woocommerce_rest_prepare_product_object', 10, 3 );
-
-function my_woocommerce_rest_prepare_product_object( $response, $object, $request ) {
-    $data = $response->get_data();
-    $newdata = [];
-
-    if ($request['fields'] != null)
-    {
-        foreach ( explode ( ",", $request['fields'] ) as $field )
-            $newdata[$field] = $data[$field];
-
-        $response->set_data( $newdata );
-    }
-
-    return $response;
-}
-*/
-
 
 export async function WooUpdateQuantityProducts(products) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
@@ -396,3 +374,64 @@ export async function WooDeleteProduct(id) {
         console.log('Product successfully deleted in WooCommerce!')
     });
 }
+
+export async function checkProductsInWoo() {
+    // This function compares the quantity and price of the products in the database with the woocommerce store to see if there are any changes and update woocommerce accordingly
+    if (!WooCommerce) return;
+
+    // Get all products from woo
+    let done = false;
+    let offset = 0;
+    const wooProducts = [];
+
+    console.log('Starting WooCommerce products batch get...');
+    while (done == false) {
+        const req = await WooCommerce.get("products", { per_page: 100, offset, orderby: 'id' });
+        const products = req.data;
+
+        if (products.length == 0) {
+            done = true;
+            break;
+        }
+
+        wooProducts.push(...products);
+
+        offset += 100;
+        console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
+    }
+
+    // Get all products from app
+    const appProducts = await Product.find({ hidden: false });
+
+    const productsToCreate = [];
+    const productsToUpdate = [];
+    console.log('Starting WooCommerce products check...');
+    for (let product of appProducts) {
+        // Check if product exists in woo
+        if (!wooProducts.find(p => p.id == product.woocommerce.id)) {
+            productsToCreate.push(product);
+            // console.log(`Product with app ID: ${product._id} does not exist in WooCommerce! Attempting to create it...`);
+            // WooCreateProduct(product);
+            continue;
+        }
+
+        // Check if product data is correct
+        const wooProduct = wooProducts.find(p => p.id == product.woocommerce.id);
+        if (product.wholesalePrice != wooProduct.regular_price || product.quantity != wooProduct.stock_quantity) {
+            productsToUpdate.push(product);
+            // console.log(`Product with woo ID: ${product.woocommerce.id} does not have correct data in WooCommerce! Attempting to edit it...`);
+            // WooEditProduct(product, product);
+            // console.log(`Successfully edited product with app ID: ${product._id}`);
+        }
+    }
+
+    // TODO BATCH CREATE AND UPDATE
+    console.log('Finished WooCommerce products check!');
+}
+// checkProductsInWoo();
+// Run this every 3 hours
+// cron.schedule('0 */3 * * *', async () => {
+// if (!WooCommerce) return;
+//     console.log('Running WooCommerce products CRON...')
+//     checkProductsInWoo();
+// });
