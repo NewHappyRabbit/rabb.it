@@ -77,7 +77,6 @@ const orderSchema = new Schema({
             name: String, // if product doesnt exist in db and is created on the fly in orders
             quantity: { // quantity or packages or when existing variable its used as quantity for each size
                 type: Number,
-                min: 1
             },
             qtyInPackage: Number, // quantity in package (used when product doesnt exist in DB and is created on the fly in orders),
             unitOfMeasure: {
@@ -188,6 +187,25 @@ const orderSchema = new Schema({
             floor: String,
             apartment: String,
             note: String
+        }
+    },
+    // the below settings are for credit orders
+    returnQuantity: {
+        type: Boolean,
+        required: function () {
+            return this.type === 'credit';
+        }
+    },
+    creditForNumber: {
+        type: String,
+        required: function () {
+            return this.type === 'credit';
+        }
+    },
+    creditFromDate: {
+        type: Date,
+        required: function () {
+            return this.type === 'credit';
         }
     }
 }, {

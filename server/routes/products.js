@@ -195,7 +195,7 @@ export function productsRoutes() {
                 return res.status(status).send(message);
 
             if (product.hidden !== true) // if hidden then its not in the website
-                WooEditProduct(product, data);
+                WooEditProduct(product);
 
             res.status(status).json(product);
         } catch (error) {

@@ -12,7 +12,7 @@ export async function ordersRoutes() {
     ordersRouter.get('/orders/number', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { documentType, company } = req.query;
-            let newDocumentNumber = await AutoIncrement.findOne({ name: documentType, company });
+            let newDocumentNumber = await AutoIncrement.findOne({ name: documentType === 'credit' ? 'invoice' : documentType, company });
 
             newDocumentNumber = newDocumentNumber?.seq + 1 || 1;
             res.json(newDocumentNumber);
@@ -118,7 +118,8 @@ export async function ordersRoutes() {
 
     ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
-            const { status, message, returnedProducts } = await OrderController.delete(req.params.id);
+            const { returnQuantity } = req.body;
+            const { status, message, returnedProducts } = await OrderController.delete(req.params.id, returnQuantity);
 
             if (status !== 204) return res.status(status).send(message);
 

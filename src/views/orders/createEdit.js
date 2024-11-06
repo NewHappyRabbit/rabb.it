@@ -38,6 +38,13 @@ function rerenderTable() {
     if (order?.woocommerce)
         render(woocommerceTemplate(), document.getElementById('woocommerce'));
 
+    render(secondTopRow(), document.getElementById('secondTopRowContainer'));
+
+    if (order?.type === 'credit' || documentType === 'credit')
+        document.getElementById('secondTopRowContainer').classList.remove('d-none');
+    else
+        document.getElementById('secondTopRowContainer').classList.add('d-none');
+
     // update total in bottom row
     const total = addedProducts.reduce((acc, product) => acc + (product.price * product.quantity) * (1 - product.discount / 100), 0);
     document.getElementById('total').textContent = formatPrice(total);
@@ -113,6 +120,23 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <button @click=${setDiscount} type="button" class="btn btn-secondary" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>Задай обща отстъпка</button>
         </div>
+`;
+
+const secondTopRow = () => html`
+    <div class="col-6 col-sm-3">
+        <label for="creditForNumber" class="form-label">Към документ номер:</label>
+        <input ?required=${documentType === 'credit' || order?.type === 'credit'} type="text" name="creditForNumber" id="creditForNumber" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${order && !['manager', 'admin'].includes(loggedInUser.role)} value=${order && order.type === 'credit' ? pad(order.creditForNumber, 0, 10) : ''}>
+    </div>
+    <div class="col-6 col-sm-3">
+        <label for="creditFromDate" class="form-label">От дата:</label>
+        <input ?required=${documentType === 'credit' || order?.type === 'credit'} type="date" name="creditFromDate" id="creditFromDate" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="form-check form-switch p-0">
+            <label class="form-check-label d-block" for="returnQuantity">Върни бройки в склад:</label>
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="returnQuantity" ?checked=${order?.returnQuantity} name="returnQuantity">
+        </div>
+    </div>
 `;
 
 const senderTemplate = (senders) => html`
@@ -228,6 +252,7 @@ function updateQuantity(e) {
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
 
+    if (e.target.value === '') return; // this is becacuse in credit document, if you enter "-" it changes value to null
     e.target.value = parseInt(e.target.value);
 
     if (orderType === 'wholesale') {
@@ -434,7 +459,7 @@ const wholesaleProductsTable = (products) => html`
 
                     <td>
                         <div class="input-group">
-                            <input @change=${updateQuantity} @keyup=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+                            <input @change=${updateQuantity} @keyup=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min=${order?.type === 'credit' || documentType === 'credit' ? '' : 1} inputmode="numeric" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
                             ${product?.product?.quantity ? html`<span class="input-group-text">/${product?.product?.quantity}</span>` : ''}
                         </div>
                     </td>
@@ -580,14 +605,14 @@ async function addProduct(e) {
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
     if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
-    var product, quantity = 1;
+    var product, quantity = order?.type === 'credit' || documentType === 'credit' ? -1 : 1;
 
     // check if quantity was entered in input field
     if (e.target.value.split('*').length === 1)
         product = e.target.value;
     else {
         quantity = parseInt(e.target.value.split('*')[0]);
-        quantity = !isNaN(quantity) && quantity > 0 ? quantity : 1;
+        quantity = !isNaN(quantity) ? quantity : 1;
         product = e.target.value.split('*')[1];
     }
 
@@ -603,7 +628,7 @@ async function addProduct(e) {
         // Check if already in addedProducts and if all sizes are selected
         const inArray = addedProducts.find(p => p.product?._id === productInDB._id && p?.selectedSizes.length === p?.product?.sizes.length);
 
-        if (inArray) inArray.quantity += quantity;
+        if (inArray) inArray.quantity = +inArray.quantity + quantity;
         else {
             const temp = {
                 index: addedProductsIndex++,
@@ -630,7 +655,7 @@ async function addProduct(e) {
         const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
         // Check if product is already in addedProducts
         if (inArray) {
-            inArray.quantity += quantity;
+            inArray.quantity = +inArray.quantity + quantity;
             // if qty is more than in db, set it as max
             if (inArray.quantity > productInDB.quantity)
                 inArray.quantity = productInDB.quantity;
@@ -651,7 +676,7 @@ async function addProduct(e) {
         const inArray = addedProducts.find(p => p.product._id === productInDB._id && !p.size);
         // Check if already in addedProducts and NO size is selected
         if (inArray) {
-            inArray.quantity += quantity;
+            inArray.quantity = +inArray.quantity + quantity;
         } else
             addedProducts.push({
                 index: addedProductsIndex++,
@@ -668,7 +693,7 @@ async function addProduct(e) {
         const inArray = addedProducts.find(p => p.product._id === productInDB._id);
         // Check if already in addedProducts
         if (inArray) {
-            inArray.quantity += quantity;
+            inArray.quantity = +inArray.quantity + quantity;
             // if qty is more than qty in db, set it as max
             if (inArray.quantity > productInDB.quantity)
                 inArray.quantity = productInDB.quantity;
@@ -728,6 +753,16 @@ function validateOrder(data) {
         markInvalid('type');
         invalidFlag = true;
     } else markValid('type');
+
+    if (data.type === 'credit' && !data.creditForNumber) {
+        markInvalid('creditForNumber');
+        invalidFlag = true;
+    } else markValid('creditForNumber');
+
+    if (data.type === 'credit' && !data.creditFromDate) {
+        markInvalid('creditFromDate');
+        invalidFlag = true;
+    } else markValid('creditFromDate');
 
     if (!data.date) {
         markInvalid('date');
@@ -803,7 +838,7 @@ function validateOrder(data) {
             } else if (sizeEl && product.size) markValidEl(sizeEl);
         }
 
-        if (!product.quantity || product.quantity < 1) {
+        if (!product.quantity || order?.type !== 'credit' && documentType !== 'credit' && product.quantity < 1) {
             markInvalidEl(row.querySelector('input[name="quantity"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="quantity"]'));
@@ -822,7 +857,7 @@ function validateOrder(data) {
 
         // Only check if quantity exists on retail or wholesale but product is simple
         if (orderType === 'retail' || (orderType === 'wholesale' && !row.querySelector('input[name="size"]'))) {
-            if (!product.quantity || product.quantity < 1) {
+            if (!product.quantity || order?.type !== 'credit' && documentType !== 'credit' && product.quantity < 1) {
                 markInvalidEl(row.querySelector('input[name="quantity"]'));
                 invalidFlag = true;
             } else markValidEl(row.querySelector('input[name="quantity"]'));
@@ -926,6 +961,12 @@ async function createEditOrder(e) {
         sender: document.getElementById('sender').value,
     };
 
+    if (data.type === 'credit') {
+        data.creditForNumber = document.getElementById('creditForNumber').value;
+        data.creditFromDate = document.getElementById('creditFromDate').value;
+        data.returnQuantity = document.getElementById('returnQuantity').checked;
+    }
+
     if (order && order.woocommerce) {
         const wooStatus = document.getElementById('status');
         data.woocommerce = {
@@ -1027,7 +1068,11 @@ const printContainer = ({ data, param, flags }) => html`
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
         <div class="d-flex justify-content-between">
-            ${param?.stokova ? '' : html`<div>Документ №: <span class="fw-bold">${pad(data.number, 0, 10)}</span></div>`}
+            <div>
+                ${param?.stokova ? '' : html`<div>Документ №: <span class="fw-bold">${pad(data.number, 0, 10)}</span></div>`}
+                ${data?.type === 'credit' ? html`<div>Към документ №: <span class="fw-bold">${data.creditForNumber}</span></div><div>От дата: <span class="fw-bold">${new Date(data.creditFromDate).toLocaleDateString('bg')}</span></div>` : ''}
+
+            </div>
             <div>Дата: <span class="fw-bold">${new Date(data.date).toLocaleDateString('bg')}</span></div>
         </div>
 
@@ -1208,6 +1253,7 @@ const template = () => html`
     <div class="container-fluid d-print-none">
         <form novalidate class="mt-3">
             <div class="row align-items-end g-3" id="topRowContainer"></div>
+            <div class="row align-items-end g-3" id="secondTopRowContainer"></div>
             <div id="table" class="table-responsive"></div>
             <div id="bottomRow" class="row g-3 align-items-end"></div>
             <div id="woocommerce" class="row g-3 align-items-end mt-1 ${order && order.woocommerce ? '' : 'd-none'}"></div>
@@ -1303,6 +1349,9 @@ export async function createEditOrderPage(ctx, next) {
 
         render(template(params, customers), container);
         render(topRow(params, customers), document.getElementById('topRowContainer'));
+        render(secondTopRow(), document.getElementById('secondTopRowContainer'));
+        if (order?.type !== 'credit' && documentType !== 'credit')
+            document.getElementById('secondTopRowContainer').classList.add('d-none');
         document.querySelector('#type option[value="' + documentType + '"]').selected = true;
         rerenderTable();
         render(senderTemplate(selectedCompany?.senders || []), document.getElementById('senderDiv'));
@@ -1311,6 +1360,11 @@ export async function createEditOrderPage(ctx, next) {
         // Set date in field
         document.getElementById('date').valueAsDate = order ? new Date(order.date) : new Date();
         document.getElementById('taxEventDate').valueAsDate = order ? new Date(order?.taxEventDate || order?.date) : new Date();
+
+        if (order?.type === 'credit') {
+            // Set date in field
+            document.getElementById('creditFromDate').valueAsDate = new Date(order.creditFromDate);
+        }
 
         // Add listener for barcode scanner
         const barcodeInput = document.getElementById('product');

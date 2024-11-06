@@ -321,20 +321,20 @@ export async function WooCreateProduct(product) {
     });
 }
 
-export async function WooEditProduct(oldProductData, newProductData) {
+export async function WooEditProduct(product) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
     const data = {
-        name: newProductData.name,
-        slug: "p" + newProductData.code,
-        description: newProductData.description,
-        regular_price: newProductData.wholesalePrice.toString(),
-        sku: newProductData.code,
-        stock_quantity: newProductData.quantity,
+        name: product.name,
+        slug: "p" + product.code,
+        description: product.description,
+        regular_price: product.wholesalePrice.toString(),
+        sku: product.code,
+        stock_quantity: product.quantity,
     }
-    const category = await Category.findById(newProductData.category);
+    const category = await Category.findById(product.category);
     if (category) data.categories = [{ id: category.woocommerce.id }];
 
-    if (newProductData.sizes.length > 0) {
+    if (product.sizes.length > 0) {
         const mongoAttributes = await ProductAttribute.find({});
 
         const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
@@ -342,7 +342,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
         const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
         const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
 
-        const simpleSizes = newProductData.sizes.map(s => s.size);
+        const simpleSizes = product.sizes.map(s => s.size);
         const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
 
         data.attributes = [
@@ -350,7 +350,7 @@ export async function WooEditProduct(oldProductData, newProductData) {
                 id: pcsId,
                 visible: true,
                 variation: false,
-                options: newProductData.sizes.length.toString()
+                options: product.sizes.length.toString()
             },
             { // size
                 id: sizeId,
@@ -368,22 +368,22 @@ export async function WooEditProduct(oldProductData, newProductData) {
                 id: piecePriceId,
                 visible: true,
                 variation: false,
-                options: (newProductData.wholesalePrice / (newProductData.sizes.length * newProductData.multiplier)).toFixed(2).toString()
+                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString()
             },
         ]
     } else data.attributes = [];
 
-    if (process.env.ENV !== 'dev' && newProductData.image) {
-        data.images = [{ src: newProductData.image.url }];
+    if (process.env.ENV !== 'dev' && product.image) {
+        data.images = [{ src: product.image.url }];
 
-        if (newProductData.additionalImages) {
-            for (const image of newProductData.additionalImages)
+        if (product.additionalImages) {
+            for (const image of product.additionalImages)
                 data.images.push({ src: image.url });
         }
     }
 
     await retry(async () => {
-        await WooCommerce.put(`products/${oldProductData.woocommerce.id}`, data);
+        await WooCommerce.put(`products/${product.woocommerce.id}`, data);
         console.log('Product successfully edited in WooCommerce!')
     });
 }

@@ -232,9 +232,9 @@ async function loadSales() {
     }
 }
 
-async function deleteSale() {
+async function deleteSale(returnQuantity = true) {
     try {
-        const req = await axios.delete(`/orders/${selectedSale}`);
+        const req = await axios.delete(`/orders/${selectedSale}`, { data: { returnQuantity } });
 
         if (req.status === 204) {
             page('/orders');
@@ -264,11 +264,12 @@ export function salesPage(ctx, next) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Сигурни ли сте че искате да анулирате продажбата? Това ще върне всички продукти в склада.
+                    Сигурни ли сте че искате да анулирате продажбата?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
-                    <button @click=${deleteSale} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай</button>
+                    <button @click=${() => deleteSale(false)} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай</button>
+                    <button @click=${() => deleteSale(true)} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай и върни количество</button>
                 </div>
             </div>
         </div>

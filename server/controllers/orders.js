@@ -60,7 +60,7 @@ async function validateOrder(data) {
         if (data.orderType === 'wholesale' && existingProduct && existingProduct.sizes.length > 0 && (!product.selectedSizes || product.selectedSizes?.length === 0))
             return { status: 400, message: `Трябва да изберете поне 1 размер за продукта: ${existingProduct.name} [${existingProduct.code}]`, property: 'size', _id: existingProduct._id };
 
-        if (!product.quantity || product.quantity <= 0)
+        if (!product.quantity || data.type !== 'credit' && product.quantity <= 0)
             return { status: 400, message: `Въведете количество за продукта: ${product.name}`, property: 'quantity', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (!product.price)
@@ -167,7 +167,6 @@ async function removeProductsQuantities({ data, returnedProducts }) {
 
     return { total, updatedProducts };
 }
-
 async function returnProductsQuantities(order) {
     var savedProducts = [];
 
@@ -314,7 +313,6 @@ export const OrderController = {
         data.user = userId;
 
         let { total, updatedProducts, message, status } = await removeProductsQuantities({ data });
-
         if (status) return { status, message };
 
         data.total = total;
@@ -322,7 +320,7 @@ export const OrderController = {
         data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
 
         if (!data.number) { // If no number assigned, grab latest from sequence
-            let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+            let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
             if (seq)
                 data.number = Number(seq.seq) + 1;
             else if (!seq) {
@@ -332,26 +330,27 @@ export const OrderController = {
         }
 
         // Check if document number already exists
-        const numberExists = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
+        const numberExists = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, number: data.number, deleted: false });
         if (numberExists && !data.woocommerce) return { status: 409, message: 'Документ с такъв номер вече съществува' }; // if creating order normally
         else if (numberExists && data.woocommerce) {
             // if creating order from woocommerce hook, Find latest document number and increment by 1
-            const latestOrderNumber = await Order.findOne({ company: company._id, type: data.type, deleted: false }).sort({ number: -1 });
+            const latestOrderNumber = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, deleted: false }).sort({ number: -1 });
             data.number = Number(latestOrderNumber.number) + 1;
         }
 
-        let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+        let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
         if (seq) {
-            await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
+            await AutoIncrement.findOneAndUpdate({ name: data.type === 'credit' ? 'invoice' : data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
         } else if (!seq) {
-            seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
+            seq = await AutoIncrement.create({ name: data.type === 'credit' ? 'invoice' : data.type, company, seq: Number(data.number) || 1 });
             data.number = seq.seq;
         }
 
         const order = await new Order(data).save();
 
         // Update all products in paralel with promies
-        await Promise.all(updatedProducts.map(product => product.save()));
+        if (data.type !== 'credit' || (data.type === 'credit' && data.returnQuantity === true))
+            await Promise.all(updatedProducts.map(product => product.save()));
 
         return { status: 201, order, updatedProducts };
     },
@@ -386,9 +385,9 @@ export const OrderController = {
 
         // First return all initial order products quantity to stock without saving them to DB
         let returnedProducts = await returnProductsQuantities(order);
-
         // Then remove quantities of new products from stock, save is done here since the returnedProducts array is used to check the quantities before saving them
-        let { total, updatedProducts, status, message } = await removeProductsQuantities({ data, returnedProducts });
+        let { total, updatedProducts, message, status } = await removeProductsQuantities({ data, returnedProducts });
+
         if (status) return { status, message };
 
         data.total = total;
@@ -398,7 +397,7 @@ export const OrderController = {
         // New logic for editing document number
         // Check if document number already exists
         if (data.number) {
-            const order = await Order.findOne({ company: company._id, type: data.type, number: data.number, deleted: false });
+            const order = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, number: data.number, deleted: false });
 
             if (order && order._id.toString() !== id) return { status: 409, message: 'Документ с такъв номер вече съществува' };
         }
@@ -407,11 +406,11 @@ export const OrderController = {
         if (data.number !== order.number) {
             // Update sequence number if document number > current sequence number
             // Else, probably customer skipped a document number before and now fills the empty numbers
-            let seq = await AutoIncrement.findOne({ name: data.type, company: company._id });
+            let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
             if (seq) {
-                await AutoIncrement.findOneAndUpdate({ name: data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
+                await AutoIncrement.findOneAndUpdate({ name: data.type === 'credit' ? 'invoice' : data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
             } else if (!seq) {
-                seq = await AutoIncrement.create({ name: data.type, company, seq: Number(data.number) || 1 });
+                seq = await AutoIncrement.create({ name: data.type === 'credit' ? 'invoice' : data.type, company, seq: Number(data.number) || 1 });
                 data.number = seq.seq;
             }
         }
@@ -426,7 +425,8 @@ export const OrderController = {
         await Order.findByIdAndUpdate(id, data);
 
         // Update all products in paralel with promies
-        await Promise.all(updatedProducts.map(product => product.save()));
+        if (data.type !== 'credit' || (data.type === 'credit' && data.returnQuantity === true))
+            await Promise.all(updatedProducts.map(product => product.save()));
 
         return { status: 201, updatedProducts };
     },
@@ -442,7 +442,7 @@ export const OrderController = {
 
         return { status: 201 };
     },
-    delete: async (id) => {
+    delete: async (id, returnQuantity) => {
         const order = await Order.findById(id);
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
@@ -450,7 +450,8 @@ export const OrderController = {
         const returnedProducts = await returnProductsQuantities(order);
 
         // Update all products in paralel with promies
-        await Promise.all(returnedProducts.map(product => product.save()));
+        if (returnQuantity === true)
+            await Promise.all(returnedProducts.map(product => product.save()));
 
         order.deleted = true;
         await order.save();
