@@ -299,6 +299,199 @@ export async function WooCreateProduct(product) {
     });
 }
 
+export async function WooCreateProductsBatch(products) {
+    const mongoAttributes = await ProductAttribute.find({});
+    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
+    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+    const doneProducts = [];
+    for (let product of products) {
+        const category = await Category.findById(product.category);
+        const data = {
+            name: product.name,
+            slug: "p" + product.code,
+            description: product.description,
+            regular_price: product.wholesalePrice.toString(),
+            sku: product.code,
+            categories: [{ id: category.woocommerce.id }],
+            stock_quantity: product.quantity,
+            "manage_stock": true, // enables the stock management
+        }
+
+        // If not in live environment, set product status as private to not show it for clients
+        if (process.env.ENV === 'dev') {
+            data.status = 'private';
+            data.catalog_visibility = 'hidden';
+        }
+
+        if (product.sizes.length > 0) {
+            const simpleSizes = product.sizes.map(s => s.size);
+            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+
+            data.attributes = [
+                { // pcs
+                    id: pcsId,
+                    visible: true,
+                    variation: false,
+                    options: (product.sizes.length * product.multiplier).toString(),
+                },
+                { // size
+                    id: sizeId,
+                    visible: true,
+                    variation: false,
+                    options: simpleSizes
+                },
+                { // viber size
+                    id: viberSizeId,
+                    visible: false,
+                    variation: false,
+                    options: viberSizes// Get the first and last size and do 'X-Y'
+                },
+                { // piecePrice
+                    id: piecePriceId,
+                    visible: true,
+                    variation: false,
+                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                },
+            ]
+        }
+
+        if (process.env.ENV !== 'dev' && product.image) {
+            data.images = [{ src: product.image.url }];
+
+            if (product.additionalImages) {
+                for (const image of product.additionalImages)
+                    data.images.push({ src: image.url });
+            }
+        }
+
+        doneProducts.push(data);
+    }
+
+    if (doneProducts.length > 0) {
+        // Batch accepts max 100 products per request
+        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+            const productsToSave = [];
+            const batch = doneProducts.slice(i, i + 100);
+            await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
+                // Success
+                for (let product of response.data.create) {
+                    const productInDb = products.find(p => p.code === product.sku);
+
+                    if (!productInDb) console.error(`Product with Woo SKU: ${product.sku} not found in database!`);
+
+                    productInDb.woocommerce = {
+                        id: product.id,
+                        permalink: product.permalink
+                    }
+
+                    productsToSave.push(productInDb);
+                }
+
+                await Promise.all(productsToSave.map(p => p.save()));
+                console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
+            }).catch((error) => {
+                console.error(error);
+                // Invalid request, for 4xx and 5xx statuses
+                console.error("Response Status:", error.response.status);
+                console.error("Response Headers:", error.response.headers);
+                console.error("Response Data:", error.response.data);
+            });
+        }
+    }
+}
+
+export async function WooEditProductsBatch(products) {
+    const mongoAttributes = await ProductAttribute.find({});
+    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
+    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+    const doneProducts = [];
+    for (let product of products) {
+        const category = await Category.findById(product.category);
+        const data = {
+            name: product.name,
+            slug: "p" + product.code,
+            description: product.description,
+            regular_price: product.wholesalePrice.toString(),
+            sku: product.code,
+            categories: [{ id: category.woocommerce.id }],
+            stock_quantity: product.quantity,
+            "manage_stock": true, // enables the stock management
+        }
+
+        // If not in live environment, set product status as private to not show it for clients
+        if (process.env.ENV === 'dev') {
+            data.status = 'private';
+            data.catalog_visibility = 'hidden';
+        }
+
+        if (product.sizes.length > 0) {
+            const simpleSizes = product.sizes.map(s => s.size);
+            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+
+            data.attributes = [
+                { // pcs
+                    id: pcsId,
+                    visible: true,
+                    variation: false,
+                    options: (product.sizes.length * product.multiplier).toString(),
+                },
+                { // size
+                    id: sizeId,
+                    visible: true,
+                    variation: false,
+                    options: simpleSizes
+                },
+                { // viber size
+                    id: viberSizeId,
+                    visible: false,
+                    variation: false,
+                    options: viberSizes// Get the first and last size and do 'X-Y'
+                },
+                { // piecePrice
+                    id: piecePriceId,
+                    visible: true,
+                    variation: false,
+                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                },
+            ]
+        }
+
+        if (process.env.ENV !== 'dev' && product.image) {
+            data.images = [{ src: product.image.url }];
+
+            if (product.additionalImages) {
+                for (const image of product.additionalImages)
+                    data.images.push({ src: image.url });
+            }
+        }
+
+        doneProducts.push(data);
+    }
+
+    if (doneProducts.length > 0) {
+        // Batch accepts max 100 products per request
+        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+            const batch = doneProducts.slice(i, i + 100);
+            await WooCommerce.post("products/batch", { update: batch }).then(async (response) => {
+                // Success
+                console.log(`Product batch ${i / 100 + 1} successfully updated in WooCommerce!`)
+            }).catch((error) => {
+                console.error(error);
+                // Invalid request, for 4xx and 5xx statuses
+                console.error("Response Status:", error.response.status);
+                console.error("Response Headers:", error.response.headers);
+                console.error("Response Data:", error.response.data);
+            });
+        }
+    }
+}
+
 export async function WooEditProduct(product) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
     const data = {
@@ -383,6 +576,7 @@ export async function checkProductsInWoo() {
     let done = false;
     let offset = 0;
     const wooProducts = [];
+    const appProducts = await Product.find({ hidden: false });
 
     console.log('Starting WooCommerce products batch get...');
     while (done == false) {
@@ -401,31 +595,46 @@ export async function checkProductsInWoo() {
     }
 
     // Get all products from app
-    const appProducts = await Product.find({ hidden: false });
-
     const productsToCreate = [];
     const productsToUpdate = [];
     console.log('Starting WooCommerce products check...');
     for (let product of appProducts) {
         // Check if product exists in woo
         if (!wooProducts.find(p => p.id == product.woocommerce.id)) {
-            productsToCreate.push(product);
-            // console.log(`Product with app ID: ${product._id} does not exist in WooCommerce! Attempting to create it...`);
-            // WooCreateProduct(product);
-            continue;
+            // Check if product exists in app and woo, but id was incorrect
+            if (wooProducts.find(p => p.sku === product.code)) {
+                const tempproduct = wooProducts.find(p => p.sku === product.code);
+                product.woocommerce.id = tempproduct.id;
+                product.permalink = tempproduct.permalink;
+                await product.save();
+                continue;
+            } else {
+                productsToCreate.push(product);
+                continue;
+            }
         }
 
         // Check if product data is correct
         const wooProduct = wooProducts.find(p => p.id == product.woocommerce.id);
         if (product.wholesalePrice != wooProduct.regular_price || product.quantity != wooProduct.stock_quantity) {
             productsToUpdate.push(product);
-            // console.log(`Product with woo ID: ${product.woocommerce.id} does not have correct data in WooCommerce! Attempting to edit it...`);
-            // WooEditProduct(product, product);
-            // console.log(`Successfully edited product with app ID: ${product._id}`);
         }
     }
 
-    // TODO BATCH CREATE AND UPDATE
+    if (productsToCreate.length > 0) {
+        console.log('Found ' + productsToCreate.length + ' products to create in WooCommerce! Starting...');
+        console.log(productsToCreate.map(p => p.code).join(', '));
+        await WooCreateProductsBatch(productsToCreate);
+        console.log('Finished WooCommerce products creation!');
+    }
+
+    if (productsToUpdate.length > 0) {
+        console.log('Found ' + productsToUpdate.length + ' products to update in WooCommerce! Starting...');
+        console.log(productsToUpdate.map(p => p.code).join(', '));
+        await WooEditProductsBatch(productsToUpdate);
+        console.log('Finished WooCommerce products update!');
+    }
+
     console.log('Finished WooCommerce products check!');
 }
 // checkProductsInWoo();
