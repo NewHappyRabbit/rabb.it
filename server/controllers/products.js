@@ -246,7 +246,9 @@ export const ProductController = {
             doneProducts.push(dbProduct);
         }
 
-        doneProducts.forEach(async product => await product.save());
+        //TODO TEST IF THIS FIXES THE WOOCOMMERCE BUG WITH QUANTITIES
+        await Promise.all(doneProducts.map(async (product) => await product.save()));
+        // doneProducts.forEach(async product => await product.save());
 
         return { doneProducts, status: 200 };
     },

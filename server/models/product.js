@@ -147,6 +147,8 @@ const productSchema = new Schema({
 
     //TODO Implement in the future
     //sale_price
+}, {
+    timestamps: true
 });
 
 const Product = mongoose.model('Product', productSchema);

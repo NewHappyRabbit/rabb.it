@@ -101,9 +101,12 @@ export async function WooUpdateQuantityProducts(products) {
         const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity }));
         await retry(async () => {
             console.log('Starting work on batch: ' + i)
-            const req = await WooCommerce.post('products/batch', { update: batch });
-            if (req.status === 200) console.log('Products quantity successfully updated in WooCommerce!')
-            else console.error('Error batch updating products quantity in WooCommerce!')
+            await WooCommerce.post('products/batch', { update: batch }).then(() => {
+                console.log('Products quantity successfully updated in WooCommerce!')
+            }).catch((error) => {
+                console.error('Error batch updating products quantity in WooCommerce!')
+                console.error(error);
+            });
         });
     }
 }
@@ -205,10 +208,6 @@ export async function WooCreateProductsINIT() {
                 console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
             }).catch((error) => {
                 console.error(error);
-                // Invalid request, for 4xx and 5xx statuses
-                console.error("Response Status:", error.response.status);
-                console.error("Response Headers:", error.response.headers);
-                console.error("Response Data:", error.response.data);
             });
         }
     }
@@ -287,15 +286,19 @@ export async function WooCreateProduct(product) {
     }
 
     await retry(async () => {
-        const response = await WooCommerce.post("products", data);
+        await WooCommerce.post("products", data).then(async (response) => {
+            product.woocommerce = {
+                id: response.data.id,
+                permalink: response.data.permalink
+            }
 
-        product.woocommerce = {
-            id: response.data.id,
-            permalink: response.data.permalink
-        }
+            await product.save();
+            console.log(`Product with id ${product._id} successfully created in WooCommerce!`);
+        }).catch((error) => {
+            console.error('Failed to create product in WooCommerce with _id: ' + product._id);
+            console.error(error);
+        });
 
-        await product.save();
-        console.log(`Product ${product.code} successfully created in WooCommerce!`);
     });
 }
 
@@ -393,11 +396,8 @@ export async function WooCreateProductsBatch(products) {
                 await Promise.all(productsToSave.map(p => p.save()));
                 console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
             }).catch((error) => {
+                console.error('Failed to create product batch in WooCommerce!');
                 console.error(error);
-                // Invalid request, for 4xx and 5xx statuses
-                console.error("Response Status:", error.response.status);
-                console.error("Response Headers:", error.response.headers);
-                console.error("Response Data:", error.response.data);
             });
         }
     }
@@ -482,11 +482,8 @@ export async function WooEditProductsBatch(products) {
                 // Success
                 console.log(`Product batch ${i / 100 + 1} successfully updated in WooCommerce!`)
             }).catch((error) => {
+                console.error('Failed to update product batch in WooCommerce!');
                 console.error(error);
-                // Invalid request, for 4xx and 5xx statuses
-                console.error("Response Status:", error.response.status);
-                console.error("Response Headers:", error.response.headers);
-                console.error("Response Data:", error.response.data);
             });
         }
     }
@@ -554,8 +551,14 @@ export async function WooEditProduct(product) {
     }
 
     await retry(async () => {
-        await WooCommerce.put(`products/${product.woocommerce.id}`, data);
-        console.log('Product successfully edited in WooCommerce!')
+        await WooCommerce.put(`products/${product.woocommerce.id}`, data).then(async (response) => {
+            // Success
+            console.log('Product successfully edited in WooCommerce!')
+        }).catch((error) => {
+            // Invalid request, for 4xx and 5xx statuses
+            console.error('Failed to edit product in WooCommerce with _id: ' + product._id);
+            console.error(error);
+        });
     });
 }
 
@@ -563,8 +566,14 @@ export async function WooDeleteProduct(id) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
     await retry(async () => {
-        await WooCommerce.delete(`products/${id}`);
-        console.log('Product successfully deleted in WooCommerce!')
+        await WooCommerce.delete(`products/${id}`).then(async () => {
+            // Success
+            console.log('Product successfully deleted in WooCommerce!')
+        }).catch((error) => {
+            // Invalid request, for 4xx and 5xx statuses
+            console.error('Failed to delete product in WooCommerce with _id: ' + id);
+            console.error(error);
+        });
     });
 }
 

@@ -26,8 +26,7 @@ export function referencesSalesRoutes() {
             const { orders } = await ReferencesController.getAccounting({ from, to });
             res.json({ orders });
         } catch (error) {
-            console.log(error);
-            // console.error(error);
+            console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
         }

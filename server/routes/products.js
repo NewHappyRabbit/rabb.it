@@ -142,8 +142,6 @@ export function productsRoutes() {
 
             res.status(status).json(product);
         } catch (error) {
-            console.log(error);
-
             console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
@@ -199,7 +197,6 @@ export function productsRoutes() {
 
             res.status(status).json(product);
         } catch (error) {
-            console.log(error);
             console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request
             res.status(500).send(error);
