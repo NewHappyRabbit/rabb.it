@@ -414,6 +414,7 @@ export async function WooEditProductsBatch(products) {
     for (let product of products) {
         const category = await Category.findById(product.category);
         const data = {
+            id: product.woocommerce.id,
             name: product.name,
             slug: "p" + product.code,
             description: product.description,
@@ -478,7 +479,7 @@ export async function WooEditProductsBatch(products) {
         // Batch accepts max 100 products per request
         for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
             const batch = doneProducts.slice(i, i + 100);
-            await WooCommerce.post("products/batch", { update: batch }).then(async (response) => {
+            await WooCommerce.post("products/batch", { update: batch }).then(async () => {
                 // Success
                 console.log(`Product batch ${i / 100 + 1} successfully updated in WooCommerce!`)
             }).catch((error) => {
@@ -551,7 +552,7 @@ export async function WooEditProduct(product) {
     }
 
     await retry(async () => {
-        await WooCommerce.put(`products/${product.woocommerce.id}`, data).then(async (response) => {
+        await WooCommerce.put(`products/${product.woocommerce.id}`, data).then(async () => {
             // Success
             console.log('Product successfully edited in WooCommerce!')
         }).catch((error) => {
