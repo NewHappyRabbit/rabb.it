@@ -338,7 +338,8 @@ export const ProductController = {
         await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
 
         await product.updateOne(data, { new: true });
-        return { status: 201, product };
+        const updatedProduct = await Product.findById(id);
+        return { status: 201, product: updatedProduct };
     },
     delete: async (id) => {
         const product = await Product.findById(id);
