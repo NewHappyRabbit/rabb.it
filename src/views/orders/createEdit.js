@@ -159,7 +159,7 @@ const bottomRow = (params, companies) => html`
     <div class="col-6 col-sm">
         <label for="company" class="form-label">Обект:</label>
         <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
-            ${companies && companies.map(company => html`<option ?selected=${order && company._id == order.company._id} value=${company._id}>${company.name}</option>`)}
+            ${companies && companies.map(company => html`<option ?selected=${order && company._id == order.company._id || selectedCompany?._id == company._id} value=${company._id}>${company.name}</option>`)}
         </select>
     </div>
 
@@ -1352,6 +1352,11 @@ export async function createEditOrderPage(ctx, next) {
         render(secondTopRow(), document.getElementById('secondTopRowContainer'));
         if (order?.type !== 'credit' && documentType !== 'credit')
             document.getElementById('secondTopRowContainer').classList.add('d-none');
+        if (!order) {
+            document.getElementById('creditFromDate').value = '';
+            document.getElementById('creditForNumber').value = '';
+        }
+
         document.querySelector('#type option[value="' + documentType + '"]').selected = true;
         rerenderTable();
         render(senderTemplate(selectedCompany?.senders || []), document.getElementById('senderDiv'));
