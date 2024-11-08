@@ -169,6 +169,11 @@ export async function WooHookCreateOrder(data) {
         customer.woocommerce.id = wooData.customer.id;
         await customer.save();
     } else if (!customer) {  // Create new customer
+        // Check if customer entered VAT number or company name
+        if (wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,10}$/gm)) {
+            wooData.customer.vat = '';
+            wooData.customer.taxvat = '';
+        }
         const { status, message, customer: customerInDb } = await CustomerController.post(wooData.customer);
         customer = customerInDb;
         if (status !== 201) return { status, message };
