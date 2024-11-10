@@ -602,9 +602,10 @@ export async function checkProductsInWoo() {
     // Get all products from woo
     let done = false;
     let offset = 0;
-    const wooProducts = [];
     const filter = { hidden: { $ne: true }, deleted: { $ne: true } };
-    const appProducts = await Product.find(filter);
+    /*
+    const wooProducts = [];
+    // const appProducts = await Product.find(filter);
 
     console.log('Starting WooCommerce products batch get...');
     while (done == false) {
@@ -621,9 +622,9 @@ export async function checkProductsInWoo() {
         offset += 100;
         console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
     }
+    */
 
-
-    /* DEV ONLY
+    ///* DEV ONLY
     // Save to file
     // fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
     // return;
@@ -631,7 +632,7 @@ export async function checkProductsInWoo() {
     const appProducts = await Product.find(filter);
     var wooProducts = fs.readFileSync('server/woocommerce/wooProducts.json', 'utf8');
     wooProducts = JSON.parse(wooProducts);
-    */
+    //*/
 
     // Get all products from app
     const productsToCreate = [];
@@ -666,21 +667,21 @@ export async function checkProductsInWoo() {
     if (productsToSave.length > 0) {
         console.log('Found ' + productsToSave.length + ' products to save in database! Starting...');
         console.log(productsToSave.map(p => p._id).join(', '));
-        await Promise.resolve(productsToSave.map(async p => await p.save()));
+        // await Promise.resolve(productsToSave.map(async p => await p.save()));
         console.log('Finished saving database products!');
     }
 
     if (productsToCreate.length > 0) {
         console.log('Found ' + productsToCreate.length + ' products to create in WooCommerce! Starting...');
         console.log(productsToCreate.map(p => p._id).join(', '));
-        await WooCreateProductsBatch(productsToCreate);
+        // await WooCreateProductsBatch(productsToCreate);
         console.log('Finished WooCommerce products creation!');
     }
 
     if (productsToUpdate.length > 0) {
         console.log('Found ' + productsToUpdate.length + ' products to update in WooCommerce! Starting...');
         console.log(productsToUpdate.map(p => p._id).join(', '));
-        await WooEditProductsBatch(productsToUpdate);
+        // await WooEditProductsBatch(productsToUpdate);
         console.log('Finished WooCommerce products update!');
     }
 
@@ -699,7 +700,7 @@ export async function checkProductsInWoo() {
     if (wooProductsToDelete.length > 0) {
         console.log('Found ' + wooProductsToDelete.length + ' products to delete in WooCommerce! Starting...');
         console.log(wooProductsToDelete.map(p => p.id).join(', '));
-        await WooDeleteProductsBatch(wooProductsToDelete);
+        // await WooDeleteProductsBatch(wooProductsToDelete);
         console.log('Finished WooCommerce products deletion!');
     }
 

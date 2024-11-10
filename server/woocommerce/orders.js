@@ -9,6 +9,7 @@ import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
 import { retry } from "./common.js";
 import cron from 'node-cron';
+import { WooUpdateQuantityProducts } from "./products.js";
 
 export async function WooHookCreateOrder(data) {
     if (!WooCommerce) return;
@@ -200,7 +201,7 @@ export async function WooHookCreateOrder(data) {
     return { status, message, order, updatedProducts }
 }
 
-export async function WooUpdateOrder(id) {
+export async function WooUpdateOrder({ id, updatedProducts }) {
     if (!WooCommerce) return;
 
     const order = await Order.findById(id).populate('products.product');
@@ -251,6 +252,8 @@ export async function WooUpdateOrder(id) {
     await retry(async () => {
         await WooCommerce.put(`orders/${order.woocommerce.id}`, wooData);
         console.log('Order successfully edited in WooCommerce!')
+
+        await WooUpdateQuantityProducts(updatedProducts);
     });
 }
 

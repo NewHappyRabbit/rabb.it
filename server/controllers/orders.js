@@ -199,7 +199,7 @@ async function returnProductsQuantities(order) {
             }
 
             // Update package quantity to be the lowest of all selected sizes quantity
-            existingProduct.quantity = Math.min(...existingProduct.sizes.map(s => s.quantity));
+            existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / existingProduct.multiplier);
 
             existingProduct.outOfStock = false;
 
