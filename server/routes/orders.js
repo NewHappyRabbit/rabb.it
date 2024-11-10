@@ -89,8 +89,7 @@ export async function ordersRoutes() {
             const { status, message, updatedProducts } = await OrderController.put({ id, data, userId });
             if (status !== 201) return res.status(status).send(message);
 
-            WooUpdateQuantityProducts(updatedProducts);
-            WooUpdateOrder(id);
+            WooUpdateOrder({ id, updatedProducts });
 
             res.status(201).send(id);
         } catch (error) {

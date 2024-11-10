@@ -11,7 +11,7 @@ async function validateProduct(data) {
 
     if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
 
-    if (!quantity) return { status: 400, message: 'Въведете количество', property: 'quantity' };
+    if (sizes?.length === 0 && (quantity == undefined || quantity < 0 || quantity == '')) return { status: 400, message: 'Въведете количество', property: 'quantity' };
 
     if (!deliveryPrice) return { status: 400, message: 'Въведете доставна цена', property: 'deliveryPrice' };
 
@@ -40,7 +40,7 @@ async function validateProduct(data) {
         return { status: 400, message: 'Цената на дребно трябва да е по-голяма от доставната', property: 'retailPrice' };
     else if (sizes.length !== 0) {
         for (const size of sizes) {
-            if (!size.size || !size.quantity)
+            if (!size.size || size.quantity == undefined)
                 return { status: 400, message: 'Липсва размер или количество', property: 'sizes' };
 
             if (!regex.test(size.quantity))
@@ -161,6 +161,11 @@ export const ProductController = {
         if (!data.multiplier)
             data.multiplier = 1;
 
+        // Calculate quantity on server instead of relying on client
+        if (data?.sizes?.length > 0) {
+            data.quantity = parseInt(Math.min(...data.sizes.map(s => s.quantity)) / data.multiplier);
+        }
+
         const validation = await validateProduct(data);
 
         if (validation) return validation;
@@ -266,6 +271,11 @@ export const ProductController = {
 
         if (!data.unitOfMeasure && data.sizes?.length === 0)
             data.unitOfMeasure = 'бр.';
+
+        // Calculate quantity on server instead of relying on client
+        if (data?.sizes?.length > 0) {
+            data.quantity = parseInt(Math.min(...data.sizes.map(s => s.quantity)) / data.multiplier);
+        }
 
         const validate = await validateProduct(data);
 

@@ -167,6 +167,7 @@ function addSize(e) {
     // Product whole quantity cant be edited when sizes exist
     document.getElementById('quantity').setAttribute('readonly', true);
 
+    updateWholeQuantity();
     updateQuantity();
     calculateUnitPrice();
 
@@ -211,7 +212,7 @@ const quantityTemplate = () => html`
             <div class="col-12 col-sm-4 mb-3">
                 <label for="quantity" class="form-label">Брой | Мярка</label>
                 <div class="input-group">
-                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="1" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
                     <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
                     <datalist id="unitOfMeasureOptions">
                         <option value="пакет"></option>
@@ -341,14 +342,14 @@ function validateProduct(data) {
 
     data.hidden = typeof data.hidden === 'string' ? true : false;
 
-    if (!data.quantity)
+    if (data?.quantity === '' || data?.quantity === undefined || data?.quantity < 0)
         invalidFlag = markInvalid('quantity');
     else markValid('quantity');
 
     // Check if each size has a quantity
     if (selectedSizes.length > 0) {
         selectedSizes.map(size => {
-            if (!size.quantity || size.quantity <= 0)
+            if (size?.quantity == undefined)
                 invalidFlag = markInvalid(`${size.size}-quantity`);
             else markValid(`${size.size}-quantity`);
         })
