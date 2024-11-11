@@ -192,7 +192,7 @@ export async function WooCreateProductsINIT() {
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
-        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+        for (let i = 0; i < doneProducts.length; i += 100) {
             const productsToSave = [];
             const batch = doneProducts.slice(i, i + 100);
             await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
@@ -209,7 +209,7 @@ export async function WooCreateProductsINIT() {
                 }
 
                 await Promise.all(productsToSave.map(p => p.save()));
-                console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
+                console.log(`Product batch ${i} successfully created in WooCommerce!`)
             }).catch((error) => {
                 console.error(error);
             });
@@ -278,7 +278,7 @@ export async function WooCreateProduct(product) {
                 //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
         ]
-    }
+    } else data.attributes = [];
 
     if (process.env.ENV !== 'dev' && product.image) {
         data.images = [{ src: product.image.url }];
@@ -363,7 +363,7 @@ export async function WooCreateProductsBatch(products) {
                     options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 },
             ]
-        }
+        } else data.attributes = [];
 
         if (process.env.ENV !== 'dev' && product.image) {
             data.images = [{ src: product.image.url }];
@@ -379,7 +379,7 @@ export async function WooCreateProductsBatch(products) {
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
-        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+        for (let i = 0; i < doneProducts.length; i += 100) {
             const productsToSave = [];
             const batch = doneProducts.slice(i, i + 100);
             await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
@@ -398,7 +398,7 @@ export async function WooCreateProductsBatch(products) {
                 }
 
                 await Promise.all(productsToSave.map(p => p.save()));
-                console.log(`Product batch ${i / 100 + 1} successfully created in WooCommerce!`)
+                console.log(`Product batch ${i} successfully created in WooCommerce!`)
             }).catch((error) => {
                 console.error('Failed to create product batch in WooCommerce!');
                 console.error(error);
@@ -465,7 +465,7 @@ export async function WooEditProductsBatch(products) {
                     options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 },
             ]
-        }
+        } else data.attributes = [];
 
         if (process.env.ENV !== 'dev' && product.image) {
             data.images = [{ src: product.image.url }];
@@ -481,11 +481,11 @@ export async function WooEditProductsBatch(products) {
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
-        for (let i = 0; i < Math.ceil(doneProducts.length / 100); i += 100) {
+        for (let i = 0; i < doneProducts.length; i += 100) {
             const batch = doneProducts.slice(i, i + 100);
             await WooCommerce.post("products/batch", { update: batch }).then(async () => {
                 // Success
-                console.log(`Product batch ${i / 100 + 1} successfully updated in WooCommerce!`)
+                console.log(`Product batch ${i} successfully updated in WooCommerce!`)
             }).catch((error) => {
                 console.error('Failed to update product batch in WooCommerce!');
                 console.error(error);
@@ -496,11 +496,11 @@ export async function WooEditProductsBatch(products) {
 
 export async function WooDeleteProductsBatch(products) {
     // Batch accepts max 100 products per request
-    for (let i = 0; i < Math.ceil(products.length / 100); i += 100) {
+    for (let i = 0; i < products.length; i += 100) {
         const batch = products.slice(i, i + 100).map(p => p.id);
         await WooCommerce.post("products/batch", { delete: batch }).then(async () => {
             // Success
-            console.log(`Product batch ${i / 100 + 1} successfully deleted in WooCommerce!`)
+            console.log(`Product batch ${i} successfully deleted in WooCommerce!`)
         }).catch((error) => {
             console.error('Failed to delete product batch in WooCommerce!');
             console.error(error);
@@ -595,6 +595,71 @@ export async function WooDeleteProduct(id) {
         });
     });
 }
+
+async function updateAllAttributes() {
+    const products = await Product.find({ sizes: { $ne: [] }, hidden: { $ne: true }, deleted: { $ne: true }, "woocommerce.id": { $exists: true } });
+
+    const mongoAttributes = await ProductAttribute.find({});
+    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
+    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
+    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+
+    const doneProducts = [];
+
+    for (let product of products) {
+        const data = {
+            id: product.woocommerce.id,
+        }
+
+        const simpleSizes = product.sizes.map(s => s.size);
+        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+
+        data.attributes = [
+            { // pcs
+                id: pcsId,
+                visible: true,
+                variation: false,
+                options: (product.sizes.length * product.multiplier).toString(),
+            },
+            { // size
+                id: sizeId,
+                visible: true,
+                variation: false,
+                options: simpleSizes
+            },
+            { // viber size
+                id: viberSizeId,
+                visible: false,
+                variation: false,
+                options: viberSizes// Get the first and last size and do 'X-Y'
+            },
+            { // piecePrice
+                id: piecePriceId,
+                visible: true,
+                variation: false,
+                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+            },
+        ]
+
+        doneProducts.push(data);
+    }
+
+    // Batch accepts max 100 products per request
+    for (let i = 0; i < doneProducts.length; i += 100) {
+        const batch = doneProducts.slice(i, i + 100);
+        await WooCommerce.post("products/batch", { update: batch }).then(async () => {
+            // Success
+            console.log(`Product batch ${i} successfully updated in WooCommerce!`)
+        }).catch((error) => {
+            console.error('Failed to update product batch in WooCommerce!');
+            console.error(error);
+        });
+    }
+
+    console.log('Done updating Woo products attributes!')
+}
+// updateAllAttributes();
 
 export async function checkProductsInWoo() {
     // This function compares the quantity and price of the products in the database with the woocommerce store to see if there are any changes and update woocommerce accordingly
