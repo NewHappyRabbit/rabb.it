@@ -350,7 +350,7 @@ export const OrderController = {
 
         // Update all products in paralel with promies
         if (data.type !== 'credit' || (data.type === 'credit' && data.returnQuantity === true))
-            await Promise.all(updatedProducts.map(product => product.save()));
+            await Promise.all(updatedProducts.map(async (product) => product.save()));
 
         return { status: 201, order, updatedProducts };
     },
@@ -426,7 +426,7 @@ export const OrderController = {
 
         // Update all products in paralel with promies
         if (data.type !== 'credit' || (data.type === 'credit' && data.returnQuantity === true))
-            await Promise.all(updatedProducts.map(product => product.save()));
+            await Promise.all(updatedProducts.map(async (product) => await product.save()));
 
         return { status: 201, updatedProducts };
     },
@@ -451,7 +451,7 @@ export const OrderController = {
 
         // Update all products in paralel with promies
         if (returnQuantity === true)
-            await Promise.all(returnedProducts.map(product => product.save()));
+            await Promise.all(returnedProducts.map(async (product) => await product.save()));
 
         order.deleted = true;
         await order.save();

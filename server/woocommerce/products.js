@@ -97,7 +97,7 @@ export async function WooCheckProductAttributesINIT() {
 export async function WooUpdateQuantityProducts(products) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    const filtered = products.filter(p => p.woocommerce.id); // only find products that are in WooCommerce (some can be hidden)
+    const filtered = products.filter(p => p?.woocommerce?.id && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
 
     // Do it in batches of 100
     console.log('Starting update for ' + filtered.length + ' products...')
@@ -208,7 +208,7 @@ export async function WooCreateProductsINIT() {
                     productsToSave.push(productInDb);
                 }
 
-                await Promise.all(productsToSave.map(p => p.save()));
+                await Promise.all(productsToSave.map(async (p) => await p.save()));
                 console.log(`Product batch ${i} successfully created in WooCommerce!`)
             }).catch((error) => {
                 console.error(error);
@@ -397,7 +397,7 @@ export async function WooCreateProductsBatch(products) {
                     productsToSave.push(productInDb);
                 }
 
-                await Promise.all(productsToSave.map(p => p.save()));
+                await Promise.all(productsToSave.map(async (p) => await p.save()));
                 console.log(`Product batch ${i} successfully created in WooCommerce!`)
             }).catch((error) => {
                 console.error('Failed to create product batch in WooCommerce!');
@@ -668,7 +668,7 @@ export async function checkProductsInWoo() {
     let done = false;
     let offset = 0;
     const filter = { hidden: { $ne: true }, deleted: { $ne: true } };
-    /*
+    /* 
         const wooProducts = [];
         // const appProducts = await Product.find(filter);
     
@@ -687,7 +687,7 @@ export async function checkProductsInWoo() {
             offset += 100;
             console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
         }
-    */
+     */
 
     ///* DEV ONLY
     // Save to file

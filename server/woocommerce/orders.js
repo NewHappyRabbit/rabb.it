@@ -208,9 +208,8 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
 
     if (!order) return { status: 404, message: 'Продажбата не е намерен' };
 
-    if (!order?.woocommerce?.id) return { status: 404, message: 'Продажбата не е направена през WooCommerce' };
-
-    //TODO Modify data to WooCommerce format
+    if (!order?.woocommerce?.id) // Order was not made from woo, just update product quantity
+        await WooUpdateQuantityProducts(updatedProducts);
 
     if (!Object.keys(woocommerce.status).includes(order.woocommerce.status)) return { status: 400, message: 'Невалиден статус за поръчка' };
 
@@ -238,7 +237,7 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
         if (!product.product) continue; // Skip if product doesnt exist in WooCommerce
 
         // Check if product in Woo
-        if (!product.product?.woocommerce?.id) continue; // Skip if product doesnt exist in WooCommerce
+        if (!product.product?.woocommerce?.id || product.product?.deleted === true || product.product?.hidden === true) continue; // Skip if product doesnt exist in WooCommerce, is deleted or is hidden
 
         wooData.line_items.push({
             product_id: product.product.woocommerce.id,
