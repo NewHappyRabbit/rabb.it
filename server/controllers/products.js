@@ -116,8 +116,7 @@ export const ProductController = {
             query.$and.push({ hidden: true });
 
         if (search)
-            query.$or = [{ code: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
-        // query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
+            query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: search }, { name: { $regex: search, $options: 'i' } }];
 
         if (onlyOpenedPackages && onlyOpenedPackages === 'true')
             query.$and.push({ openedPackages: true });
