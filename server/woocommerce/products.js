@@ -659,7 +659,6 @@ async function updateAllAttributes() {
 
     console.log('Done updating Woo products attributes!')
 }
-// updateAllAttributes();
 
 export async function checkProductsInWoo() {
     // This function compares the quantity and price of the products in the database with the woocommerce store to see if there are any changes and update woocommerce accordingly
@@ -670,17 +669,13 @@ export async function checkProductsInWoo() {
     const filter = { hidden: { $ne: true }, deleted: { $ne: true } };
     /* 
         const wooProducts = [];
-        // const appProducts = await Product.find(filter);
+        const appProducts = await Product.find(filter);
     
         console.log('Starting WooCommerce products batch get...');
         while (done == false) {
             const req = await WooCommerce.get("products", { per_page: 100, offset, orderby: 'id' });
             const products = req.data;
-    
-            if (products.length == 0) {
-                done = true;
-                break;
-            }
+            if (products.length < 100) done = true;
     
             wooProducts.push(...products);
     
