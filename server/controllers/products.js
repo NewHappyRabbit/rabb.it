@@ -2,6 +2,7 @@ import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
+import { ProductAttribute } from "../models/product_attribute.js";
 import { Setting } from "../models/setting.js";
 import { uploadImg } from "./common.js";
 import fs from 'fs';
@@ -131,7 +132,7 @@ export const ProductController = {
         return { count, pageCount, products, status: 200 };
     },
     getById: async (id) => {
-        const product = await Product.findById(id);
+        const product = await Product.findById(id).populate('attributes.attribute');
         if (!product) return { status: 404, message: "Продуктът не е намерен" }
         return { product, status: 200 };
     },
@@ -212,6 +213,26 @@ export const ProductController = {
 
         // Update upsaleAmount in settings
         await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
+
+        data.attributes = [];
+        // Check if attributes were used
+        if (data.season) {
+            const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
+            if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
+            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
+        }
+
+        if (data.in_category) {
+            const inCategoryAttr = await ProductAttribute.findOne({ slug: 'in_category' });
+            if (!inCategoryAttr) return { status: 400, message: 'Атрибутът "in_category" не е намерен' };
+            data.attributes.push({ attribute: inCategoryAttr._id, value: data.in_category });
+        }
+
+        if (data.sex) {
+            const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
+            if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
+            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+        }
 
         const product = await Product.create(data);
         return { product, status: 201 };
@@ -348,6 +369,25 @@ export const ProductController = {
 
         // Update upsaleAmount in settings
         await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
+
+        data.attributes = [];
+        if (data.season) {
+            const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
+            if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
+            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
+        }
+
+        if (data.in_category) {
+            const inCategoryAttr = await ProductAttribute.findOne({ slug: 'in_category' });
+            if (!inCategoryAttr) return { status: 400, message: 'Атрибутът "in_category" не е намерен' };
+            data.attributes.push({ attribute: inCategoryAttr._id, value: data.in_category });
+        }
+
+        if (data.sex) {
+            const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
+            if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
+            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+        }
 
         await product.updateOne(data, { new: true });
         const updatedProduct = await Product.findById(id);

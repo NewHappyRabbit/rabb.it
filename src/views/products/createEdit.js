@@ -543,6 +543,40 @@ function selectCategory(e) {
     document.getElementById('name').value = categories.find(c => c._id === e.target.value).name;
 }
 
+const attributesTemplate = (product) => html`
+    <div class="row mb-3">
+        <h4>Атрибути:</h4>
+        <div class="col">
+            <label for="season">Сезон:</label>
+            <select id="season" name="season" class="form-control">
+                <option ?selected=${!product} value="">Избери</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято')} value='Пролет/Лято'>Пролет/Лято</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима')} value='Есен/Зима'>Есен/Зима</option>
+            </select>
+        </div>
+
+        <div class="col">
+            <label for="in_category">Категория:</label>
+            <select id="in_category" name="in_category" class="form-control">
+                <option ?selected=${!product} value="">Избери</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Детски')} value='Детски'>Детски</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Мъжки')} value='Мъжки'>Мъжки</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Дамски')} value='Дамски'>Дамски</option>
+            </select>
+        </div>
+
+        <div class="col">
+            <label for="sex">Пол:</label>
+            <select id="sex" name="sex" class="form-control">
+                <option ?selected=${!product} value="">Избери</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За него')} value='За него'>За него</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За нея')} value='За нея'>За нея</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'Унисекс')} value='Унисекс'>Унисекс</option>
+            </select>
+        </div>
+    </div>
+`;
+
 export async function createEditProductPage(ctx, next) {
     try {
         if (ctx.params.id) {
@@ -592,6 +626,8 @@ export async function createEditProductPage(ctx, next) {
                     </select>
                 </div>
 
+                ${attributesTemplate(product)}
+
                 <div class="row mb-3">
                     <label for="name" class="form-label">Име</label>
                     <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
@@ -640,7 +676,7 @@ export async function createEditProductPage(ctx, next) {
             html`
                 <div class="input-group mb-3 mt-3 w-25">
                     <input id="printLabelQty" @keyup=${(e) => fixInputPrice({ target: e.target, int: true })} class="form-control" type="text" name="printLabel" id="printLabel">
-                    <button @click=${(e) => socket.emit('send-print', product, Number(document.getElementById("printLabelQty").value))} class="btn btn-outline-primary" type="button">Принтирай етикети</button>
+                    <button @click=${() => socket.emit('send-print', product, Number(document.getElementById("printLabelQty").value))} class="btn btn-outline-primary" type="button">Принтирай етикети</button>
                 </div>`
             : html`
                     <div class="mb-3">

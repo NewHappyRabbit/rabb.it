@@ -13,6 +13,7 @@ export async function WooCheckProductAttributesINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
     // Check if all products attributes exist in WooCommerce, if not - create them
+    console.log('Starting WooCommerce products attributes check...');
 
     // Attributes are hard-coded for now
     const attributes = [
@@ -36,62 +37,50 @@ export async function WooCheckProductAttributesINIT() {
             slug: 'size_viber',
             order_by: 'name_num'
         },
+        {
+            name: 'Сезон',
+            slug: 'season',
+            order_by: 'name'
+        },
+        {
+            name: 'Категория',
+            slug: 'in_category',
+            order_by: 'name'
+        },
+        {
+            name: 'Пол',
+            slug: 'sex',
+            order_by: 'name'
+        },
     ];
 
-    WooCommerce.get("products/attributes").then(async (response) => {
-        const mongoAttributes = await ProductAttribute.find({});
-        for (const attribute of attributes) {
-            let found = false;
-            for (const existingAttribute of response.data) {
-                if (existingAttribute.name == attribute.name) {
-                    found = true;
+    const mongoAttributes = await ProductAttribute.find({});
+    const wooAttributes = await WooCommerce.get("products/attributes").then((response) => response.data);
 
-                    // Check if attribute exists in mongodb
-                    const inMongo = mongoAttributes.find(m => 'pa_' + m.slug == existingAttribute.slug);
+    for (const attribute of attributes) {
+        // Check if it exists in db
+        let inMongo = mongoAttributes.find(m => m.slug == attribute.slug);
 
-                    if (inMongo) {
-                        inMongo.woocommerce.id = existingAttribute.id;
-                        inMongo.save();
-                    } else {
-                        attribute.woocommerce = { id: existingAttribute.id };
-                        ProductAttribute.create(attribute);
-                    }
-
-                    break;
-                }
-            }
-
-            if (!found) {
-                WooCommerce.post("products/attributes", attribute).then(() => {
-                    // Success
-                    console.log(`Attribute "${attribute.name}" successfully created in WooCommerce!`)
-
-                    // Check if attribute exists in mongodb
-                    const inMongo = mongoAttributes.find(m => m.slug == attribute.slug);
-
-                    if (inMongo) {
-                        inMongo.woocommerce.id = attribute.id;
-                        inMongo.save();
-                    } else {
-                        attribute.woocommerce = { id: attribute.id };
-                    }
-                    ProductAttribute.create(attribute);
-                }).catch((error) => {
-                    // Invalid request, for 4xx and 5xx statuses
-                    console.error("Response Status:", error.response.status);
-                    console.error("Response Headers:", error.response.headers);
-                    console.error("Response Data:", error.response.data);
-                });
-            }
+        if (!inMongo) {
+            console.log(`Creating "${attribute.name}" in mongo...`)
+            await ProductAttribute.create(attribute);
+            inMongo = await ProductAttribute.findOne({ slug: attribute.slug });
         }
 
-        console.log("All products attributes exist in WooCommerce!")
-    }).catch((error) => {
-        // Invalid request, for 4xx and 5xx statuses
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-        console.error("Response Data:", error.response.data);
-    });
+        // Check if it exists in woo
+        const inWoo = wooAttributes.find(w => w.slug == "pa_" + attribute.slug);
+        if (!inWoo) {
+            console.log(`Creating "${attribute.name}" in woo...`)
+            // Create it in woo
+            const wooAttribute = await WooCommerce.post("products/attributes", attribute).then((response) => response.data);
+
+            inMongo.woocommerce = { id: wooAttribute.id };
+        } else inMongo.woocommerce = { id: inWoo.id };
+
+        await inMongo.save();
+    }
+
+    console.log("Products attributes check done!")
 }
 
 export async function WooUpdateQuantityProducts(products) {
@@ -123,6 +112,9 @@ export async function WooCreateProductsINIT() {
     const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
     const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
     const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
     const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
 
@@ -177,6 +169,30 @@ export async function WooCreateProductsINIT() {
                 },
             ]
         }
+
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+            });
 
         if (process.env.ENV !== 'dev' && product.image) {
             data.images = [{ src: product.image.url }];
@@ -239,9 +255,8 @@ export async function WooCreateProduct(product) {
         data.catalog_visibility = 'hidden';
     }
 
+    const mongoAttributes = await ProductAttribute.find({});
     if (product.sizes.length > 0) {
-        const mongoAttributes = await ProductAttribute.find({});
-
         const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
         const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
         const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
@@ -277,8 +292,37 @@ export async function WooCreateProduct(product) {
                 options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
             },
-        ]
+        ];
+
     } else data.attributes = [];
+
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
+
+    if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+        data.attributes.push({
+            id: seasonAttr.woocommerce.id,
+            visible: true,
+            variation: false,
+            options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+        });
+
+    if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+        data.attributes.push({
+            id: in_categoryAttr.woocommerce.id,
+            visible: false,
+            variation: false,
+            options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+        });
+
+    if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+        data.attributes.push({
+            id: sexAttr.woocommerce.id,
+            visible: true,
+            variation: false,
+            options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+        });
 
     if (process.env.ENV !== 'dev' && product.image) {
         data.images = [{ src: product.image.url }];
@@ -312,6 +356,9 @@ export async function WooCreateProductsBatch(products) {
     const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
     const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
     const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
     const doneProducts = [];
     for (let product of products) {
@@ -365,6 +412,30 @@ export async function WooCreateProductsBatch(products) {
             ]
         } else data.attributes = [];
 
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+            });
+
         if (process.env.ENV !== 'dev' && product.image) {
             data.images = [{ src: product.image.url }];
 
@@ -413,6 +484,9 @@ export async function WooEditProductsBatch(products) {
     const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
     const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
     const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
     const doneProducts = [];
     for (let product of products) {
@@ -466,6 +540,30 @@ export async function WooEditProductsBatch(products) {
                 },
             ]
         } else data.attributes = [];
+
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+            });
 
         if (process.env.ENV !== 'dev' && product.image) {
             data.images = [{ src: product.image.url }];
@@ -521,9 +619,8 @@ export async function WooEditProduct(product) {
     const category = await Category.findById(product.category);
     if (category) data.categories = [{ id: category.woocommerce.id }];
 
+    const mongoAttributes = await ProductAttribute.find({});
     if (product.sizes.length > 0) {
-        const mongoAttributes = await ProductAttribute.find({});
-
         const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
         const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
         const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
@@ -559,6 +656,34 @@ export async function WooEditProduct(product) {
             },
         ]
     } else data.attributes = [];
+
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
+
+    if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+        data.attributes.push({
+            id: seasonAttr.woocommerce.id,
+            visible: true,
+            variation: false,
+            options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+        });
+
+    if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+        data.attributes.push({
+            id: in_categoryAttr.woocommerce.id,
+            visible: false,
+            variation: false,
+            options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+        });
+
+    if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+        data.attributes.push({
+            id: sexAttr.woocommerce.id,
+            visible: true,
+            variation: false,
+            options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+        });
 
     if (process.env.ENV !== 'dev' && product.image) {
         data.images = [{ src: product.image.url }];
@@ -604,6 +729,9 @@ async function updateAllAttributes() {
     const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
     const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
     const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
     const doneProducts = [];
 
@@ -641,6 +769,30 @@ async function updateAllAttributes() {
                 options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
             },
         ]
+
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.id,
+                visible: true,
+                variation: false,
+                options: [product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value]
+            });
 
         doneProducts.push(data);
     }

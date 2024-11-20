@@ -143,7 +143,23 @@ const productSchema = new Schema({
     woocommerce: {
         id: String,
         permalink: String,
-    }
+    },
+    attributes: [
+        {
+            attribute: {
+                type: Schema.Types.ObjectId,
+                ref: 'ProductAttribute',
+                required: true,
+            },
+            value: {
+                type: String,
+                required: true
+            },
+        },
+        {
+            _id: false
+        }
+    ]
 
     //TODO Implement in the future
     //sale_price
