@@ -14,11 +14,11 @@ jobs:
                   echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
 
                   chmod 600 ~/.ssh/id_rsa
-                  ssh-keyscan app.emo-sklad.bg >> ~/.ssh/known_hosts
+                  ssh-keyscan 91.108.120.145 >> ~/.ssh/known_hosts
 
             - name: Execute Commands on Hostinger VM
               run: |
-                  ssh -o StrictHostKeyChecking=no root@app.emo-sklad.bg << 'EOF'
+                  ssh -o StrictHostKeyChecking=no root@91.108.120.145 << 'EOF'
 
                   # Navigate to your app directory
                   cd /var/www/app.emo-sklad.bg/html/rabb.it
