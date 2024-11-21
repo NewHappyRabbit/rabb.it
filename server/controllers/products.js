@@ -231,7 +231,7 @@ export const ProductController = {
         if (data.sex) {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
-            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+            data.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(data.sex) });
         }
 
         const product = await Product.create(data);
@@ -386,7 +386,7 @@ export const ProductController = {
         if (data.sex) {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
-            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+            data.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(data.sex) });
         }
 
         await product.updateOne(data, { new: true });

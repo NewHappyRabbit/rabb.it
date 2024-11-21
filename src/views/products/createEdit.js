@@ -567,11 +567,10 @@ const attributesTemplate = (product) => html`
 
         <div class="col">
             <label for="sex">Пол:</label>
-            <select id="sex" name="sex" class="form-control">
+            <select id="sex" name="sex" class="form-control" multiple>
                 <option ?selected=${!product} value="">Избери</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За него')} value='За него'>За него</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За нея')} value='За нея'>За нея</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'Унисекс')} value='Унисекс'>Унисекс</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За него' || a.value.includes('За него'))} value='За него'>За него</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За нея' || a.value.includes('За нея'))} value='За нея'>За нея</option>
             </select>
         </div>
     </div>
