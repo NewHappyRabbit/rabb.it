@@ -317,7 +317,7 @@ export const OrderController = {
 
         data.total = total;
 
-        data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
+        data.unpaid = parseInt((data.paidAmount || 0).toFixed(2)) < parseInt(total);
 
         if (!data.number) { // If no number assigned, grab latest from sequence
             let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
@@ -392,7 +392,7 @@ export const OrderController = {
 
         data.total = total;
 
-        data.unpaid = (data.paidAmount || 0).toFixed(2) < total;
+        data.unpaid = parseInt((data.paidAmount || 0).toFixed(2)) < parseInt(total);
 
         // New logic for editing document number
         // Check if document number already exists
