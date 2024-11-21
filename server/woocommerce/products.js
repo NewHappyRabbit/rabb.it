@@ -175,7 +175,7 @@ export async function WooCreateProductsINIT() {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -300,12 +300,14 @@ export async function WooCreateProduct(product) {
     const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
     const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
+    console.log(in_categoryAttr)
+
     if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
         data.attributes.push({
             id: seasonAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
         });
 
     if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -417,7 +419,7 @@ export async function WooCreateProductsBatch(products) {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -546,7 +548,7 @@ export async function WooEditProductsBatch(products) {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -666,7 +668,7 @@ export async function WooEditProduct(product) {
             id: seasonAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
         });
 
     if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -775,7 +777,7 @@ async function updateAllAttributes() {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
+                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))

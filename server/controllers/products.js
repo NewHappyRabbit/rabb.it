@@ -219,7 +219,7 @@ export const ProductController = {
         if (data.season) {
             const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
             if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
-            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
+            data.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(data.season) });
         }
 
         if (data.in_category) {
@@ -374,7 +374,7 @@ export const ProductController = {
         if (data.season) {
             const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
             if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
-            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
+            data.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(data.season) });
         }
 
         if (data.in_category) {

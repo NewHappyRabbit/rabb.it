@@ -548,10 +548,10 @@ const attributesTemplate = (product) => html`
         <h4>Атрибути:</h4>
         <div class="col">
             <label for="season">Сезон:</label>
-            <select id="season" name="season" class="form-control">
+            <select id="season" name="season" class="form-control" multiple>
                 <option ?selected=${!product} value="">Избери</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято')} value='Пролет/Лято'>Пролет/Лято</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима')} value='Есен/Зима'>Есен/Зима</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято' || a.value.includes('Пролет/Лято'))} value='Пролет/Лято'>Пролет/Лято</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима' || a.value.includes('Есен/Зима'))} value='Есен/Зима'>Есен/Зима</option>
             </select>
         </div>
 
