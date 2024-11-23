@@ -12,7 +12,7 @@ import cron from 'node-cron';
 import { WooUpdateQuantityProducts } from "./products.js";
 
 export async function WooHookCreateOrder(data) {
-    console.log('Starting...')
+    console.log('Starting woo hook order...')
     if (!WooCommerce) return;
     // This functions creates a new order in the app from a WooCommerce order. It's activated by a hook in Woocommerce
 
@@ -125,7 +125,6 @@ export async function WooHookCreateOrder(data) {
 
     if (data.coupon_lines.length > 0)
         wooData.coupons = data.coupon_lines;
-
     // Products
     let index = 0;
     for (let product of data.line_items) {
@@ -162,15 +161,18 @@ export async function WooHookCreateOrder(data) {
 
         wooData.products.push(productData);
     }
-
     // Check if customer already in db
     //FIXME For some reason, wooData returns customer.id as 0 instead of the actual ID. Investigate...
     // var customer = await Customer.findOne({"woocommerce.id": })
     //TEMPFIX
     var customer;
+
+    // First try to find by email
     if (wooData.customer?.email)
         customer = await Customer.findOne({ email: wooData.customer.email });
-    else if (wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
+
+    // Then if not found, try to find by vat
+    if (wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
         customer = await Customer.findOne({ vat: wooData.customer.vat })
     else customer = null
 
