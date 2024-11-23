@@ -621,7 +621,7 @@ export async function createEditProductPage(ctx, next) {
                 <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
                     <select @change=${selectCategory} class="form-select border-primary" name="category" id="category" required>
-                        ${until(loadCategories(), html`<option>Зареждане...</option>`)}
+                        ${until(loadCategories(), html`<option disabled>Зареждане...</option>`)}
                     </select>
                 </div>
 
