@@ -175,7 +175,7 @@ export async function WooCreateProductsINIT() {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -191,7 +191,7 @@ export async function WooCreateProductsINIT() {
                 id: sexAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
             });
 
         if (process.env.ENV !== 'dev' && product.image) {
@@ -305,7 +305,7 @@ export async function WooCreateProduct(product) {
             id: seasonAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
         });
 
     if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -321,7 +321,7 @@ export async function WooCreateProduct(product) {
             id: sexAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
         });
 
     if (process.env.ENV !== 'dev' && product.image) {
@@ -417,7 +417,7 @@ export async function WooCreateProductsBatch(products) {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -433,7 +433,7 @@ export async function WooCreateProductsBatch(products) {
                 id: sexAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
             });
 
         if (process.env.ENV !== 'dev' && product.image) {
@@ -456,7 +456,9 @@ export async function WooCreateProductsBatch(products) {
             await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
                 // Success
                 for (let product of response.data.create) {
+                    if (product?.error) return console.error(product.error);
                     const productInDb = products.find(p => p.code === product.sku);
+                    console.log({ product, productInDb })
 
                     if (!productInDb) console.error(`Product with Woo SKU: ${product.sku} not found in database!`);
 
@@ -475,6 +477,15 @@ export async function WooCreateProductsBatch(products) {
                 console.error(error);
             });
         }
+    }
+}
+
+function getJSONValue(string) {
+    // Returns JSON object or string
+    try {
+        return JSON.parse(string);
+    } catch (err) {
+        return string;
     }
 }
 
@@ -546,7 +557,7 @@ export async function WooEditProductsBatch(products) {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -562,7 +573,7 @@ export async function WooEditProductsBatch(products) {
                 id: sexAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
             });
 
         if (process.env.ENV !== 'dev' && product.image) {
@@ -579,8 +590,9 @@ export async function WooEditProductsBatch(products) {
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
-        for (let i = 0; i < doneProducts.length; i += 100) {
-            const batch = doneProducts.slice(i, i + 100);
+        for (let i = 0; i < doneProducts.length; i += 20) {
+            const batch = doneProducts.slice(i, i + 20);
+            console.log(`Starting update on batch ${i}...`)
             await WooCommerce.post("products/batch", { update: batch }).then(async () => {
                 // Success
                 console.log(`Product batch ${i} successfully updated in WooCommerce!`)
@@ -666,7 +678,7 @@ export async function WooEditProduct(product) {
             id: seasonAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
         });
 
     if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -682,7 +694,7 @@ export async function WooEditProduct(product) {
             id: sexAttr.woocommerce.id,
             visible: true,
             variation: false,
-            options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
         });
 
     if (process.env.ENV !== 'dev' && product.image) {
@@ -775,7 +787,7 @@ async function updateAllAttributes() {
                 id: seasonAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -791,7 +803,7 @@ async function updateAllAttributes() {
                 id: sexAttr.woocommerce.id,
                 visible: true,
                 variation: false,
-                options: JSON.parse(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
             });
 
         doneProducts.push(data);
@@ -836,7 +848,7 @@ export async function checkProductsInWoo() {
         }
      */
 
-    ///* DEV ONLY
+    //* DEV ONLY
     // Save to file
     // fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
     // return;
