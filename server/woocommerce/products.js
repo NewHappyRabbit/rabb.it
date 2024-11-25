@@ -140,7 +140,7 @@ export async function WooCreateProductsINIT() {
 
         if (product.sizes.length > 0) {
             const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
             data.attributes = [
                 { // pcs
@@ -263,7 +263,7 @@ export async function WooCreateProduct(product) {
         const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
 
         const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
         data.attributes = [
             { // pcs
@@ -382,7 +382,7 @@ export async function WooCreateProductsBatch(products) {
 
         if (product.sizes.length > 0) {
             const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
             data.attributes = [
                 { // pcs
@@ -522,7 +522,7 @@ export async function WooEditProductsBatch(products) {
 
         if (product.sizes.length > 0) {
             const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
             data.attributes = [
                 { // pcs
@@ -639,14 +639,14 @@ export async function WooEditProduct(product) {
         const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
 
         const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
         data.attributes = [
             { // pcs
                 id: pcsId,
                 visible: true,
                 variation: false,
-                options: product.sizes.length.toString()
+                options: (product.sizes.length * product.multiplier).toString()
             },
             { // size
                 id: sizeId,
@@ -753,7 +753,7 @@ async function updateAllAttributes() {
         }
 
         const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}`;
+        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
         data.attributes = [
             { // pcs
