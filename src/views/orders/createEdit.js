@@ -81,7 +81,6 @@ function setDiscount() {
     rerenderTable();
 }
 
-
 const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
@@ -843,9 +842,7 @@ function validateOrder(data) {
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="quantity"]'));
 
-        const discountRegex = /^\d{1,}(\.\d{1})?$/; // good: 0.1, 2; bad: 0.01
-
-        if (product.discount < 0 || product.discount > 100 || !discountRegex.test(product.discount)) {
+        if (isNaN(product.discount) || product.discount < 0 || product.discount > 100) {
             markInvalidEl(row.querySelector('input[name="discount"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="discount"]'));

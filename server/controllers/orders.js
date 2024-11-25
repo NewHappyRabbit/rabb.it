@@ -69,7 +69,7 @@ async function validateOrder(data) {
         if (product.price < 0)
             return { status: 400, message: 'Цената трябва да е по-голяма или равна на 0', property: 'price', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
-        if (product.discount && (product.discount < 0 || product.discount > 100))
+        if (product.discount && (isNaN(product.discount) || product.discount < 0 || product.discount > 100))
             return { status: 400, message: 'Отстъпката трябва да е в границите между 0 и 100', property: 'discount', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (!product.unitOfMeasure)
