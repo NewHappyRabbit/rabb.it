@@ -104,9 +104,7 @@ export async function WooUpdateQuantityProducts(products) {
     }
 }
 
-export async function WooCreateProductsINIT() {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-
+async function generateProductsData(products) {
     const mongoAttributes = await ProductAttribute.find({});
     const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
     const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
@@ -116,10 +114,7 @@ export async function WooCreateProductsINIT() {
     const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
     const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
 
-    const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
-
-    const doneProducts = [];
-    for (let product of products) {
+    async function formatData(product) {
         const category = await Category.findById(product.category);
         const data = {
             name: product.name,
@@ -130,7 +125,11 @@ export async function WooCreateProductsINIT() {
             categories: [{ id: category.woocommerce.id }],
             stock_quantity: product.quantity,
             "manage_stock": true, // enables the stock management
+            attributes: [],
         }
+
+        if (product?.woocommerce?.id)
+            data.id = product.woocommerce.id;
 
         // If not in live environment, set product status as private to not show it for clients
         if (process.env.ENV === 'dev') {
@@ -142,7 +141,7 @@ export async function WooCreateProductsINIT() {
             const simpleSizes = product.sizes.map(s => s.size);
             const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
 
-            data.attributes = [
+            data.attributes.push(
                 { // pcs
                     id: pcsId,
                     visible: true,
@@ -167,7 +166,7 @@ export async function WooCreateProductsINIT() {
                     variation: false,
                     options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 },
-            ]
+            )
         }
 
         if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
@@ -203,8 +202,21 @@ export async function WooCreateProductsINIT() {
             }
         }
 
-        doneProducts.push(data);
+        return data;
     }
+
+    // If array of products is passed, return array. Else return product
+    if (Array.isArray(products)) return await Promise.all(products.map(async product => await formatData(product)));
+    else return await formatData(products);
+}
+
+export async function WooCreateProductsINIT() {
+    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+
+    const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
+
+    //FIXME TEST
+    const doneProducts = await generateProductsData(products);
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
@@ -236,102 +248,8 @@ export async function WooCreateProductsINIT() {
 export async function WooCreateProduct(product) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    const category = await Category.findById(product.category);
-
-    const data = {
-        name: product.name,
-        slug: "p" + product.code,
-        description: product.description,
-        regular_price: product.wholesalePrice.toString(),
-        sku: product.code,
-        categories: [{ id: category.woocommerce.id }],
-        stock_quantity: product.quantity,
-        "manage_stock": true, // enables the stock management
-    }
-
-    // If not in live environment, set product status as private to not show it for clients
-    if (process.env.ENV === 'dev') {
-        data.status = 'private';
-        data.catalog_visibility = 'hidden';
-    }
-
-    const mongoAttributes = await ProductAttribute.find({});
-    if (product.sizes.length > 0) {
-        const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-        const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-        const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-        const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-
-        const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-        data.attributes = [
-            { // pcs
-                id: pcsId,
-                visible: true,
-                variation: false,
-                options: (product.sizes.length * product.multiplier).toString(),
-                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
-            },
-            { // size
-                id: sizeId,
-                visible: true,
-                variation: false,
-                options: simpleSizes
-            },
-            { // viber size
-                id: viberSizeId,
-                visible: false,
-                variation: false,
-                options: viberSizes// Get the first and last size and do 'X-Y'
-            },
-            { // piecePrice
-                id: piecePriceId,
-                visible: true,
-                variation: false,
-                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-                //TODO TEST IF MULTIPLIER WORSK IN WOOCOMMERCE
-            },
-        ];
-
-    } else data.attributes = [];
-
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
-
-    if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-        data.attributes.push({
-            id: seasonAttr.woocommerce.id,
-            visible: true,
-            variation: false,
-            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-        });
-
-    if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-        data.attributes.push({
-            id: in_categoryAttr.woocommerce.id,
-            visible: false,
-            variation: false,
-            options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-        });
-
-    if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-        data.attributes.push({
-            id: sexAttr.woocommerce.id,
-            visible: true,
-            variation: false,
-            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-        });
-
-    if (process.env.ENV !== 'dev' && product.image) {
-        data.images = [{ src: product.image.url }];
-
-        if (product.additionalImages) {
-            for (const image of product.additionalImages)
-                data.images.push({ src: image.url });
-        }
-    }
+    //FIXME TEST
+    const data = await generateProductsData(product);
 
     await retry(async () => {
         await WooCommerce.post("products", data).then(async (response) => {
@@ -351,102 +269,7 @@ export async function WooCreateProduct(product) {
 }
 
 export async function WooCreateProductsBatch(products) {
-    const mongoAttributes = await ProductAttribute.find({});
-    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
-
-    const doneProducts = [];
-    for (let product of products) {
-        const category = await Category.findById(product.category);
-        const data = {
-            name: product.name,
-            slug: "p" + product.code,
-            description: product.description,
-            regular_price: product.wholesalePrice.toString(),
-            sku: product.code,
-            categories: [{ id: category.woocommerce.id }],
-            stock_quantity: product.quantity,
-            "manage_stock": true, // enables the stock management
-        }
-
-        // If not in live environment, set product status as private to not show it for clients
-        if (process.env.ENV === 'dev') {
-            data.status = 'private';
-            data.catalog_visibility = 'hidden';
-        }
-
-        if (product.sizes.length > 0) {
-            const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-            data.attributes = [
-                { // pcs
-                    id: pcsId,
-                    visible: true,
-                    variation: false,
-                    options: (product.sizes.length * product.multiplier).toString(),
-                },
-                { // size
-                    id: sizeId,
-                    visible: true,
-                    variation: false,
-                    options: simpleSizes
-                },
-                { // viber size
-                    id: viberSizeId,
-                    visible: false,
-                    variation: false,
-                    options: viberSizes// Get the first and last size and do 'X-Y'
-                },
-                { // piecePrice
-                    id: piecePriceId,
-                    visible: true,
-                    variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-                },
-            ]
-        } else data.attributes = [];
-
-        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-            data.attributes.push({
-                id: seasonAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-            data.attributes.push({
-                id: in_categoryAttr.woocommerce.id,
-                visible: false,
-                variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-            data.attributes.push({
-                id: sexAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-            });
-
-        if (process.env.ENV !== 'dev' && product.image) {
-            data.images = [{ src: product.image.url }];
-
-            if (product.additionalImages) {
-                for (const image of product.additionalImages)
-                    data.images.push({ src: image.url });
-            }
-        }
-
-        doneProducts.push(data);
-    }
+    const doneProducts = await generateProductsData(products);
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
@@ -490,106 +313,11 @@ function getJSONValue(string) {
 }
 
 export async function WooEditProductsBatch(products) {
-    const mongoAttributes = await ProductAttribute.find({});
-    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
-
-    const doneProducts = [];
-    for (let product of products) {
-        const category = await Category.findById(product.category);
-        const data = {
-            id: product.woocommerce.id,
-            name: product.name,
-            slug: "p" + product.code,
-            description: product.description,
-            regular_price: product.wholesalePrice.toString(),
-            sku: product.code,
-            categories: [{ id: category.woocommerce.id }],
-            stock_quantity: product.quantity,
-            "manage_stock": true, // enables the stock management
-        }
-
-        // If not in live environment, set product status as private to not show it for clients
-        if (process.env.ENV === 'dev') {
-            data.status = 'private';
-            data.catalog_visibility = 'hidden';
-        }
-
-        if (product.sizes.length > 0) {
-            const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-            data.attributes = [
-                { // pcs
-                    id: pcsId,
-                    visible: true,
-                    variation: false,
-                    options: (product.sizes.length * product.multiplier).toString(),
-                },
-                { // size
-                    id: sizeId,
-                    visible: true,
-                    variation: false,
-                    options: simpleSizes
-                },
-                { // viber size
-                    id: viberSizeId,
-                    visible: false,
-                    variation: false,
-                    options: viberSizes// Get the first and last size and do 'X-Y'
-                },
-                { // piecePrice
-                    id: piecePriceId,
-                    visible: true,
-                    variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-                },
-            ]
-        } else data.attributes = [];
-
-        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-            data.attributes.push({
-                id: seasonAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-            data.attributes.push({
-                id: in_categoryAttr.woocommerce.id,
-                visible: false,
-                variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-            data.attributes.push({
-                id: sexAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-            });
-
-        if (process.env.ENV !== 'dev' && product.image) {
-            data.images = [{ src: product.image.url }];
-
-            if (product.additionalImages) {
-                for (const image of product.additionalImages)
-                    data.images.push({ src: image.url });
-            }
-        }
-
-        doneProducts.push(data);
-    }
+    const doneProducts = await generateProductsData(products);
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
+        console.log(doneProducts.length)
         for (let i = 0; i < doneProducts.length; i += 20) {
             const batch = doneProducts.slice(i, i + 20);
             console.log(`Starting update on batch ${i}...`)
@@ -620,91 +348,8 @@ export async function WooDeleteProductsBatch(products) {
 
 export async function WooEditProduct(product) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-    const data = {
-        name: product.name,
-        slug: "p" + product.code,
-        description: product.description,
-        regular_price: product.wholesalePrice.toString(),
-        sku: product.code,
-        stock_quantity: product.quantity,
-    }
-    const category = await Category.findById(product.category);
-    if (category) data.categories = [{ id: category.woocommerce.id }];
 
-    const mongoAttributes = await ProductAttribute.find({});
-    if (product.sizes.length > 0) {
-        const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-        const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-        const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-        const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-
-        const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-        data.attributes = [
-            { // pcs
-                id: pcsId,
-                visible: true,
-                variation: false,
-                options: (product.sizes.length * product.multiplier).toString()
-            },
-            { // size
-                id: sizeId,
-                visible: true,
-                variation: false,
-                options: simpleSizes
-            },
-            { // viber size
-                id: viberSizeId,
-                visible: false,
-                variation: false,
-                options: viberSizes // Get the first and last size and do 'X-Y'
-            },
-            { // piecePrice
-                id: piecePriceId,
-                visible: true,
-                variation: false,
-                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString()
-            },
-        ]
-    } else data.attributes = [];
-
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
-
-    if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-        data.attributes.push({
-            id: seasonAttr.woocommerce.id,
-            visible: true,
-            variation: false,
-            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-        });
-
-    if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-        data.attributes.push({
-            id: in_categoryAttr.woocommerce.id,
-            visible: false,
-            variation: false,
-            options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-        });
-
-    if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-        data.attributes.push({
-            id: sexAttr.woocommerce.id,
-            visible: true,
-            variation: false,
-            options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-        });
-
-    if (process.env.ENV !== 'dev' && product.image) {
-        data.images = [{ src: product.image.url }];
-
-        if (product.additionalImages) {
-            for (const image of product.additionalImages)
-                data.images.push({ src: image.url });
-        }
-    }
+    const data = await generateProductsData(product);
 
     await retry(async () => {
         await WooCommerce.put(`products/${product.woocommerce.id}`, data).then(async (res) => {
@@ -733,97 +378,6 @@ export async function WooDeleteProduct(id) {
     });
 }
 
-async function updateAllAttributes() {
-    const products = await Product.find({ sizes: { $ne: [] }, hidden: { $ne: true }, deleted: { $ne: true }, "woocommerce.id": { $exists: true } });
-
-    const mongoAttributes = await ProductAttribute.find({});
-    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
-
-    const doneProducts = [];
-
-    for (let product of products) {
-        const data = {
-            id: product.woocommerce.id,
-        }
-
-        const simpleSizes = product.sizes.map(s => s.size);
-        const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-        data.attributes = [
-            { // pcs
-                id: pcsId,
-                visible: true,
-                variation: false,
-                options: (product.sizes.length * product.multiplier).toString(),
-            },
-            { // size
-                id: sizeId,
-                visible: true,
-                variation: false,
-                options: simpleSizes
-            },
-            { // viber size
-                id: viberSizeId,
-                visible: false,
-                variation: false,
-                options: viberSizes// Get the first and last size and do 'X-Y'
-            },
-            { // piecePrice
-                id: piecePriceId,
-                visible: true,
-                variation: false,
-                options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-            },
-        ]
-
-        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-            data.attributes.push({
-                id: seasonAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-            data.attributes.push({
-                id: in_categoryAttr.woocommerce.id,
-                visible: false,
-                variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-            data.attributes.push({
-                id: sexAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-            });
-
-        doneProducts.push(data);
-    }
-
-    // Batch accepts max 100 products per request
-    for (let i = 0; i < doneProducts.length; i += 100) {
-        const batch = doneProducts.slice(i, i + 100);
-        await WooCommerce.post("products/batch", { update: batch }).then(async () => {
-            // Success
-            console.log(`Product batch ${i} successfully updated in WooCommerce!`)
-        }).catch((error) => {
-            console.error('Failed to update product batch in WooCommerce!');
-            console.error(error);
-        });
-    }
-
-    console.log('Done updating Woo products attributes!')
-}
-
 export async function checkProductsInWoo() {
     // This function compares the quantity and price of the products in the database with the woocommerce store to see if there are any changes and update woocommerce accordingly
     if (!WooCommerce) return;
@@ -846,13 +400,13 @@ export async function checkProductsInWoo() {
             offset += 100;
             console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
         }
+    
+    
+        //* DEV ONLY
+        // Save to file
+        fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
+        return;
      */
-
-    //* DEV ONLY
-    // Save to file
-    // fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
-    // return;
-
     const appProducts = await Product.find(filter);
     var wooProducts = fs.readFileSync('server/woocommerce/wooProducts.json', 'utf8');
     wooProducts = JSON.parse(wooProducts);
@@ -904,8 +458,8 @@ export async function checkProductsInWoo() {
 
     if (productsToUpdate.length > 0) {
         console.log('Found ' + productsToUpdate.length + ' products to update in WooCommerce! Starting...');
-        console.log(productsToUpdate.map(p => p._id).join(', '));
-        // await WooEditProductsBatch(productsToUpdate);
+        // console.log(productsToUpdate.map(p => p._id).join(', '));
+        await WooEditProductsBatch(productsToUpdate);
         console.log('Finished WooCommerce products update!');
     }
 
