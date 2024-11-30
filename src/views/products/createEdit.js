@@ -625,12 +625,12 @@ export async function createEditProductPage(ctx, next) {
                     </select>
                 </div>
 
-                ${attributesTemplate(product)}
-
                 <div class="row mb-3">
                     <label for="name" class="form-label">Име</label>
                     <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
                 </div>
+
+                ${attributesTemplate(product)}
 
                 ${quantityTemplate()}
 
