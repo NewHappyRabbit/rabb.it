@@ -578,6 +578,14 @@ const attributesTemplate = (product) => html`
     </div>
 `;
 
+function calculator() {
+    const num1 = document.getElementById('calc_num1').value || 0;
+    const num2 = document.getElementById('calc_num2').value || 0;
+    const sum = document.getElementById('calc_sum');
+
+    sum.value = Number(num1) * Number(num2);
+}
+
 export async function createEditProductPage(ctx, next) {
     try {
         if (ctx.params.id) {
@@ -633,6 +641,14 @@ export async function createEditProductPage(ctx, next) {
                 </div>
 
                 ${attributesTemplate(product)}
+
+                <h4>Калкулатор:</h4>
+                <div class="input-group mb-3">
+                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
+                    <span class="input-group-text">X</span>
+                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
+                    <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
+                </div>
 
                 ${quantityTemplate()}
 
