@@ -24,15 +24,19 @@ export const CategoryController = {
         // create slug
         var slug = slugify(data.name);
 
-        // check if slug exists
-        const slugExists = await Category.findOne({ slug: { $regex: slug + '-', $options: 'i' } }).sort({ slug: -1 });
+        // Check if exact match
+        const exactMatch = await Category.findOne({ slug: slug });
+        if (exactMatch) {
+            // Check if more than one (ex. test-1, test-2 ....)
+            const slugMatch = await Category.findOne({ slug: { $regex: '^' + slug + '-', $options: 'i' } }).sort({ slug: -1 });
 
-        if (slugExists) // if many slugs (ex -2, -3...)
-            slug += `-${Number(slugExists.slug.split('-').pop()) + 1}`;
-        else { // if only 1 found (exact)
-            const slugExists2 = await Category.findOne({ slug });
-
-            if (slugExists2) slug += '-1';
+            if (!slugMatch) slug += '-1';
+            else {
+                let num = slugMatch.slug.split('-');
+                console.log(num);
+                num = Number(num[num.length - 1]) + 1;
+                slug += '-' + num;
+            }
         }
 
         data.slug = slug;
@@ -66,24 +70,26 @@ export const CategoryController = {
             const oldSlug = currentCategory.slug;
             var newSlug = slugify(data.name);
 
-            // check if slug exists
-            const slugExists = await Category.findOne({ slug: { $regex: newSlug + '-', $options: 'i' } }).sort({ slug: -1 });
+            // Check if exact match
+            const exactMatch = await Category.findOne({ slug: newSlug });
+            if (exactMatch) {
+                // Check if more than one (ex. test-1, test-2 ....)
+                const slugMatch = await Category.findOne({ slug: { $regex: '^' + newSlug + '-', $options: 'i' } }).sort({ slug: -1 });
 
-            if (slugExists) // if many slugs (ex -2, -3...)
-                newSlug += `-${Number(slugExists.slug.split('-').pop()) + 1}`;
-            else { // if only 1 found (exact)
-                const slugExists2 = await Category.findOne({ slug: newSlug });
-
-                if (slugExists2) newSlug += '-1';
+                if (!slugMatch) newSlug += '-1';
+                else {
+                    let num = slugMatch.slug.split('-');
+                    num = Number(num[num.length - 1]) + 1;
+                    newSlug += '-' + num;
+                }
             }
 
             // update subcategories path
             const categories = await Category.find({ path: { $regex: `,${oldSlug},` } });
-            for (const category of categories) {
+            await Promise.all(categories.map(async category => {
                 category.path = category.path.replace(`,${oldSlug},`, `,${newSlug},`);
-
                 await category.save();
-            }
+            }))
 
             data.slug = newSlug;
         }

@@ -11,6 +11,7 @@ import { loggedInUser } from "@/views/login";
 
 var selectedCategoryId;
 var formOptions;
+var categories;
 
 function renderCategories(categories) {
     // add depth value
@@ -82,6 +83,7 @@ async function createEditDeleteCategory(e) {
     const alertEl = document.getElementById('alert');
     try {
         var req;
+        console.log({ action, selectedCategoryId })
         if (action === 'delete')
             req = await axios.delete(`/categories/${selectedCategoryId}`);
         else if (action === 'edit')
@@ -179,7 +181,7 @@ export function categoriesOptions(params) {
     const parentCategories = categories.filter(cat => !cat.path);
 
     var options = showNoParent ? [html`<option value="">Без категория</option>`] : [html`<option disabled ?selected=${!selected} value="">Избери категория</option>`];
-    const option = (category) => html`<option ?disabled=${disableWithChilden && categories.some(cat => cat.path?.includes(category.slug))} .selected=${selected && selected == category._id} slug="${category.slug}" value="${category._id}">${category.depth.map(() => '-').join(' ')}${category.name}</option>`;
+    const option = (category) => html`<option ?disabled=${disableWithChilden && categories.some(cat => cat.path?.includes(',' + category.slug + ','))} .selected=${selected && selected == category._id.toString()} slug="${category.slug}" value="${category._id}">${category.depth.map(() => '-').join(' ')}${category.name}</option>`;
 
     function recursion(category) {
         options.push(option(category));
@@ -197,27 +199,28 @@ export function categoriesOptions(params) {
 
 function renderForm(category) {
     selectedCategoryId = category ? category._id : null;
+    const options = {
+        categories,
+    }
+
+    if (category && category.path) {
+        // Find parent category id by slug to select in Parent menu
+        let parentSlug = category.path.split(',');
+        parentSlug = parentSlug[parentSlug.length - 2];
+        options.selected = categories.find(category => category.slug === parentSlug)._id;
+    }
+    formOptions = categoriesOptions(options);
+
     render(modalForm(category ? category : null), document.querySelector('#createEditModal form'))
 
-    if (!category)
-        return;
+    if (!category) return;
 
     // Find currently selected category and disable option element
     const optionEl = document.querySelector(`#parent option[value="${category._id}"]`);
     optionEl.disabled = true;
-
-    // Select parent category in options
-    if (!category.path) // Category is parent
-        return document.querySelector('#parent option').selected = true;
-
-    // find parent category to select in options
-    const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
-    document.querySelector(`#parent [slug=${parentSlug}]`).selected = true;
-
 }
 
 export async function categoriesPage() {
-    var categories;
     selectedCategoryId = null;
     async function loadCategories() {
         const req = await axios.get('/categories');

@@ -14,7 +14,7 @@ import { socket } from '@/api';
 
 var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false, lastUpsaleAmount;
 
-async function loadCategories() {
+async function loadCategories(product) {
     const req = await axios.get('/categories');
     categories = req.data;
 
@@ -22,7 +22,7 @@ async function loadCategories() {
         categories,
         ...(product && { selected: product.category }),
         showNoParent: false,
-        disableWithChilden: true
+        disableWithChilden: true,
     }
 
     return categoriesOptions(options);
@@ -389,6 +389,8 @@ async function updateProduct(e) {
 
     const data = Object.fromEntries(formData.entries());
 
+    console.log(data.category)
+
     data.sizes = selectedSizes;
 
     formData.set('sizes', JSON.stringify(data.sizes));
@@ -621,7 +623,7 @@ export async function createEditProductPage(ctx, next) {
                 <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
                     <select @change=${selectCategory} class="form-select border-primary" name="category" id="category" required>
-                        ${until(loadCategories(), html`<option disabled>Зареждане...</option>`)}
+                        ${until(loadCategories(product), html`<option disabled>Зареждане...</option>`)}
                     </select>
                 </div>
 
