@@ -1,4 +1,4 @@
-import { WooCommerce } from "../config/woocommerce.js";
+import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { retry } from "./common.js";
 
@@ -14,6 +14,14 @@ export async function WooCreateCategoriesINIT() {
     console.log("Categories successfully created in WooCommerce!")
 }
 
+async function checkParentId({ data, category, shop }) {
+    if (category.path) {
+        const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
+        const parent = await Category.findOne({ slug: parentSlug });
+        if (parent) data.parent = parent.woocommerce?.find(el => el.woo_url == shop.url).id;
+    }
+}
+
 export async function WooCreateCategory(category) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
@@ -23,27 +31,27 @@ export async function WooCreateCategory(category) {
         menu_order: category.order
     }
 
-    if (category.path) {
-        const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
-        const parent = await Category.findOne({ slug: parentSlug });
-        if (parent) data.parent = parent.woocommerce.id;
-    }
-
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: category.image.url };
 
-    await retry(async () => {
-        const response = await WooCommerce.post("products/categories", data)
-        console.log("Category successfully created in WooCommerce!")
-        //TODO TEST
-        // add woo id to category
-        category.woocommerce.id = response.data.id;
-        category.save();
-    });
+    for (let shop of WooCommerce_Shops) {
+        await checkParentId({ data, category, shop });
+
+        await retry(async () => {
+            const response = await shop.post("products/categories", data)
+            console.log(`Category successfully created in WooCommerce [${shop.url}]!`)
+            category.woocommerce.push({
+                woo_url: shop.url,
+                id: response.data.id,
+            });
+
+            await category.save();
+        });
+    }
 }
 
 export async function WooEditCategory(category) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+    if (!WooCommerce || !category.woocommerce?.length) return; // If woocommerce wasnt initalized or is not used
 
     const data = {
         name: category.name,
@@ -51,28 +59,32 @@ export async function WooEditCategory(category) {
         menu_order: category.order
     }
 
-    if (category.path) {
-        const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
-        const parent = await Category.findOne({ slug: parentSlug });
-        if (parent) data.parent = parent.woocommerce.id;
-    }
-
     if (process.env.ENV !== 'dev' && category.image)
         data.image = { src: category.image.url };
 
-    await retry(async () => {
-        await WooCommerce.put(`products/categories/${category.woocommerce.id}`, data)
-        console.log('Category successfully edited in WooCommerce!')
-    });
+    for (let shop of WooCommerce_Shops) {
+        const categoryId = category.woocommerce.find(el => el.woo_url == shop.url).id;
+
+        await checkParentId({ data, category, shop });
+
+        await retry(async () => {
+            await shop.put(`products/categories/${categoryId}`, data)
+            console.log(`Category successfully edited in WooCommerce [${shop.url}]!`)
+        });
+    }
 }
 
-export async function WooDeleteCategory(wooId) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+export async function WooDeleteCategory(wooData) {
+    if (!WooCommerce || !wooData) return; // If woocommerce wasnt initalized or is not used
 
-    await retry(async () => {
-        await WooCommerce.delete(`products/categories/${wooId}`, {
-            force: true
+    for (let shop of WooCommerce_Shops) {
+        const categoryId = wooData.find(el => el.woo_url == shop.url).id;
+
+        await retry(async () => {
+            await shop.delete(`products/categories/${categoryId}`, {
+                force: true
+            });
+            console.log(`Category successfully deleted in WooCommerce! [${shop.url}]`)
         });
-        console.log('Category successfully deleted in WooCommerce!')
-    });
+    }
 }

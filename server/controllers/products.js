@@ -420,7 +420,7 @@ export const ProductController = {
             product.additionalImages = [];
         }
 
-        const wooId = product.woocommerce.id;
+        const wooData = product.woocommerce;
 
         const inDocument = await Order.findOne({ 'products.product': id });
         if (inDocument) {
@@ -428,6 +428,6 @@ export const ProductController = {
             await product.save();
         } else await product.deleteOne();
 
-        return { status: 204, wooId };
+        return { status: 204, wooData };
     }
 }

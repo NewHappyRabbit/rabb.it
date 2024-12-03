@@ -142,6 +142,7 @@ const orderSchema = new Schema({
         default: false
     },
     woocommerce: {
+        woo_url: String,
         id: String,
         shipping: String,
         status: {

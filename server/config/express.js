@@ -15,6 +15,7 @@ export const corsURLS = [
     process.env.URL, `${process.env.URL}/server`,
     // For hooks
     process.env.WOO_URL,
+    process.env.WOO_URL_RETAIL
 ];
 
 function expressConfig() {

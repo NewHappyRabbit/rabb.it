@@ -79,7 +79,11 @@ const productSchema = new Schema({
                 default: function () {
                     return this.quantity;
                 }
-            }
+            },
+            woocommerce: [{
+                woo_url: String,
+                id: String, // Variation ID (from retail woocommerce)
+            }],
         },
     ],
     openedPackages: {
@@ -140,10 +144,11 @@ const productSchema = new Schema({
         type: Boolean,
         default: false,
     },
-    woocommerce: {
+    woocommerce: [{
+        woo_url: String,
         id: String,
         permalink: String,
-    },
+    }],
     attributes: [
         {
             attribute: {

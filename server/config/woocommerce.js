@@ -9,4 +9,25 @@ export const WooCommerce = process.env.WOO_URL && process.env.WOO_KEY && process
     version: "wc/v3",
 }) : undefined;
 
+if (WooCommerce)
+    WooCommerce.custom = {
+        type: 'wholesale',
+        price: 'wholesalePrice'
+    }
+
+export const WooCommerce_Retail = process.env.WOO_URL_RETAIL && process.env.WOO_KEY_RETAIL && process.env.WOO_SECRET_RETAIL && process.env.WOO_HOOKS_SECRET_RETAIL ? new WooCommerceRestApi({
+    url: process.env.WOO_URL_RETAIL,
+    consumerKey: process.env.WOO_KEY_RETAIL,
+    consumerSecret: process.env.WOO_SECRET_RETAIL,
+    version: "wc/v3",
+}) : undefined;
+
+if (WooCommerce_Retail)
+    WooCommerce_Retail.custom = {
+        type: 'retail',
+        price: 'retailPrice'
+    }
+
+export const WooCommerce_Shops = [WooCommerce, WooCommerce_Retail];
+
 if (WooCommerce) console.log('WooCommerce instantiated');
