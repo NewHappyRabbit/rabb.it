@@ -146,21 +146,52 @@ function updateQuantity() {
     calculateProductPrices();
 }
 
-function addSize(e) {
+function clearSizesInputs(el) {
+    el.value = '';
+    el.focus();
+    el.click();
+}
+
+function addSize(e, type) {
     e.preventDefault();
+    console.log(type)
+    if (!type) return;
     document.getElementById('deliveryPricePerUnit').disabled = false;
     document.getElementById('multiplier').disabled = false;
-    const sizeEl = document.getElementById('size');
-    const suffixEl = document.getElementById('suffix');
-    const suffix = suffixEl.value;
+    let size;
 
-    const size = suffix ? sizeEl.value + suffix : sizeEl.value;
+    if (type === 'simpleSizesContainer') {
+        const el = document.getElementById('simpleSize');
+        const value = el.value;
+        clearSizesInputs(el);
 
-    if (size !== '' && !selectedSizes.find(s => s.size === size)) {
+        if (!value || value === '') return;
+        size = value;
+    } else if (type === 'suffixSizesContainer') {
+        console.log('here')
+        const el = document.getElementById('suffixSize');
+        const suffixSize = el.value;
+        const suffix = document.getElementById('suffix').value;
+        clearSizesInputs(el);
+
+        if (!suffixSize || suffixSize === '' || !suffix || suffix === '') return;
+        size = suffixSize + suffix;
+    } else if (type === 'rangeSizesContainer') {
+        const fromEl = document.getElementById('rangeFrom');
+        const toEl = document.getElementById('rangeTo');
+        const from = fromEl.value;
+        const to = toEl.value;
+        clearSizesInputs(toEl);
+        clearSizesInputs(fromEl);
+
+        if (!from || from === '' || !to || to === '') return;
+        size = from + '-' + to;
+    }
+
+    if (!selectedSizes.find(s => s.size === size)) {
         selectedSizes.push({ size, quantity: selectedSizes.length ? selectedSizes[0].quantity : 0 });
 
         const addedSizes = document.getElementById('addedSizes');
-
         render(sizesTemplate(selectedSizes), addedSizes);
     }
 
@@ -170,10 +201,6 @@ function addSize(e) {
     updateWholeQuantity();
     updateQuantity();
     calculateUnitPrice();
-
-    sizeEl.value = '';
-    sizeEl.focus();
-    sizeEl.click();
 }
 
 function removeSize(e) {
@@ -197,7 +224,108 @@ function removeSize(e) {
     render(sizesTemplate(selectedSizes), addedSizes);
 }
 
+function showSizeContainer() {
+    const selected = document.getElementById('sizeType').value;
+
+    const list = ['simpleSizesContainer', 'suffixSizesContainer', 'rangeSizesContainer'];
+
+    // Hide all containers and display only the selected
+    list.forEach(el => {
+        const container = document.getElementById(el);
+        container.classList.add('d-none');
+        if (el === selected) container.classList.remove('d-none');
+    });
+}
+
+function makeButtonActive(id) {
+    const selected = document.getElementById(id);
+    const sizesButtons = [document.getElementById('simpleSizeButton'), document.getElementById('suffixSizeButton'), document.getElementById('rangeSizeButton')];
+
+    sizesButtons.forEach(btn => btn.setAttribute('type', 'button'));
+    selected.setAttribute('type', 'submit');
+}
+
+const sizesSelectionTemplate = () => html`
+<div class="row mb-3">
+    <label class="form-label">Размери</label>
+
+    <div class="col-12 col-sm-6 mb-3">
+        <select @change=${showSizeContainer} name="sizeType" id="sizeType" class="form-select">
+            <option selected value="">Без размер</option>
+            <option value="simpleSizesContainer">Обикновен (S,M,L,..)</option>
+            <option value="suffixSizesContainer">Детски (5 г., 10 м.,..)</option>
+            <option value="rangeSizesContainer">От-До (39-43, 1-3,..)</option>
+        </select>
+    </div>
+
+    <!-- Simple -->
+    <div class="col-12 col-sm-6 d-none" id="simpleSizesContainer">
+        <div class="input-group">
+            <input @keyup=${() => makeButtonActive('simpleSizeButton')} class="form-control" name="size" id="simpleSize" autocomplete="off" placeholder="S, 4XL, 43,..">
+            <button id="simpleSizeButton" type="button" @click=${(e) => addSize(e, 'simpleSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+        </div>
+    </div>
+
+    <!-- Suffix -->
+    <div class="d-none col-12 col-sm-6" id="suffixSizesContainer">
+        <div class="input-group">
+            <input @keyup=${() => makeButtonActive('suffixSizeButton')} class="form-control" name="size" id="suffixSize" autocomplete="off" placeholder="1,2,3,..">
+            <select class="form-select" name="suffix" id="suffix">
+                <option value=" м.">Месеца (м.)</option>
+                <option value=" г.">Години (г.)</option>
+            </select>
+            <button id="suffixSizeButton" type="button" @click=${(e) => addSize(e, 'suffixSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+        </div>
+    </div>
+
+    <!-- Range -->
+    <div class="d-none col-12 col-sm-6" id="rangeSizesContainer">
+        <div class="input-group">
+            <input @keyup=${() => makeButtonActive('rangeSizeButton')} type="text" class="form-control" name="rangeFrom" id="rangeFrom" placeholder="39">
+            <span class="input-group-text">-</span>
+            <input @keyup=${() => makeButtonActive('rangeSizeButton')} type="text" class="form-control" name="rangeTo" id="rangeTo" placeholder="43">
+            <button id="rangeSizeButton" type="button" @click=${(e) => addSize(e, 'rangeSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+        </div>
+    </div>
+
+    <div id="addedSizes" class="d-flex gap-3 mt-1 pt-2 flex-wrap"></div>
+</div>
+`;
+
 const quantityTemplate = () => html`
+        <div class="row mb-3" id="qtyTemplate">
+            <div class="col-12 col-sm-4 mb-3">
+                <label for="quantity" class="form-label">Брой | Мярка</label>
+                <div class="input-group">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
+                    <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
+                    <datalist id="unitOfMeasureOptions">
+                        <option value="пакет"></option>
+                        <option value="бр."></option>
+                        <option value="кг."></option>
+                        <option value="л."></option>
+                    </datalist>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 mb-3">
+                <label for="multiplier" class="form-label">Повтарящи бр. от размер</label>
+                <input @change=${updateMultiplier} @keyup=${updateMultiplier} class="form-control" type="number" inputmode="numeric" name="multiplier" id="multiplier" min="1" step="1" required .value=${product && product.multiplier} placeholder="1" autocomplete="off" ?disabled="${selectedSizes.length === 0}">
+            </div>
+
+            <div class="col-12 col-sm-4 mb-3 d-none">
+                <label for="minQty" class="form-label">Мин. брой за на едро</label>
+                <input class="form-control" type="number" inputmode="numeric" name="minQty" id="minQty" min="0" step="1" aria-describedby="minQtyHelp" .value=${product && product.minQty} autocomplete="off">
+                <div id="minQtyHelp" class="form-text">Бройки които да се запазят за продажби на едро. Няма да може да се продават на дребно.</div>
+            </div>
+
+            <div class="col-12 col-sm-4">
+                <label for="totalQty" class="form-label">Общ брой</label>
+                <input class="form-control" type="number" .value=${product?.sizes?.length > 0 ? product.sizes.map(s => s.quantity).reduce((a, b) => a + b, 0) : ''} id="totalQty" min="0" step="1" disabled>
+            </div>
+        </div>
+    `;
+/* const quantityTemplate = () => html`
         <div class="row mb-3" id="qtyTemplate">
             <div class="col-12 col-sm-4 mb-3">
                 <label for="size" class="form-label">Размери | Суфикс</label>
@@ -239,7 +367,7 @@ const quantityTemplate = () => html`
                 <input class="form-control" type="number" .value=${product?.sizes?.length > 0 ? product.sizes.map(s => s.quantity).reduce((a, b) => a + b, 0) : ''} id="totalQty" min="0" step="1" disabled>
             </div>
         </div>
-    `;
+    `; */
 
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
@@ -299,7 +427,7 @@ function updateSizeQuantity(e) {
 
 const sizesTemplate = () => html`
     ${selectedSizes.map(size => html`
-        <div class="input-group mb-2 me-2" style="width: 45%">
+        <div class="input-group sizeElement">
             <label for="${size.size}-quantity" class="input-group-text border-primary">${size.size}</label>
             <input class="form-control border-primary" type="text" @keyup=${updateSizeQuantity} name="${size.size}-quantity" id="${size.size}-quantity" inputmode="decimal" required .value=${size.quantity} autocomplete="off">
             <button class="btn btn-outline-secondary bgDangerHover" id="size-${size.size}" @click=${removeSize} type="button">X</button>
@@ -325,7 +453,7 @@ function removeImage(e) {
 const imgTemplate = (img, fileName) => html`
     <div class="uploadImgContainer m-1">
         <img src="${img}" class="img-thumbnail" alt="">
-            ${fileName ? html`<button @click=${removeImage} fileName=${fileName} class="btn btn-danger">X</button>` : ''}
+            ${fileName ? html`<button type="button" @click=${removeImage} fileName=${fileName} class="btn btn-danger">X</button>` : ''}
         </div>
 `;
 
@@ -384,7 +512,7 @@ async function updateProduct(e) {
     e.preventDefault();
     toggleSubmitBtn();
 
-    const form = e.target;
+    const form = document.querySelector('form');
     const formData = new FormData(form);
 
     const data = Object.fromEntries(formData.entries());
@@ -605,7 +733,7 @@ export async function createEditProductPage(ctx, next) {
     const template = () => html`
         ${nav()}
         <div class="container-fluid">
-            <form enctype="multipart/form-data" novalidate @submit=${updateProduct} id="createProductForm" class="needs-validation p-2">
+            <form enctype="multipart/form-data" novalidate id="createProductForm" class="needs-validation p-2">
                 <div class="row mb-3">
                     <label for="image" class="form-label">Главна снимка</label>
                     <input @change=${loadPreviewImage} name="image" class="form-control" type="file" id="image" accept="capture=camera,image/*">
@@ -631,6 +759,8 @@ export async function createEditProductPage(ctx, next) {
                     <label for="name" class="form-label">Име</label>
                     <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
                 </div>
+
+                ${sizesSelectionTemplate()}
 
                 ${quantityTemplate()}
 
@@ -686,7 +816,7 @@ export async function createEditProductPage(ctx, next) {
                     </div>`}
 
                 <div id="alert" class="d-none alert" role="alert"></div>
-                ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'submit', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3' }) : ''}
+                ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'button', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3', func: updateProduct }) : ''}
             </form >
         </div > `;
 

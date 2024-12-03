@@ -1,3 +1,7 @@
+.sizeElement {
+	width: calc(100% / 4 - 1rem);
+}
+
 .bgDangerHover:hover {
 	background-color: #dc3545 !important;
 }
@@ -36,5 +40,9 @@
 @media screen and (max-width: 768px) {
 	#barcodeVideo video {
 		width: 100%;
+	}
+
+	.sizeElement {
+		width: calc(100% / 2 - 0.5rem);
 	}
 }
