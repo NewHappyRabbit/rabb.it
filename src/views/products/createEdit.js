@@ -14,7 +14,7 @@ import { socket } from '@/api';
 
 var categories, selectedSizes, deliveryPriceFields, wholesalePriceFields, retailPriceField, wholesaleMarkup, retailMarkup, product, editPage = false, lastUpsaleAmount;
 
-async function loadCategories() {
+async function loadCategories(product) {
     const req = await axios.get('/categories');
     categories = req.data;
 
@@ -22,7 +22,7 @@ async function loadCategories() {
         categories,
         ...(product && { selected: product.category }),
         showNoParent: false,
-        disableWithChilden: true
+        disableWithChilden: true,
     }
 
     return categoriesOptions(options);
@@ -517,6 +517,8 @@ async function updateProduct(e) {
 
     const data = Object.fromEntries(formData.entries());
 
+    console.log(data.category)
+
     data.sizes = selectedSizes;
 
     formData.set('sizes', JSON.stringify(data.sizes));
@@ -704,6 +706,14 @@ const attributesTemplate = (product) => html`
     </div>
 `;
 
+function calculator() {
+    const num1 = document.getElementById('calc_num1').value || 0;
+    const num2 = document.getElementById('calc_num2').value || 0;
+    const sum = document.getElementById('calc_sum');
+
+    sum.value = Number(num1) * Number(num2);
+}
+
 export async function createEditProductPage(ctx, next) {
     try {
         if (ctx.params.id) {
@@ -749,15 +759,23 @@ export async function createEditProductPage(ctx, next) {
                 <div class="row mb-3">
                     <label for="category" class="form-label">Категория</label>
                     <select @change=${selectCategory} class="form-select border-primary" name="category" id="category" required>
-                        ${until(loadCategories(), html`<option disabled>Зареждане...</option>`)}
+                        ${until(loadCategories(product), html`<option disabled>Зареждане...</option>`)}
                     </select>
                 </div>
-
-                ${attributesTemplate(product)}
 
                 <div class="row mb-3">
                     <label for="name" class="form-label">Име</label>
                     <input class="form-control border-primary" type="text" name="name" id="name" placeholder="Цветна тениска" .value=${product && product.name} required autocomplete="off">
+                </div>
+
+                ${attributesTemplate(product)}
+
+                <h4>Калкулатор:</h4>
+                <div class="input-group mb-3">
+                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
+                    <span class="input-group-text">X</span>
+                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
+                    <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
                 </div>
 
                 ${sizesSelectionTemplate()}

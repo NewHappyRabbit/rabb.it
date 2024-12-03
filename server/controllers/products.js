@@ -208,7 +208,8 @@ export const ProductController = {
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
         if (!data.description && data.sizes.length > 0)
-            data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
+            data.description = `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
+        // data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
         else if (!data.description)
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 
@@ -361,7 +362,7 @@ export const ProductController = {
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
         if (!data.description && data.sizes.length > 0)
-            data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
+            data.description = `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
         else if (!data.description)
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 

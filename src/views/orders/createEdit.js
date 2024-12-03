@@ -1392,7 +1392,7 @@ export async function createEditOrderPage(ctx, next) {
                 }
             });
     } catch (err) {
-        console.error(err);
+        console.trace(err);
         alert('Възникна грешка');
     }
 }
