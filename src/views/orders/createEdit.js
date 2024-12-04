@@ -237,8 +237,8 @@ const woocommerceTemplate = () => html`
     </div>
 
     <div class="col-3">
-        <div>Доставка: ${order && (order.woocommerce.speedy ? 'Speedy' : order.woocommerce.econt ? 'Еконт' : order.woocommerce.shipping)}</div>
-        ${order && order.woocommerce.speedy ? speedyTemplate() : order && order.woocommerce.econt ? econtTemplate() : shippingTemplate()}
+        <div>Доставка: ${order && (order.woocommerce.speedy?.total ? 'Speedy' : order.woocommerce.econt?.total ? 'Еконт' : order.woocommerce.shipping)}</div>
+        ${order && order.woocommerce.speedy?.total ? speedyTemplate() : order && order.woocommerce.econt?.total ? econtTemplate() : shippingTemplate()}
     </div>
     <!-- TODO Add customer Note -->
 
