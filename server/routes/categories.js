@@ -63,11 +63,11 @@ export function categoriesRoutes() {
         try {
             const id = req.params.id;
 
-            const { status, message, wooId } = await CategoryController.delete(id);
+            const { status, message, wooData } = await CategoryController.delete(id);
             if (status !== 204)
                 return res.status(status).send(message);
 
-            if (wooId) WooDeleteCategory(wooId);
+            if (wooData) WooDeleteCategory(wooData);
 
             res.status(204).send();
         } catch (error) {

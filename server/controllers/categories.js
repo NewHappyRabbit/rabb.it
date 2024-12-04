@@ -128,7 +128,7 @@ export const CategoryController = {
         if (categories.length > 0)
             return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.', property: 'subcategories' };
 
-        const wooId = category.woocommerce.id;
+        const wooData = category.woocommerce;
 
         // delete original image if it exists
         if (category.image) {
@@ -139,6 +139,6 @@ export const CategoryController = {
         }
 
         await Category.findByIdAndDelete(id);
-        return { status: 204, wooId }
+        return { status: 204, wooData }
     }
 }

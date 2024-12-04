@@ -6,6 +6,7 @@ import fs from 'fs';
 import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 
 export function productSockets(socket) {
     socket.on('disconnect', () => {
@@ -82,12 +83,12 @@ export function productsRoutes() {
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
             const hidden = req.query.hidden === 'true';
+            //FIXME
             const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden }).select('woocommerce.permalink -_id').lean();
 
-            const urls = productsURLS.map(p => p.woocommerce.permalink);
+            const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale')).permalink);
 
             //TODO Add test for this in wooCommerce tests instead to productController
-
             if (!urls)
                 return res.status(204).send();
 
@@ -192,7 +193,7 @@ export function productsRoutes() {
             if (status !== 201)
                 return res.status(status).send(message);
 
-            if (product.hidden === false && product?.woocommerce?.id) // if hidden then its not in the website
+            if (product.hidden === false && product?.woocommerce?.length) // if hidden then its not in the website
                 WooEditProduct(product);
 
             res.status(status).json(product);
@@ -205,12 +206,12 @@ export function productsRoutes() {
 
     productsRouter.delete('/products/:id', permit('admin'), async (req, res) => {
         try {
-            const { wooId, status, message } = await ProductController.delete(req.params.id);
+            const { wooData, status, message } = await ProductController.delete(req.params.id);
             if (status !== 204)
                 return res.status(status).send(message);
 
-            if (wooId) // if it has wooId, then its in the ecommerce
-                WooDeleteProduct(wooId);
+            if (wooData.length) // if it has wooId, then its in the ecommerce
+                WooDeleteProduct(wooData);
 
             res.status(status).send();
         } catch (error) {

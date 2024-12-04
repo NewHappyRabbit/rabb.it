@@ -1,4 +1,4 @@
-import { WooCommerce } from "../config/woocommerce.js";
+import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
@@ -8,6 +8,312 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+
+function getJSONValue(string) {
+    // Returns JSON object or string
+    try {
+        return JSON.parse(string);
+    } catch (err) {
+        return string;
+    }
+}
+
+async function generateWholesaleProductsData(products, shop) {
+    const mongoAttributes = await ProductAttribute.find({});
+    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.find(el => el.woo_url == shop.url).id;
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.find(el => el.woo_url == shop.url).id;
+    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.find(el => el.woo_url == shop.url).id;
+    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.find(el => el.woo_url == shop.url).id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
+
+    async function formatData(product, shop) {
+        const category = await Category.findById(product.category);
+        const data = {
+            name: product.name,
+            slug: "p" + product.code,
+            description: product.description,
+            regular_price: product.wholesalePrice.toString(),
+            sku: product.code,
+            categories: [{ id: category.woocommerce.find(el => el.woo_url == shop.url).id }],
+            stock_quantity: product.quantity,
+            "manage_stock": true, // enables the stock management
+            attributes: [],
+        }
+
+        if (product?.woocommerce.length > 0 && product.woocommerce.find(el => el.woo_url == shop.url))
+            data.id = product.woocommerce.find(el => el.woo_url == shop.url).id;
+
+        // If not in live environment, set product status as private to not show it for clients
+        if (process.env.ENV === 'dev') {
+            data.status = 'private';
+            data.catalog_visibility = 'hidden';
+        }
+
+        if (product.sizes.length > 0) {
+            const simpleSizes = product.sizes.map(s => s.size);
+            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
+
+            data.attributes.push(
+                { // pcs
+                    id: pcsId,
+                    visible: true,
+                    variation: false,
+                    options: (product.sizes.length * product.multiplier).toString(),
+                },
+                { // size
+                    id: sizeId,
+                    visible: true,
+                    variation: false,
+                    options: simpleSizes
+                },
+                { // viber size
+                    id: viberSizeId,
+                    visible: false,
+                    variation: false,
+                    options: viberSizes// Get the first and last size and do 'X-Y'
+                },
+                { // piecePrice
+                    id: piecePriceId,
+                    visible: true,
+                    variation: false,
+                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                },
+            )
+        }
+
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: true,
+                variation: false,
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: true,
+                variation: false,
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+            });
+
+        if (process.env.ENV !== 'dev' && product.image) {
+            data.images = [{ src: product.image.url }];
+
+            if (product.additionalImages) {
+                for (const image of product.additionalImages)
+                    data.images.push({ src: image.url });
+            }
+        }
+
+        return data;
+    }
+
+    // If array of products is passed, return array. Else return product
+    if (Array.isArray(products)) return await Promise.all(products.map(async product => await formatData(product, shop)));
+    else return await formatData(products, shop);
+}
+
+async function generateRetailProductsData(products, shop) {
+    const mongoAttributes = await ProductAttribute.find({});
+    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.find(el => el.woo_url == shop.url).id;
+    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
+    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
+    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
+
+    async function formatData(product, shop) {
+        const category = await Category.findById(product.category);
+        const data = {
+            name: product.name,
+            slug: "p" + product.code,
+            ...(product.sizes?.length === 0 && { // if simple product, manage stock. else this is set in the variations
+                stock_quantity: product.quantity,
+                "manage_stock": true, // enables the stock management
+            }),
+            type: product.sizes.length > 0 ? 'variable' : 'simple',
+            description: product.description,
+            regular_price: product.retailPrice.toString(),
+            sku: product.code,
+            categories: [{ id: category.woocommerce.find(el => el.woo_url == shop.url).id }],
+            attributes: [],
+        }
+
+        if (product?.woocommerce.length > 0 && product.woocommerce.find(el => el.woo_url == shop.url))
+            data.id = product.woocommerce.find(el => el.woo_url == shop.url).id;
+
+        // If not in live environment, set product status as private to not show it for clients
+        if (process.env.ENV === 'dev') {
+            data.status = 'private';
+            data.catalog_visibility = 'hidden';
+        }
+
+        if (product.sizes.length > 0) {
+            const simpleSizes = product.sizes.map(s => s.size);
+
+            data.attributes.push(
+                { // size
+                    id: sizeId,
+                    visible: true,
+                    variation: true,
+                    options: simpleSizes
+                },
+            )
+        }
+
+        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
+            data.attributes.push({
+                id: seasonAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: true,
+                variation: false,
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
+            data.attributes.push({
+                id: in_categoryAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: false,
+                variation: false,
+                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
+            });
+
+        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
+            data.attributes.push({
+                id: sexAttr.woocommerce.find(el => el.woo_url == shop.url).id,
+                visible: true,
+                variation: false,
+                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+            });
+
+        if (process.env.ENV !== 'dev' && product.image) {
+            data.images = [{ src: product.image.url }];
+
+            if (product.additionalImages) {
+                for (const image of product.additionalImages)
+                    data.images.push({ src: image.url });
+            }
+        }
+
+        return data;
+    }
+
+    // If array of products is passed, return array. Else return product
+    if (Array.isArray(products)) return await Promise.all(products.map(async product => await formatData(product, shop)));
+    else return await formatData(products, shop);
+}
+
+async function generateVariationsData(product, shop) {
+    const sizeAttr = await ProductAttribute.findOne({ slug: 'size' });
+    const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
+
+    const data = product.sizes.map(s => ({
+        ...(s.woocommerce.length > 0 && { id: s.woocommerce.find(el => el.woo_url == shop.url).id }),
+        "manage_stock": true,
+        stock_quantity: s.quantity,
+        regular_price: product.retailPrice.toString(),
+        attributes: [{
+            id: sizeId,
+            option: s.size,
+        }],
+    }));
+
+    return data;
+}
+
+export async function WooCreateProduct(product) {
+    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+
+    for (let shop of WooCommerce_Shops) {
+        var data;
+        if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
+        else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
+        await retry(async () => {
+            await shop.post("products", data).then(async (response) => {
+                product.woocommerce.push({
+                    woo_url: shop.url,
+                    id: response.data.id,
+                    permalink: response.data.permalink
+                });
+
+                if (shop.custom.type === 'retail' && product.sizes.length > 0) {
+                    const sizeAttr = await ProductAttribute.findOne({ slug: 'size' });
+                    const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
+                    // Create variations
+                    const variations = await generateVariationsData(product, shop);
+                    await shop.post(`products/${response.data.id}/variations/batch`, { create: variations }).then(async (response) => {
+                        for (let variation of response.data.create) product.sizes.find(s => s.size === variation.attributes.find(a => a.id.toString() === sizeId).option).woocommerce.push({ id: variation.id, woo_url: shop.url });
+                    }).catch((error) => {
+                        console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                        console.error(error);
+                    });
+                }
+
+                await product.save();
+                console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
+            }).catch((error) => {
+                console.error(`Failed to create product in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                console.error(error);
+            });
+        });
+    }
+}
+
+export async function WooEditProduct(product) {
+    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+
+    for (let shop of WooCommerce_Shops) {
+        // for (let shop of WooCommerce_Shops) {
+        var data;
+        if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
+        else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
+
+        await retry(async () => {
+            await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}`, data).then(async () => {
+                if (shop.custom.type === 'retail' && product.sizes.length > 0) {
+                    // Create variations
+                    const variations = await generateVariationsData(product, shop);
+                    await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
+                    }).catch((error) => {
+                        console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                        console.error(error);
+                    });
+                }
+                // Success
+                console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
+            }).catch((error) => {
+                // Invalid request, for 4xx and 5xx statuses
+                console.error(`Failed to edit product in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                console.error(error);
+            });
+        });
+    }
+}
+
+export async function WooDeleteProduct(wooData) {
+    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+
+    for (let shop of WooCommerce_Shops) {
+        await retry(async () => {
+            await shop.delete(`products/${wooData.find(el => el.woo_url == shop.url).id}`).then(async () => {
+                // Success
+                console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
+            }).catch((error) => {
+                // Invalid request, for 4xx and 5xx statuses
+                console.error(`Failed to delete product in WooCommerce [${shop.url}]`);
+                console.error(error);
+            });
+        });
+    }
+}
 
 export async function WooCheckProductAttributesINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
@@ -54,30 +360,38 @@ export async function WooCheckProductAttributesINIT() {
         },
     ];
 
-    const mongoAttributes = await ProductAttribute.find({});
-    const wooAttributes = await WooCommerce.get("products/attributes").then((response) => response.data);
+    for (let shop of WooCommerce_Shops) {
+        const mongoAttributes = await ProductAttribute.find({});
+        const wooAttributes = await shop.get("products/attributes").then((response) => response.data);
 
-    for (const attribute of attributes) {
-        // Check if it exists in db
-        let inMongo = mongoAttributes.find(m => m.slug == attribute.slug);
+        for (const attribute of attributes) {
+            // Check if it exists in db
+            let inMongo = mongoAttributes.find(m => m.slug == attribute.slug);
 
-        if (!inMongo) {
-            console.log(`Creating "${attribute.name}" in mongo...`)
-            await ProductAttribute.create(attribute);
-            inMongo = await ProductAttribute.findOne({ slug: attribute.slug });
+            if (!inMongo) {
+                console.log(`Creating "${attribute.name}" in mongo...`)
+                await ProductAttribute.create(attribute);
+                inMongo = await ProductAttribute.findOne({ slug: attribute.slug });
+            }
+
+            // Check if it exists in woo
+            const inWoo = wooAttributes.find(w => w.slug == "pa_" + attribute.slug);
+            let wooId;
+            if (!inWoo) {
+                console.log(`Creating "${attribute.name}" in woo...`)
+                // Create it in woo
+                const wooAttribute = await shop.post("products/attributes", attribute).then((response) => response.data);
+
+                wooId = wooAttribute.id;
+
+                inMongo.woocommerce.push({ woo_url: shop.url, id: wooAttribute.id });
+            } else wooId = inWoo.id;
+
+            if (!inMongo.woocommerce.find(el => el.woo_url == shop.url))
+                inMongo.woocommerce.push({ woo_url: shop.url, id: wooId });
+
+            await inMongo.save();
         }
-
-        // Check if it exists in woo
-        const inWoo = wooAttributes.find(w => w.slug == "pa_" + attribute.slug);
-        if (!inWoo) {
-            console.log(`Creating "${attribute.name}" in woo...`)
-            // Create it in woo
-            const wooAttribute = await WooCommerce.post("products/attributes", attribute).then((response) => response.data);
-
-            inMongo.woocommerce = { id: wooAttribute.id };
-        } else inMongo.woocommerce = { id: inWoo.id };
-
-        await inMongo.save();
     }
 
     console.log("Products attributes check done!")
@@ -86,137 +400,64 @@ export async function WooCheckProductAttributesINIT() {
 export async function WooUpdateQuantityProducts(products) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
-    const filtered = products.filter(p => p?.woocommerce?.id && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+    const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
 
-    // Do it in batches of 100
-    console.log('Starting update for ' + filtered.length + ' products...')
-    for (let i = 0; i < filtered.length; i += 100) {
-        const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.id, stock_quantity: p.quantity }));
-        await retry(async () => {
-            console.log('Starting work on batch: ' + i)
-            await WooCommerce.post('products/batch', { update: batch }).then(() => {
-                console.log('Products quantity successfully updated in WooCommerce!')
-            }).catch((error) => {
-                console.error('Error batch updating products quantity in WooCommerce!')
-                console.error(error);
+    async function updateSimpleProducts(products, shop) {
+        console.log('Starting update for ' + products.length + ' products...')
+        for (let i = 0; i < products.length; i += 100) {
+            const batch = products.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: p.quantity }));
+            await retry(async () => {
+                console.log('Starting work on simple products batch: ' + i)
+                await WooCommerce.post('products/batch', { update: batch }).then(() => {
+                    console.log('Products quantity successfully updated in WooCommerce!')
+                }).catch((error) => {
+                    console.error('Error batch updating products quantity in WooCommerce!')
+                    console.error(error);
+                });
             });
-        });
+        }
     }
-}
 
-async function generateProductsData(products) {
-    const mongoAttributes = await ProductAttribute.find({});
-    const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.id;
-    const sizeId = mongoAttributes.find(m => m.slug == 'size').woocommerce.id;
-    const viberSizeId = mongoAttributes.find(m => m.slug == 'size_viber').woocommerce.id;
-    const piecePriceId = mongoAttributes.find(m => m.slug == 'pieceprice').woocommerce.id;
-    const seasonAttr = mongoAttributes.find(m => m.slug == 'season');
-    const in_categoryAttr = mongoAttributes.find(m => m.slug == 'in_category');
-    const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
+    for (let shop of WooCommerce_Shops) {
+        if (shop.custom.type === 'wholesale') {
+            // All products are simple
+            await updateSimpleProducts(filtered, shop);
+        } else if (shop.custom.type === 'retail') {
+            // Split to simple and variable products
+            const simple = filtered.filter(p => p.sizes.length === 0);
+            const variable = filtered.filter(p => p.sizes.length > 0);
 
-    async function formatData(product) {
-        const category = await Category.findById(product.category);
-        const data = {
-            name: product.name,
-            slug: "p" + product.code,
-            description: product.description,
-            regular_price: product.wholesalePrice.toString(),
-            sku: product.code,
-            categories: [{ id: category.woocommerce.id }],
-            stock_quantity: product.quantity,
-            "manage_stock": true, // enables the stock management
-            attributes: [],
-        }
+            // Do it in batches of 100
 
-        if (product?.woocommerce?.id)
-            data.id = product.woocommerce.id;
+            // Simple products
+            await updateSimpleProducts(simple, shop);
 
-        // If not in live environment, set product status as private to not show it for clients
-        if (process.env.ENV === 'dev') {
-            data.status = 'private';
-            data.catalog_visibility = 'hidden';
-        }
+            // Variable products (have to be done one by one)
+            for (let product of variable) {
+                let variations = [];
+                for (let size of product.sizes)
+                    variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity });
 
-        if (product.sizes.length > 0) {
-            const simpleSizes = product.sizes.map(s => s.size);
-            const viberSizes = simpleSizes.length > 1 ? `${simpleSizes[0]}-${simpleSizes[simpleSizes.length - 1]}` : simpleSizes[0];
-
-            data.attributes.push(
-                { // pcs
-                    id: pcsId,
-                    visible: true,
-                    variation: false,
-                    options: (product.sizes.length * product.multiplier).toString(),
-                },
-                { // size
-                    id: sizeId,
-                    visible: true,
-                    variation: false,
-                    options: simpleSizes
-                },
-                { // viber size
-                    id: viberSizeId,
-                    visible: false,
-                    variation: false,
-                    options: viberSizes// Get the first and last size and do 'X-Y'
-                },
-                { // piecePrice
-                    id: piecePriceId,
-                    visible: true,
-                    variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
-                },
-            )
-        }
-
-        if (product.attributes?.find(a => a.attribute.toString() === seasonAttr._id.toString()))
-            data.attributes.push({
-                id: seasonAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
-            data.attributes.push({
-                id: in_categoryAttr.woocommerce.id,
-                visible: false,
-                variation: false,
-                options: product.attributes.find(a => a.attribute.toString() === in_categoryAttr._id.toString()).value
-            });
-
-        if (product.attributes?.find(a => a.attribute.toString() === sexAttr._id.toString()))
-            data.attributes.push({
-                id: sexAttr.woocommerce.id,
-                visible: true,
-                variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
-            });
-
-        if (process.env.ENV !== 'dev' && product.image) {
-            data.images = [{ src: product.image.url }];
-
-            if (product.additionalImages) {
-                for (const image of product.additionalImages)
-                    data.images.push({ src: image.url });
+                await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
+                    console.log(`Products variations quantity successfully updated in WooCommerce [${shop.url}]!`)
+                }).catch((error) => {
+                    console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                    console.error(error);
+                });
             }
         }
-
-        return data;
     }
-
-    // If array of products is passed, return array. Else return product
-    if (Array.isArray(products)) return await Promise.all(products.map(async product => await formatData(product)));
-    else return await formatData(products);
 }
+
+// TODO
+/* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
 
 export async function WooCreateProductsINIT() {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
     const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
 
-    //FIXME TEST
-    const doneProducts = await generateProductsData(products);
+    const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
@@ -245,31 +486,8 @@ export async function WooCreateProductsINIT() {
     }
 }
 
-export async function WooCreateProduct(product) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-
-    //FIXME TEST
-    const data = await generateProductsData(product);
-
-    await retry(async () => {
-        await WooCommerce.post("products", data).then(async (response) => {
-            product.woocommerce = {
-                id: response.data.id,
-                permalink: response.data.permalink
-            }
-
-            await product.save();
-            console.log(`Product with id ${product._id} successfully created in WooCommerce!`);
-        }).catch((error) => {
-            console.error('Failed to create product in WooCommerce with _id: ' + product._id);
-            console.error(error);
-        });
-
-    });
-}
-
 export async function WooCreateProductsBatch(products) {
-    const doneProducts = await generateProductsData(products);
+    const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
@@ -303,17 +521,8 @@ export async function WooCreateProductsBatch(products) {
     }
 }
 
-function getJSONValue(string) {
-    // Returns JSON object or string
-    try {
-        return JSON.parse(string);
-    } catch (err) {
-        return string;
-    }
-}
-
 export async function WooEditProductsBatch(products) {
-    const doneProducts = await generateProductsData(products);
+    const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
 
     if (doneProducts.length > 0) {
         // Batch accepts max 100 products per request
@@ -344,38 +553,6 @@ export async function WooDeleteProductsBatch(products) {
             console.error(error);
         });
     }
-}
-
-export async function WooEditProduct(product) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-
-    const data = await generateProductsData(product);
-
-    await retry(async () => {
-        await WooCommerce.put(`products/${product.woocommerce.id}`, data).then(async (res) => {
-            // Success
-            console.log('Product successfully edited in WooCommerce!')
-        }).catch((error) => {
-            // Invalid request, for 4xx and 5xx statuses
-            console.error('Failed to edit product in WooCommerce with _id: ' + product._id);
-            console.error(error);
-        });
-    });
-}
-
-export async function WooDeleteProduct(id) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
-
-    await retry(async () => {
-        await WooCommerce.delete(`products/${id}`).then(async () => {
-            // Success
-            console.log('Product successfully deleted in WooCommerce!')
-        }).catch((error) => {
-            // Invalid request, for 4xx and 5xx statuses
-            console.error('Failed to delete product in WooCommerce with _id: ' + id);
-            console.error(error);
-        });
-    });
 }
 
 export async function checkProductsInWoo() {
