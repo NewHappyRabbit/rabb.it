@@ -152,9 +152,18 @@ function clearSizesInputs(el) {
     el.click();
 }
 
+function updateSizeQty() {
+    const sumOfCalculator = parseInt(document.getElementById('calc_sum').value) || 0;
+
+    if (!product && sumOfCalculator > 0) // If editing product, create new size with 0 qty. If creating product, use sum from calcualtor
+        selectedSizes.map(s => s.quantity = parseInt(sumOfCalculator / selectedSizes.length));
+
+    const addedSizes = document.getElementById('addedSizes');
+    render(sizesTemplate(selectedSizes), addedSizes);
+}
+
 function addSize(e, type) {
     e.preventDefault();
-    console.log(type)
     if (!type) return;
     document.getElementById('deliveryPricePerUnit').disabled = false;
     document.getElementById('multiplier').disabled = false;
@@ -168,7 +177,6 @@ function addSize(e, type) {
         if (!value || value === '') return;
         size = value;
     } else if (type === 'suffixSizesContainer') {
-        console.log('here')
         const el = document.getElementById('suffixSize');
         const suffixSize = el.value;
         const suffix = document.getElementById('suffix').value;
@@ -189,10 +197,9 @@ function addSize(e, type) {
     }
 
     if (!selectedSizes.find(s => s.size === size)) {
-        selectedSizes.push({ size, quantity: selectedSizes.length ? selectedSizes[0].quantity : 0 });
+        selectedSizes.push({ size, quantity: 0 });
 
-        const addedSizes = document.getElementById('addedSizes');
-        render(sizesTemplate(selectedSizes), addedSizes);
+        updateSizeQty();
     }
 
     // Product whole quantity cant be edited when sizes exist
@@ -271,8 +278,8 @@ const sizesSelectionTemplate = () => html`
         <div class="input-group">
             <input @keyup=${() => makeButtonActive('suffixSizeButton')} class="form-control" name="size" id="suffixSize" autocomplete="off" placeholder="1,2,3,..">
             <select class="form-select" name="suffix" id="suffix">
-                <option value=" м.">Месеца (м.)</option>
                 <option value=" г.">Години (г.)</option>
+                <option value=" м.">Месеца (м.)</option>
             </select>
             <button id="suffixSizeButton" type="button" @click=${(e) => addSize(e, 'suffixSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
         </div>
@@ -517,8 +524,6 @@ async function updateProduct(e) {
 
     const data = Object.fromEntries(formData.entries());
 
-    console.log(data.category)
-
     data.sizes = selectedSizes;
 
     formData.set('sizes', JSON.stringify(data.sizes));
@@ -673,21 +678,33 @@ function selectCategory(e) {
     document.getElementById('name').value = categories.find(c => c._id === e.target.value).name;
 }
 
+function onSelectAttrCategory(e) {
+    const category = e.target.value;
+
+    document.querySelectorAll('#sex option').forEach(opt => opt.selected = false);
+    if (category === 'Мъжки')
+        document.querySelector('#sex [value="За него"]').selected = true;
+    else if (category === 'Дамски')
+        document.querySelector('#sex [value="За нея"]').selected = true;
+    else if (category === 'Детски')
+        document.querySelectorAll('#sex option').forEach(opt => opt.selected = true);
+}
+
 const attributesTemplate = (product) => html`
     <div class="row mb-3">
         <h4>Атрибути:</h4>
         <div class="col">
             <label for="season">Сезон:</label>
             <select id="season" name="season" class="form-control" multiple>
-                <option ?selected=${!product} value="">Избери</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято' || a.value.includes('Пролет/Лято'))} value='Пролет/Лято'>Пролет/Лято</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима' || a.value.includes('Есен/Зима'))} value='Есен/Зима'>Есен/Зима</option>
+                <option value="">Избери</option>
+                <option ?selected=${!product || product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято' || a.value.includes('Пролет/Лято'))} value='Пролет/Лято'>Пролет/Лято</option>
+                <option ?selected=${!product || product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима' || a.value.includes('Есен/Зима'))} value='Есен/Зима'>Есен/Зима</option>
             </select>
         </div>
 
         <div class="col">
             <label for="in_category">Категория:</label>
-            <select id="in_category" name="in_category" class="form-control">
+            <select @change=${onSelectAttrCategory} id="in_category" name="in_category" class="form-control">
                 <option ?selected=${!product} value="">Избери</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Детски')} value='Детски'>Детски</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Мъжки')} value='Мъжки'>Мъжки</option>
@@ -712,6 +729,7 @@ function calculator() {
     const sum = document.getElementById('calc_sum');
 
     sum.value = Number(num1) * Number(num2);
+    updateSizeQty();
 }
 
 export async function createEditProductPage(ctx, next) {
@@ -848,11 +866,4 @@ export async function createEditProductPage(ctx, next) {
     // If product has sizes, enable deliveryPricePerUnit
     if (selectedSizes.length)
         document.getElementById('deliveryPricePerUnit').disabled = false;
-
-    //FIXME REMOVE BELOW CODE AFTER INITAL PRODUCTS ARE ADDED
-    if (!product) {
-        document.getElementById('deliveryPricePerUnit').value = 1;
-        document.getElementById('deliveryPrice').value = 1;
-        document.getElementById('retailPrice').value = 2;
-    }
 }

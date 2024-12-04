@@ -68,6 +68,36 @@ function checkDigitEAN13(barcode) {
 }
 
 export const ProductController = {
+    saveTemp: async (products) => {
+        const doneProducts = [];
+        //FIXME DELETE THIS FUNCTION AFTER ALL PRODUCTS SAVED WITH ATTRIBUTES
+        for (const product of products) {
+            if (product.attributes.length === 0) continue;
+            const productDB = await Product.findById(product._id);
+            if (!productDB) continue;
+            productDB.attributes = [];
+            if (product.attributes.season) {
+                const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
+                if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
+                productDB.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(product.attributes.season) });
+            }
+
+            if (product.attributes.in_category) {
+                const inCategoryAttr = await ProductAttribute.findOne({ slug: 'in_category' });
+                if (!inCategoryAttr) return { status: 400, message: 'Атрибутът "in_category" не е намерен' };
+                productDB.attributes.push({ attribute: inCategoryAttr._id, value: product.attributes.in_category });
+            }
+
+            if (product.attributes.sex) {
+                const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
+                if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
+                productDB.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(product.attributes.sex) });
+            }
+            doneProducts.push(productDB);
+        }
+        await Promise.all(doneProducts.map(async (p) => await p.save()));
+        return { status: 200 }
+    },
     find: async (search) => {
         // Find product using searh as code or barcode
 
@@ -90,6 +120,14 @@ export const ProductController = {
     get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
+
+        // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
+        if (page && page === 'temp') {
+            const products = await Product.find({ $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }] }).sort({ _id: -1 }).limit(50).populate('attributes.attribute');
+            return { products, status: 200 };
+        }
+
+        //FIXME END
 
         if (page && page === 'orders') {
             const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');

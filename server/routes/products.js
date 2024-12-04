@@ -49,6 +49,19 @@ export function productSockets(socket) {
 export function productsRoutes() {
     const productsRouter = express.Router();
 
+    productsRouter.post('/productstempsave', permit('user', 'manager', 'admin'), async (req, res) => {
+        //FIXME DELETE THIS ROUTE AFTER ALL PRODUCTS ARE SAVED WITH ATTRIBUTES
+        try {
+            const { status } = await ProductController.saveTemp(req.body);
+            if (status !== 200) return res.status(status).send('ERROR');
+            res.status(200).send('ok');
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    })
+
     productsRouter.get('/products/find', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { search } = req.query;
