@@ -7,9 +7,8 @@ export async function WooCreateCategoriesINIT() {
 
     const categories = await Category.find({});
 
-    for (const category of categories) {
-        WooCreateCategory(category);
-    }
+    for (const category of categories)
+        await WooCreateCategory(category);
 
     console.log("Categories successfully created in WooCommerce!")
 }

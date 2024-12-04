@@ -429,6 +429,14 @@ export const ProductController = {
             data.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(data.sex) });
         }
 
+        if (data.sizes.length > 0) {
+            // Add the old woo ids and data back to the sizes
+            for (let size of data.sizes) {
+                const oldWooData = product.sizes.find(s => s.size === size.size)?.woocommerce;
+                if (oldWooData) size.woocommerce = oldWooData;
+            }
+        }
+
         await product.updateOne(data, { new: true });
         const updatedProduct = await Product.findById(id);
         return { status: 201, product: updatedProduct };

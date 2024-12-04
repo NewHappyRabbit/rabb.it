@@ -141,7 +141,7 @@ async function generateRetailProductsData(products, shop) {
                 "manage_stock": true, // enables the stock management
             }),
             type: product.sizes.length > 0 ? 'variable' : 'simple',
-            description: product.description,
+            // description: product.description,
             regular_price: product.retailPrice.toString(),
             sku: product.code,
             categories: [{ id: category.woocommerce.find(el => el.woo_url == shop.url).id }],
@@ -229,6 +229,28 @@ async function generateVariationsData(product, shop) {
     return data;
 }
 
+async function saveWooDataToProduct(wooResponse, product, shop) {
+    if (!product.woocommerce) product.woocommerce = [];
+    product.woocommerce.push({
+        woo_url: shop.url,
+        id: wooResponse.id,
+        permalink: wooResponse.permalink
+    });
+
+    if (shop.custom.type === 'retail' && product.sizes.length > 0) {
+        const sizeAttr = await ProductAttribute.findOne({ slug: 'size' });
+        const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
+        // Create variations
+        const variations = await generateVariationsData(product, shop);
+        await shop.post(`products/${wooResponse.id}/variations/batch`, { create: variations }).then(async (response) => {
+            for (let variation of response.data.create) product.sizes.find(s => s.size === variation.attributes.find(a => a.id.toString() === sizeId).option).woocommerce.push({ id: variation.id, woo_url: shop.url });
+        }).catch((error) => {
+            console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+            console.error(error);
+        });
+    }
+}
+
 export async function WooCreateProduct(product) {
     if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
 
@@ -238,25 +260,7 @@ export async function WooCreateProduct(product) {
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
         await retry(async () => {
             await shop.post("products", data).then(async (response) => {
-                product.woocommerce.push({
-                    woo_url: shop.url,
-                    id: response.data.id,
-                    permalink: response.data.permalink
-                });
-
-                if (shop.custom.type === 'retail' && product.sizes.length > 0) {
-                    const sizeAttr = await ProductAttribute.findOne({ slug: 'size' });
-                    const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
-                    // Create variations
-                    const variations = await generateVariationsData(product, shop);
-                    await shop.post(`products/${response.data.id}/variations/batch`, { create: variations }).then(async (response) => {
-                        for (let variation of response.data.create) product.sizes.find(s => s.size === variation.attributes.find(a => a.id.toString() === sizeId).option).woocommerce.push({ id: variation.id, woo_url: shop.url });
-                    }).catch((error) => {
-                        console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
-                        console.error(error);
-                    });
-                }
-
+                await saveWooDataToProduct(response.data, product, shop);
                 await product.save();
                 console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
             }).catch((error) => {
@@ -273,28 +277,32 @@ export async function WooEditProduct(product) {
     for (let shop of WooCommerce_Shops) {
         // for (let shop of WooCommerce_Shops) {
         var data;
-        if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
-        else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
+        if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(product, shop);
+        else if (shop.custom.type === 'retail') data = await generateRetailProductsData(product, shop);
 
-        await retry(async () => {
-            await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}`, data).then(async () => {
-                if (shop.custom.type === 'retail' && product.sizes.length > 0) {
-                    // Create variations
-                    const variations = await generateVariationsData(product, shop);
-                    await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
-                    }).catch((error) => {
-                        console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
-                        console.error(error);
-                    });
-                }
-                // Success
-                console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
-            }).catch((error) => {
-                // Invalid request, for 4xx and 5xx statuses
-                console.error(`Failed to edit product in WooCommerce [${shop.url}] with _id: ${product._id}`);
-                console.error(error);
-            });
+        // await retry(async () => {
+        await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}`, data).then(async () => {
+            if (shop.custom.type === 'retail' && product.sizes.length > 0) {
+                // Create variations
+                const variations = await generateVariationsData(product, shop);
+                //TODO Right now if new size is added to product it will blow up here. Make the above function make update and create arrays and pass them below (check if size has .woocommerce inside, if not add to create array)
+                //FIXME
+
+                await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async (res) => {
+                    console.log(`Product variations successfully edited in WooCommerce [${shop.url}]!`)
+                }).catch((error) => {
+                    console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                    console.error(error);
+                });
+            }
+            // Success
+            console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
+        }).catch((error) => {
+            // Invalid request, for 4xx and 5xx statuses
+            console.error(`Failed to edit product in WooCommerce [${shop.url}] with _id: ${product._id}`);
+            console.error(error);
         });
+        // });
     }
 }
 
@@ -453,27 +461,29 @@ export async function WooUpdateQuantityProducts(products) {
 /* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
 
 export async function WooCreateProductsINIT() {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops.length === 0) return; // If woocommerce wasnt initalized or is not used
 
-    const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
+    for (let shop of WooCommerce_Shops) {
+        console.log(`Starting products init for WooCommerce [${shop.url}]...`);
+        var data;
+        const products = await Product.find({ "woocommerce.woo_url": { $ne: shop.url }, hidden: false });
+        if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)), shop);
+        else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(products)), shop);
 
-    const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
+        if (data.length === 0) {
+            console.log('No products need to be created.');
+            continue;
+        }
 
-    if (doneProducts.length > 0) {
+        console.log(`Found ${data.length} products to create in WooCommerce [${shop.url}]. Starting...`);
         // Batch accepts max 100 products per request
-        for (let i = 0; i < doneProducts.length; i += 100) {
+        for (let i = 0; i < data.length; i += 100) {
             const productsToSave = [];
-            const batch = doneProducts.slice(i, i + 100);
-            await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
-                // Success
-                for (let product of response.data.create) {
-                    const productInDb = products.find(p => p.code === product.sku);
-
-                    productInDb.woocommerce = {
-                        id: product.id,
-                        permalink: product.permalink
-                    }
-
+            const batch = data.slice(i, i + 100);
+            await shop.post("products/batch", { create: batch }).then(async (response) => {
+                for (let wooResponse of response.data.create) {
+                    const productInDb = products.find(p => p.code === wooResponse.sku);
+                    await saveWooDataToProduct(wooResponse, productInDb, shop);
                     productsToSave.push(productInDb);
                 }
 
@@ -483,7 +493,39 @@ export async function WooCreateProductsINIT() {
                 console.error(error);
             });
         }
+
+        console.log(`All products successfully created in WooCommerce [${shop.url}]!`);
     }
+    /* 
+        const products = await Product.find({ woocommerce: { $exists: false }, hidden: false });
+    
+        const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
+    
+        if (doneProducts.length > 0) {
+            // Batch accepts max 100 products per request
+            for (let i = 0; i < doneProducts.length; i += 100) {
+                const productsToSave = [];
+                const batch = doneProducts.slice(i, i + 100);
+                await WooCommerce.post("products/batch", { create: batch }).then(async (response) => {
+                    // Success
+                    for (let product of response.data.create) {
+                        const productInDb = products.find(p => p.code === product.sku);
+    
+                        productInDb.woocommerce = {
+                            id: product.id,
+                            permalink: product.permalink
+                        }
+    
+                        productsToSave.push(productInDb);
+                    }
+    
+                    await Promise.all(productsToSave.map(async (p) => await p.save()));
+                    console.log(`Product batch ${i} successfully created in WooCommerce!`)
+                }).catch((error) => {
+                    console.error(error);
+                });
+            }
+        } */
 }
 
 export async function WooCreateProductsBatch(products) {
