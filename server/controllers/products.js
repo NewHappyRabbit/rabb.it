@@ -279,7 +279,7 @@ export const ProductController = {
         // Check if product quantity is 0 or each size qty is 0 (depending if product is simple or variable)
         if (data.sizes.length && data.sizes.filter(size => size.quantity > 0).length === 0) {
             data.outOfStock = true;
-        } else if (data.quantity === 0) data.outOfStock = true;
+        } else if (data.sizes.length === 0 && data.quantity === 0) data.outOfStock = true;
 
         const product = await Product.create(data);
         return { product, status: 201 };
@@ -449,7 +449,7 @@ export const ProductController = {
         // Check if product quantity is 0 or each size qty is 0 (depending if product is simple or variable)
         if (data.sizes.length && data.sizes.filter(size => size.quantity > 0).length === 0) {
             data.outOfStock = true;
-        } else if (data.quantity === 0) data.outOfStock = true;
+        } else if (data.sizes.length === 0 && data.quantity === 0) data.outOfStock = true;
 
         await product.updateOne(data, { new: true });
         const updatedProduct = await Product.findById(id);
