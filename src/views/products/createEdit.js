@@ -197,7 +197,7 @@ function addSize(e, type) {
     }
 
     if (!selectedSizes.find(s => s.size === size)) {
-        selectedSizes.push({ size, quantity: 0 });
+        selectedSizes.push({ size, quantity: product ? 0 : selectedSizes[0]?.quantity || 0 });
 
         updateSizeQty();
     }
@@ -263,6 +263,14 @@ const sizesSelectionTemplate = () => html`
             <option value="suffixSizesContainer">Детски (5 г., 10 м.,..)</option>
             <option value="rangeSizesContainer">От-До (39-43, 1-3,..)</option>
         </select>
+    </div>
+
+    <h4>Калкулатор:</h4>
+    <div class="input-group mb-3">
+        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
+        <span class="input-group-text">X</span>
+        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
+        <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
     </div>
 
     <!-- Simple -->
@@ -788,14 +796,6 @@ export async function createEditProductPage(ctx, next) {
 
                 ${attributesTemplate(product)}
 
-                <h4>Калкулатор:</h4>
-                <div class="input-group mb-3">
-                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
-                    <span class="input-group-text">X</span>
-                    <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
-                    <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
-                </div>
-
                 ${sizesSelectionTemplate()}
 
                 ${quantityTemplate()}
@@ -858,6 +858,10 @@ export async function createEditProductPage(ctx, next) {
 
     render(template(), container);
     render(sizesTemplate(selectedSizes), document.getElementById('addedSizes'));
+
+    document.getElementById('calc_num1').value = '';
+    document.getElementById('calc_num2').value = '';
+    document.getElementById('calc_sum').value = '';
 
     // If product has images, render them
     if (product && product.additionalImages.length > 0)
