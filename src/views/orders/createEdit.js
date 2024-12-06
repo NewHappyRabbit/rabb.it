@@ -232,7 +232,7 @@ const woocommerceTemplate = () => html`
     <div class="col-3">
         <label for="status" class="form-label">Статус:</label>
         <select name="status" id="status" class="form-control" required>
-            ${Object.entries(params.woocommerce.status).map(type => html`<option ?selected=${order && type[0] == order.status} value=${type[0]}>${type[1]}</option>`)}
+            ${Object.entries(params.woocommerce.status).map(type => html`<option ?selected=${order && type[0] == order.woocommerce.status} value=${type[0]}>${type[1]}</option>`)}
         </select>
     </div>
 
