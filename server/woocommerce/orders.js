@@ -53,7 +53,8 @@ export async function WooHookCreateOrder(data) {
         wooData["customer_note"] = data.customer_note;
 
     // Speedy shipping
-    if (data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value && data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value !== '') {
+    if (data.meta_data.find(meta => meta.key == 'speedy_total_price')?.value && data.meta_data.find(meta => meta.key == 'speedy_total_price')?.value !== '') {
+        // if (data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value && data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value !== '') {
         // General info for both address and office pickups
         wooData.woocommerce.speedy = {
             country: data.meta_data.find(meta => meta.key === 'speedy_country_name').value,
@@ -90,7 +91,7 @@ export async function WooHookCreateOrder(data) {
     }
 
     // Econt shipping
-    if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To')?.value && data.meta_data.find(meta => meta.key === 'Econt_Shipping_To')?.value !== '') {
+    if (data.meta_data.find(meta => meta.key == 'Econt_Total_Shipping_Cost')?.value && data.meta_data.find(meta => meta.key == 'Econt_Total_Shipping_Cost')?.value !== '') {
         // Office
         if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To').value === 'OFFICE') {
             wooData.woocommerce.econt = {
