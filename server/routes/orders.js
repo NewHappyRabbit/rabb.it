@@ -3,7 +3,7 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
-import { WooUpdateOrder } from "../woocommerce/orders.js";
+import { WooCancelOrder, WooUpdateOrder } from "../woocommerce/orders.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 
 export async function ordersRoutes() {
@@ -122,6 +122,7 @@ export async function ordersRoutes() {
 
             if (status !== 204) return res.status(status).send(message);
 
+            WooCancelOrder(req.params.id);
             WooUpdateQuantityProducts(returnedProducts);
 
             res.status(204).send();

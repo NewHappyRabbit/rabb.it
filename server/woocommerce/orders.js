@@ -220,7 +220,7 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
     if (!order) return { status: 404, message: 'Продажбата не е намерен' };
 
     if (!order?.woocommerce?.id) // Order was not made from woo, just update product quantity
-        await WooUpdateQuantityProducts(updatedProducts);
+        return await WooUpdateQuantityProducts(updatedProducts);
 
     if (!Object.keys(woocommerce.status).includes(order.woocommerce.status)) return { status: 400, message: 'Невалиден статус за поръчка' };
 
@@ -264,6 +264,23 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
         console.log('Order successfully edited in WooCommerce!')
 
         await WooUpdateQuantityProducts(updatedProducts);
+    });
+}
+
+export async function WooCancelOrder(id) {
+    if (!WooCommerce) return;
+
+    const order = await Order.findById(id).populate('products.product');
+
+    if (!order) return { status: 404, message: 'Продажбата не е намерена' };
+
+    if (!order?.woocommerce?.id) return; // Order was not made from woo
+
+    await WooCommerce.put(`orders/${order.woocommerce.id}`, { status: 'cancelled' }).then(async () => {
+        console.log('Order status successfully changed to "Canceled" in WooCommerce!');
+    }).catch((error) => {
+        console.error('Error updating order status to "Canceled" in WooCommerce!');
+        console.error(error);
     });
 }
 
