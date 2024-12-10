@@ -208,6 +208,17 @@ export function productsRoutes() {
 
             if (product.hidden === false && product?.woocommerce?.length) // if hidden then its not in the website
                 WooEditProduct(product);
+            else if (product.hidden === true && product?.woocommerce?.length) {
+                console.log('Product changed from non-hidden to hidden -> Deleting it from WooCommerce!');
+                // Product was probably changed from non-hidden to hidden
+                await WooDeleteProduct(product.woocommerce.id); // Delete from Woo
+                product.woocommerce = undefined;
+                await product.save();
+            } else if (product.hidden === false && !product.woocommerce.length) {
+                console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
+                // Product was probably changed from hidden to non-hidden
+                await WooCreateProduct(product);
+            }
 
             res.status(status).json(product);
         } catch (error) {

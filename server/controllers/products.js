@@ -330,6 +330,10 @@ export const ProductController = {
             data.noInvoice = true;
         else data.noInvoice = false;
 
+        if (data.hidden == "")
+            data.hidden = true;
+        else data.hidden = false;
+
         if (data.sizes && typeof data.sizes !== 'object')
             data.sizes = JSON.parse(data.sizes);
         else if (!data.sizes) data.sizes = [];

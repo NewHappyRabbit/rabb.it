@@ -824,7 +824,7 @@ export async function createEditProductPage(ctx, next) {
 
                 <h3>Опции</h3>
                 <div class="mb-3">
-                    <input class="form-check-input" type="checkbox" value="" name="hidden" id="hidden" ?disabled=${product} ?checked=${product?.hidden}>
+                    <input class="form-check-input" type="checkbox" value="" name="hidden" id="hidden" ?checked=${product?.hidden}>
                     <label class="form-check-label" for="hidden">
                         Скрит продукт (не се показва в сайта)
                     </label>
