@@ -1,9 +1,9 @@
-import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { retry } from "./common.js";
 
 export async function WooCreateCategoriesINIT() {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
     const categories = await Category.find({});
 
@@ -22,7 +22,7 @@ async function checkParentId({ data, category, shop }) {
 }
 
 export async function WooCreateCategory(category) {
-    if (!WooCommerce) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
     const data = {
         name: category.name,
@@ -50,7 +50,7 @@ export async function WooCreateCategory(category) {
 }
 
 export async function WooEditCategory(category) {
-    if (!WooCommerce || !category.woocommerce?.length) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops?.length === 0 || !category.woocommerce?.length) return; // If woocommerce wasnt initalized or is not used
 
     const data = {
         name: category.name,
@@ -74,7 +74,7 @@ export async function WooEditCategory(category) {
 }
 
 export async function WooDeleteCategory(wooData) {
-    if (!WooCommerce || !wooData) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops?.length === 0 || !wooData) return; // If woocommerce wasnt initalized or is not used
 
     for (let shop of WooCommerce_Shops) {
         const categoryId = wooData.find(el => el.woo_url == shop.url).id;
