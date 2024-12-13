@@ -714,9 +714,9 @@ const attributesTemplate = (product) => html`
             <label for="in_category">Категория:</label>
             <select @change=${onSelectAttrCategory} id="in_category" name="in_category" class="form-control">
                 <option ?selected=${!product} value="">Избери</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Детски')} value='Детски'>Детски</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Мъжки')} value='Мъжки'>Мъжки</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Дамски')} value='Дамски'>Дамски</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Детски'))} value='Детски'>Детски</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Мъжки'))} value='Мъжки'>Мъжки</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Дамски'))} value='Дамски'>Дамски</option>
             </select>
         </div>
 

@@ -9,15 +9,6 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 
-function getJSONValue(string) {
-    // Returns JSON object or string
-    try {
-        return JSON.parse(string);
-    } catch (err) {
-        return string;
-    }
-}
-
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});
     const pcsId = mongoAttributes.find(m => m.slug == 'pcs').woocommerce.find(el => el.woo_url == shop.url).id;
@@ -88,7 +79,7 @@ async function generateWholesaleProductsData(products, shop) {
                 id: seasonAttr.woocommerce.find(el => el.woo_url == shop.url).id,
                 visible: true,
                 variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -104,7 +95,7 @@ async function generateWholesaleProductsData(products, shop) {
                 id: sexAttr.woocommerce.find(el => el.woo_url == shop.url).id,
                 visible: true,
                 variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value
             });
 
         if (process.env.ENV !== 'dev' && product.image) {
@@ -175,7 +166,7 @@ async function generateRetailProductsData(products, shop) {
                 id: seasonAttr.woocommerce.find(el => el.woo_url == shop.url).id,
                 visible: true,
                 variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value)
+                options: product.attributes.find(a => a.attribute.toString() === seasonAttr._id.toString()).value
             });
 
         if (product.attributes?.find(a => a.attribute.toString() === in_categoryAttr._id.toString()))
@@ -191,7 +182,7 @@ async function generateRetailProductsData(products, shop) {
                 id: sexAttr.woocommerce.find(el => el.woo_url == shop.url).id,
                 visible: true,
                 variation: false,
-                options: getJSONValue(product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value)
+                options: product.attributes.find(a => a.attribute.toString() === sexAttr._id.toString()).value
             });
 
         if (process.env.ENV !== 'dev' && product.image) {

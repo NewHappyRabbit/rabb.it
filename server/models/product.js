@@ -156,10 +156,10 @@ const productSchema = new Schema({
                 ref: 'ProductAttribute',
                 required: true,
             },
-            value: {
+            value: [{
                 type: String,
                 required: true
-            },
+            }],
         },
         {
             _id: false

@@ -259,7 +259,7 @@ export const ProductController = {
         if (data.season) {
             const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
             if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
-            data.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(data.season) });
+            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
         }
 
         if (data.in_category) {
@@ -271,7 +271,7 @@ export const ProductController = {
         if (data.sex) {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
-            data.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(data.sex) });
+            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
         }
 
         data.outOfStock = false;
@@ -425,7 +425,7 @@ export const ProductController = {
         if (data.season) {
             const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
             if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
-            data.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(data.season) });
+            data.attributes.push({ attribute: seasonAttr._id, value: data.season });
         }
 
         if (data.in_category) {
@@ -437,7 +437,7 @@ export const ProductController = {
         if (data.sex) {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
-            data.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(data.sex) });
+            data.attributes.push({ attribute: sexAttr._id, value: data.sex });
         }
 
         if (data.sizes.length > 0) {
