@@ -24,9 +24,10 @@ const categorySchema = new Schema({
     image: imageSchema,
     woocommerce: [
         {
+            _id: false,
             woo_url: String,
             id: String,
-        }
+        },
     ]
 });
 

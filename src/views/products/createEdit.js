@@ -196,7 +196,7 @@ function addSize(e, type) {
         size = from + '-' + to;
     }
 
-    if (!selectedSizes.find(s => s.size === size)) {
+    if (!selectedSizes.find(s => s.size.toLowerCase() === size.toLowerCase())) {
         selectedSizes.push({ size, quantity: product ? 0 : selectedSizes[0]?.quantity || 0 });
 
         updateSizeQty();

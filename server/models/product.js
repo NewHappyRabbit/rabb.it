@@ -81,6 +81,7 @@ const productSchema = new Schema({
                 }
             },
             woocommerce: [{
+                _id: false,
                 woo_url: String,
                 id: String, // Variation ID (from retail woocommerce)
             }],
@@ -145,6 +146,7 @@ const productSchema = new Schema({
         default: false,
     },
     woocommerce: [{
+        _id: false,
         woo_url: String,
         id: String,
         permalink: String,

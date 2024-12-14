@@ -28,14 +28,17 @@ export const CategoryController = {
         const exactMatch = await Category.findOne({ slug: slug });
         if (exactMatch) {
             // Check if more than one (ex. test-1, test-2 ....)
-            const slugMatch = await Category.findOne({ slug: { $regex: '^' + slug + '-', $options: 'i' } }).sort({ slug: -1 });
+            let freeSlug = false, i = 1;
+            while (freeSlug === false) {
+                const testSlug = slug + '-' + i;
+                const temp = await Category.findOne({ slug: testSlug });
+                if (temp) {
+                    i++
+                    continue;
+                };
 
-            if (!slugMatch) slug += '-1';
-            else {
-                let num = slugMatch.slug.split('-');
-                console.log(num);
-                num = Number(num[num.length - 1]) + 1;
-                slug += '-' + num;
+                freeSlug = true;
+                slug = testSlug;
             }
         }
 
@@ -70,17 +73,20 @@ export const CategoryController = {
             const oldSlug = currentCategory.slug;
             var newSlug = slugify(data.name);
 
-            // Check if exact match
             const exactMatch = await Category.findOne({ slug: newSlug });
             if (exactMatch) {
                 // Check if more than one (ex. test-1, test-2 ....)
-                const slugMatch = await Category.findOne({ slug: { $regex: '^' + newSlug + '-', $options: 'i' } }).sort({ slug: -1 });
+                let freeSlug = false, i = 1;
+                while (freeSlug === false) {
+                    const testSlug = newSlug + '-' + i;
+                    const temp = await Category.findOne({ slug: testSlug });
+                    if (temp) {
+                        i++
+                        continue;
+                    };
 
-                if (!slugMatch) newSlug += '-1';
-                else {
-                    let num = slugMatch.slug.split('-');
-                    num = Number(num[num.length - 1]) + 1;
-                    newSlug += '-' + num;
+                    freeSlug = true;
+                    newSlug = testSlug;
                 }
             }
 

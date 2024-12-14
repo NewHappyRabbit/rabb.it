@@ -4,12 +4,39 @@ import { retry } from "./common.js";
 
 export async function WooCreateCategoriesINIT() {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
+    console.log('Starting WOO categories init...')
+    const unsorted = await Category.find();
+    const sorted = [];
 
-    const categories = await Category.find({});
+    unsorted.filter(cat => !cat.path).forEach(cat => {
+        sorted.push(cat);
+    });
 
-    for (const category of categories)
-        await WooCreateCategory(category);
+    for (let i = 0; i < 9; i++) {
+        unsorted.filter(cat => cat.path?.split(',').length == i + 1).forEach(cat => {
+            sorted.push(cat);
+        });
+    }
 
+    for (let shop of WooCommerce_Shops) {
+        for (let category of sorted) {
+            if (category.woocommerce.find(el => el.woo_url == shop.url)) continue;
+
+            const data = {
+                name: category.name,
+                slug: category.slug,
+                menu_order: category.order
+            }
+            await checkParentId({ data, category, shop });
+
+            const response = await shop.post("products/categories", data)
+            category.woocommerce.push({
+                woo_url: shop.url,
+                id: response.data.id,
+            });
+            await category.save();
+        }
+    }
     console.log("Categories successfully created in WooCommerce!")
 }
 
