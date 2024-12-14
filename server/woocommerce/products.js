@@ -1,9 +1,8 @@
-import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
 import { retry } from "./common.js";
-import cron from 'node-cron';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -414,7 +413,7 @@ export async function WooUpdateQuantityProducts(products) {
             const batch = products.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: p.quantity }));
             await retry(async () => {
                 console.log('Starting work on simple products batch: ' + i)
-                await WooCommerce.post('products/batch', { update: batch }).then(() => {
+                await shop.post('products/batch', { update: batch }).then(() => {
                     console.log('Products quantity successfully updated in WooCommerce!')
                 }).catch((error) => {
                     console.error('Error batch updating products quantity in WooCommerce!')
@@ -495,7 +494,7 @@ export async function WooCreateProductsINIT() {
 
 // TODO
 /* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
-
+/*
 export async function WooCreateProductsBatch(products) {
     const doneProducts = await generateWholesaleProductsData(JSON.parse(JSON.stringify(products)));
 
@@ -572,109 +571,99 @@ export async function checkProductsInWoo() {
     let done = false;
     let offset = 0;
     const filter = { hidden: { $ne: true }, deleted: { $ne: true } };
-    /* 
-        const wooProducts = [];
-        const appProducts = await Product.find(filter);
-    
-        console.log('Starting WooCommerce products batch get...');
-        while (done == false) {
-            const req = await WooCommerce.get("products", { per_page: 100, offset, orderby: 'id' });
-            const products = req.data;
-            if (products.length < 100) done = true;
-    
-            wooProducts.push(...products);
-    
-            offset += 100;
-            console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
-        }
-    
-    
-        //* DEV ONLY
-        // Save to file
-        fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
-        return;
-     */
+    const wooProducts = [];
+    const appProducts = await Product.find(filter);
+
+    console.log('Starting WooCommerce products batch get...');
+    while (done == false) {
+        const req = await WooCommerce.get("products", { per_page: 100, offset, orderby: 'id' });
+        const products = req.data;
+        if (products.length < 100) done = true;
+
+        wooProducts.push(...products);
+
+        offset += 100;
+        console.log(`Got ${wooProducts.length} products from WooCommerce! Attempting to get more...`);
+    }
+
+    // Save to file
+    fs.writeFileSync('server/woocommerce/wooProducts.json', JSON.stringify(wooProducts));
+    return;
     const appProducts = await Product.find(filter);
     var wooProducts = fs.readFileSync('server/woocommerce/wooProducts.json', 'utf8');
     wooProducts = JSON.parse(wooProducts);
-    //*/
 
-    // Get all products from app
-    const productsToCreate = [];
-    const productsToUpdate = [];
-    const productsToSave = [];
-    const wooProductsToDelete = [];
-    console.log('Starting WooCommerce products check...');
-    for (let product of appProducts) {
-        // Check if product exists in woo
-        if (!wooProducts.find(p => p.id == product.woocommerce.id)) {
-            // Check if product exists in app and woo, but id was incorrect
-            if (product.code && wooProducts.find(p => p.sku === product.code)) {
-                console.log('Found product with incorrect id in WooCommerce! App _id: ' + product._id);
-                const tempproduct = wooProducts.find(p => p.sku === product.code);
-                product.woocommerce.id = tempproduct.id;
-                product.permalink = tempproduct.permalink;
-                productsToSave.push(product);
-                continue;
-            } else {
-                productsToCreate.push(product);
-                continue;
-            }
-        }
-
-        // Check if product data is correct
-        const wooProduct = wooProducts.find(p => p.id == product.woocommerce.id);
-        if (product.wholesalePrice != wooProduct.regular_price || product.quantity != wooProduct.stock_quantity) {
-            productsToUpdate.push(product);
+// Get all products from app
+const productsToCreate = [];
+const productsToUpdate = [];
+const productsToSave = [];
+const wooProductsToDelete = [];
+console.log('Starting WooCommerce products check...');
+for (let product of appProducts) {
+    // Check if product exists in woo
+    if (!wooProducts.find(p => p.id == product.woocommerce.id)) {
+        // Check if product exists in app and woo, but id was incorrect
+        if (product.code && wooProducts.find(p => p.sku === product.code)) {
+            console.log('Found product with incorrect id in WooCommerce! App _id: ' + product._id);
+            const tempproduct = wooProducts.find(p => p.sku === product.code);
+            product.woocommerce.id = tempproduct.id;
+            product.permalink = tempproduct.permalink;
+            productsToSave.push(product);
+            continue;
+        } else {
+            productsToCreate.push(product);
+            continue;
         }
     }
 
-    if (productsToSave.length > 0) {
-        console.log('Found ' + productsToSave.length + ' products to save in database! Starting...');
-        console.log(productsToSave.map(p => p._id).join(', '));
-        // await Promise.resolve(productsToSave.map(async p => await p.save()));
-        console.log('Finished saving database products!');
+    // Check if product data is correct
+    const wooProduct = wooProducts.find(p => p.id == product.woocommerce.id);
+    if (product.wholesalePrice != wooProduct.regular_price || product.quantity != wooProduct.stock_quantity) {
+        productsToUpdate.push(product);
     }
-
-    if (productsToCreate.length > 0) {
-        console.log('Found ' + productsToCreate.length + ' products to create in WooCommerce! Starting...');
-        console.log(productsToCreate.map(p => p._id).join(', '));
-        // await WooCreateProductsBatch(productsToCreate);
-        console.log('Finished WooCommerce products creation!');
-    }
-
-    if (productsToUpdate.length > 0) {
-        console.log('Found ' + productsToUpdate.length + ' products to update in WooCommerce! Starting...');
-        // console.log(productsToUpdate.map(p => p._id).join(', '));
-        await WooEditProductsBatch(productsToUpdate);
-        console.log('Finished WooCommerce products update!');
-    }
-
-    const productsAfterSave = await Product.find(filter); // if any products were edited in the before steps, get the actual new data
-    const hiddenOrDeletedProducts = await Product.find({ $or: [{ hidden: true }, { deleted: true }] }); // get all deleted or hidden products
-    for (let product of wooProducts) {
-        // Check if any product in woo doesnt exist in app
-        if (!productsAfterSave.find(p => p.woocommerce.id == product.id))
-            wooProductsToDelete.push(product);
-
-        // Check if any hidden or deleted product exists in woocommerce
-        if (hiddenOrDeletedProducts.find(p => p.woocommerce.id == product.id))
-            wooProductsToDelete.push(product);
-    }
-
-    if (wooProductsToDelete.length > 0) {
-        console.log('Found ' + wooProductsToDelete.length + ' products to delete in WooCommerce! Starting...');
-        console.log(wooProductsToDelete.map(p => p.id).join(', '));
-        // await WooDeleteProductsBatch(wooProductsToDelete);
-        console.log('Finished WooCommerce products deletion!');
-    }
-
-    console.log('Finished WooCommerce products check!');
 }
+
+if (productsToSave.length > 0) {
+    console.log('Found ' + productsToSave.length + ' products to save in database! Starting...');
+    console.log(productsToSave.map(p => p._id).join(', '));
+    // await Promise.resolve(productsToSave.map(async p => await p.save()));
+    console.log('Finished saving database products!');
+}
+
+if (productsToCreate.length > 0) {
+    console.log('Found ' + productsToCreate.length + ' products to create in WooCommerce! Starting...');
+    console.log(productsToCreate.map(p => p._id).join(', '));
+    // await WooCreateProductsBatch(productsToCreate);
+    console.log('Finished WooCommerce products creation!');
+}
+
+if (productsToUpdate.length > 0) {
+    console.log('Found ' + productsToUpdate.length + ' products to update in WooCommerce! Starting...');
+    // console.log(productsToUpdate.map(p => p._id).join(', '));
+    await WooEditProductsBatch(productsToUpdate);
+    console.log('Finished WooCommerce products update!');
+}
+
+const productsAfterSave = await Product.find(filter); // if any products were edited in the before steps, get the actual new data
+const hiddenOrDeletedProducts = await Product.find({ $or: [{ hidden: true }, { deleted: true }] }); // get all deleted or hidden products
+for (let product of wooProducts) {
+    // Check if any product in woo doesnt exist in app
+    if (!productsAfterSave.find(p => p.woocommerce.id == product.id))
+        wooProductsToDelete.push(product);
+
+    // Check if any hidden or deleted product exists in woocommerce
+    if (hiddenOrDeletedProducts.find(p => p.woocommerce.id == product.id))
+        wooProductsToDelete.push(product);
+}
+
+if (wooProductsToDelete.length > 0) {
+    console.log('Found ' + wooProductsToDelete.length + ' products to delete in WooCommerce! Starting...');
+    console.log(wooProductsToDelete.map(p => p.id).join(', '));
+    // await WooDeleteProductsBatch(wooProductsToDelete);
+    console.log('Finished WooCommerce products deletion!');
+}
+
+console.log('Finished WooCommerce products check!');
+}
+ */
 // checkProductsInWoo();
-// Run this every 3 hours
-// cron.schedule('0 */3 * * *', async () => {
-// if (WooCommerce_Shops?.length === 0) return;
-//     console.log('Running WooCommerce products CRON...')
-//     checkProductsInWoo();
-// });

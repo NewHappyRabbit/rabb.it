@@ -8,7 +8,6 @@ import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
 import { retry } from "./common.js";
-import cron from 'node-cron';
 import { WooUpdateQuantityProducts } from "./products.js";
 
 export async function WooHookCreateOrder(data) {
@@ -320,10 +319,3 @@ async function getNewOrders() {
         }
     }
 }
-
-// Run this every 3 hours
-// cron.schedule('0 */3 * * *', async () => {
-//     if (!WooCommerce) return;
-//     console.log('Running WooCommerce orders CRON...')
-//     getNewOrders();
-// });
