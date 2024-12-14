@@ -32,9 +32,10 @@ const customerSchema = new Schema({
         type: Boolean,
         default: false,
     },
-    woocommerce: {
+    woocommerce: [{
+        woo_url: String,
         id: String,
-    }
+    }]
 });
 
 const Customer = mongoose.model('Customer', customerSchema);

@@ -136,12 +136,12 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         }
 
         // Retail + Variable product
-        if (data.orderType === 'retail' && existingProduct.sizes.length > 0) {
+        if (data.orderType === 'retail' && existingProduct.sizes?.length > 0) {
             // Check if there is enough quantity
-            if (existingProduct.sizes.filter(size => size.size === product.size)[0].quantity < product.quantity)
-                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${product.size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.filter(size => size.size === product.size)[0].quantity}` };
+            if (existingProduct.sizes.find(size => size.size === product.size).quantity < product.quantity)
+                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} с размер ${product.size} [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(size => size.size === product.size).quantity}` };
 
-            existingProduct.sizes.filter(size => size.size === product.size)[0].quantity -= product.quantity;
+            existingProduct.sizes.find(size => size.size === product.size).quantity -= product.quantity;
 
             // Update package quantity to be the lowest of all selected sizes quantity
             existingProduct.quantity = parseInt(Math.min(...existingProduct.sizes.map(s => s.quantity)) / existingProduct.multiplier);
@@ -152,7 +152,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         }
 
         // Retail + Simple product
-        if (data.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
+        if (data.orderType === 'retail' && existingProduct.sizes?.length === 0) {
             // Check if there is enough quantity
             if (existingProduct.quantity < product.quantity)
                 return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${existingProduct.quantity}` };
@@ -323,7 +323,7 @@ export const OrderController = {
 
         data.total = total;
 
-        data.unpaid = parseInt((data.paidAmount || 0).toFixed(2)) < parseInt(total);
+        data.unpaid = parseFloat((data.paidAmount || 0).toFixed(2)) < parseFloat(total);
 
         if (!data.number) { // If no number assigned, grab latest from sequence
             let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
@@ -398,7 +398,7 @@ export const OrderController = {
 
         data.total = total;
 
-        data.unpaid = parseInt((data.paidAmount || 0).toFixed(2)) < parseInt(total);
+        data.unpaid = parseFloat((data.paidAmount || 0).toFixed(2)) < parseFloat(total);
 
         // New logic for editing document number
         // Check if document number already exists

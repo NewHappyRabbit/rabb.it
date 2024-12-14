@@ -1,4 +1,4 @@
-import { WooCommerce } from "../config/woocommerce.js";
+import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
 import { OrderController } from "../controllers/orders.js";
 import { SettingsController } from "../controllers/settings.js";
 import { Customer } from "../models/customer.js";
@@ -10,9 +10,9 @@ import { Order, woocommerce } from "../models/order.js";
 import { retry } from "./common.js";
 import { WooUpdateQuantityProducts } from "./products.js";
 
-export async function WooHookCreateOrder(data) {
+export async function WooHookCreateOrder({ shop, data }) {
     console.log('Starting woo hook order...')
-    if (!WooCommerce) return;
+    if (WooCommerce_Shops.length === 0 || !shop || !data) return;
     // This functions creates a new order in the app from a WooCommerce order. It's activated by a hook in Woocommerce
 
     // Get default data
@@ -22,9 +22,10 @@ export async function WooHookCreateOrder(data) {
 
     const wooData = {
         date: data.date_created,
-        orderType: 'wholesale', //TODO change when retail website is created
+        orderType: shop.custom.type,
         type: defaultData.find(setting => setting.key === 'wooDocumentType').value,
         woocommerce: {
+            woo_url: shop.url,
             id: data.id,
             status: data.status,
             total: Number(data.total),
@@ -32,19 +33,21 @@ export async function WooHookCreateOrder(data) {
             payment_method_title: data.payment_method_title || 'Наложен платеж',
         },
         customer: {
-            name: "ПРОМЕНИ ИМЕТО НА КЛИЕНТА",
+            name: shop.custom.type === 'wholesale' ? "ПРОМЕНИ ИМЕТО НА КЛИЕНТА" : `${data.billing.first_name} ${data.billing.last_name}`,
             email: data.billing.email,
             phone: data.billing.phone,
-            mol: data.billing.first_name + ' ' + data.billing.last_name,
-            vat: data.billing.company.replace(/\D+/g, ''),
-            address: "ПРОМЕНИ АДРЕСА",
+            ...(shop.custom.type === 'wholesale' && {
+                mol: `${data.billing.first_name} ${data.billing.last_name}`,
+                vat: data.billing.company.replace(/\D+/g, ''),
+            }),
+            address: shop.custom.type === 'wholesale' ? "ПРОМЕНИ АДРЕСА" : `${data.billing.country}, ${data.billing.city} ${data.billing.postcode}, ${data.billing.address_1} ${data.billing.address_2}`,
             woocommerce: {
+                woo_url: shop.url,
                 id: data.customer_id
             },
         },
         discount_total: Number(data.discount_total),
         billing: data.billing,
-        // shipping: data.shipping,
         products: []
     };
 
@@ -130,18 +133,7 @@ export async function WooHookCreateOrder(data) {
     for (let product of data.line_items) {
         const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString() });
         if (!productInDb) return { status: 404, message: 'Продуктът не е намерен' };
-
-        // Check quantity
-        if (productInDb.quantity < product.quantity) return { status: 400, message: 'Няма достатъчно количество от продукта: ' + productInDb.name + ' (наличност: ' + productInDb.quantity + ')' + `[${productInDb.code}]` };
-
-        let discount = 0, price = product.price;
-        //TODO Edit this when sale price is implemented to check sale price as well
-        // Check if price from woo is different from price in db (either product is on sale or coupon was applied)
-        if (productInDb.wholesalePrice !== product.price) {
-            // Calculate discount percentage based on difference of prices
-            discount = parseFloat(Math.abs(((product.price - productInDb.wholesalePrice) / productInDb.wholesalePrice) * 100).toFixed(2));
-            price = productInDb.wholesalePrice;
-        }
+        const dbPrice = shop.custom.type === 'wholesale' ? productInDb.wholesalePrice : productInDb.retailPrice;
 
         const productData = {
             index: index++,
@@ -149,42 +141,62 @@ export async function WooHookCreateOrder(data) {
             product: productInDb._id,
             unitOfMeasure: productInDb.unitOfMeasure,
             quantity: Number(product.quantity),
-            price: Number(price),
-            discount,
+            price: Number(dbPrice),
+            discount: parseFloat(Math.abs(((product.price - dbPrice) / dbPrice) * 100).toFixed(2)),
         }
 
-        if (productInDb.sizes.length)
-            productData.selectedSizes = productInDb.sizes.map(s => s.size)
+        //TODO Edit this when sale price is implemented to check sale price as well
 
-        if (productInDb.multiplier)
-            productData.multiplier = productInDb.multiplier;
+        ///////////////////////////
+        if (shop.custom.type === 'wholesale' || productInDb.sizes.length === 0) {
+            if (productInDb.quantity < product.quantity) return { status: 400, message: 'Няма достатъчно количество от продукта: ' + productInDb.name + ' (наличност: ' + productInDb.quantity + ')' + `[${productInDb.code}]` };
+
+            // If variable product, select all sizes
+            if (productInDb.sizes.length)
+                productData.selectedSizes = productInDb.sizes.map(s => s.size)
+
+            if (productInDb.multiplier)
+                productData.multiplier = productInDb.multiplier;
+        } else if (shop.custom.type === 'retail' && productInDb.sizes.length > 0) {
+            const selectedSize = productInDb.sizes.find(s => s.woocommerce.map(el => el.woo_url === shop.url && el.id === product.variation_id));
+
+            if (selectedSize.quantity < product.quantity) return { status: 400, message: `Няма достатъчно количество от продукта: ${productInDb.name} с размер ${selectedSize.size} (наличност: ${selectedSize.quantity}) [${productInDb.code}]` };
+
+            productData.size = selectedSize.size;
+        }
+
+        ///////////////////////////
 
         wooData.products.push(productData);
     }
     // Check if customer already in db
-    //FIXME For some reason, wooData returns customer.id as 0 instead of the actual ID. Investigate...
-    // var customer = await Customer.findOne({"woocommerce.id": })
-    //TEMPFIX
     var customer;
+    customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
 
-    // First try to find by email
-    if (wooData.customer?.email)
+    // Try to find by email
+    if (!customer && wooData.customer?.email)
         customer = await Customer.findOne({ email: wooData.customer.email });
-
-    // Then if not found, try to find by vat
-    if (wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
+    // Try to find by vat
+    if (!customer && wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
         customer = await Customer.findOne({ vat: wooData.customer.vat })
-    else customer = null
+    if (!customer) customer = null;
 
-    if (customer && !customer.woocommerce) { // Add woo id to existing customer
-        customer.woocommerce.id = wooData.customer.id;
+    if (customer && (customer.woocommerce?.length === 0 || !customer.woocommerce?.find(el => el.woo_url === shop.url))) {
+        console.log('1')
+
+        // Customer found in DB but not connected to this shop. Add shop customer id to customer db
+        customer.woocommerce.push({ id: wooData.customer.id, woo_url: shop.url });
         await customer.save();
-    } else if (!customer) {  // Create new customer
-        // Check if customer entered VAT number or company name
-        if (wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,10}$/gm)) {
+    } else if (!customer) {
+        console.log('2')
+
+        // Create new customer
+        if (shop.custom.type === 'wholesale' && wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,10}$/gm)) {
+            // Check if customer entered VAT number or company name
             wooData.customer.vat = '';
             wooData.customer.taxvat = '';
         }
+
         const { status, message, customer: customerInDb } = await CustomerController.post(wooData.customer);
         customer = customerInDb;
         if (status !== 201) return { status, message };
@@ -208,11 +220,13 @@ export async function WooHookCreateOrder(data) {
 
     const { status, message, order, updatedProducts } = await OrderController.post({ data: wooData, userId: user._id });
 
+    await WooUpdateQuantityProducts(updatedProducts);
+
     return { status, message, order, updatedProducts }
 }
 
 export async function WooUpdateOrder({ id, updatedProducts }) {
-    if (!WooCommerce) return;
+    if (WooCommerce_Shops.length === 0) return;
 
     const order = await Order.findById(id).populate('products.product');
 
@@ -225,8 +239,10 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
 
     if (!Object.keys(woocommerce.payment_method).includes(order.woocommerce.payment_method)) return { status: 400, message: 'Невалиден тип на плащане за поръчка' };
 
+    const shop = WooCommerce_Shops.find(el => el.url === order.woocommerce.woo_url);
+
     // Get Woo Order
-    const req = await WooCommerce.get(`orders/${order.woocommerce.id}`);
+    const req = await shop.get(`orders/${order.woocommerce.id}`);
     const wooOrder = req.data;
 
     const wooData = {
@@ -244,30 +260,34 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
 
     // Add products to order
     for (let product of order.products) {
-        if (!product.product) continue; // Skip if product doesnt exist in WooCommerce
+        const productInDB = product.product;
+        if (!productInDB) continue; // Skip if product doesnt exist in WooCommerce
 
         // Check if product in Woo
-        if (!product.product?.woocommerce?.id || product.product?.deleted === true || product.product?.hidden === true) continue; // Skip if product doesnt exist in WooCommerce, is deleted or is hidden
+        if (!productInDB?.woocommerce?.length === 0 || productInDB?.deleted === true || productInDB?.hidden === true) continue; // Skip if product doesnt exist in WooCommerce, is deleted or is hidden
 
         wooData.line_items.push({
-            product_id: product.product.woocommerce.id,
+            product_id: product.product.woocommerce.find(el => el.woo_url === shop.url).id,
             quantity: product.quantity,
-            price: product.product.wholesalePrice,
+            price: product.price,
             subtotal: (product.price * product.quantity).toFixed(2),
             total: ((product.price * product.quantity) * (100 - product.discount) / 100).toFixed(2),
+            ...(shop.custom.type === 'retail' && product?.size && {
+                // Variable product, add size variation
+                variation_id: productInDB.sizes.find(s => s.size === product.size).woocommerce.find(el => el.woo_url === shop.url).id
+            })
         });
     }
 
-    await retry(async () => {
-        await WooCommerce.put(`orders/${order.woocommerce.id}`, wooData);
-        console.log('Order successfully edited in WooCommerce!')
+    await shop.put(`orders/${order.woocommerce.id}`, wooData);
+    console.log('Order successfully edited in WooCommerce!')
 
-        await WooUpdateQuantityProducts(updatedProducts);
-    });
+    await WooUpdateQuantityProducts(updatedProducts);
 }
 
+
 export async function WooCancelOrder(id) {
-    if (!WooCommerce) return;
+    if (WooCommerce_Shops.length === 0) return;
 
     const order = await Order.findById(id).populate('products.product');
 
@@ -275,7 +295,9 @@ export async function WooCancelOrder(id) {
 
     if (!order?.woocommerce?.id) return; // Order was not made from woo
 
-    await WooCommerce.put(`orders/${order.woocommerce.id}`, { status: 'cancelled' }).then(async () => {
+    const shop = WooCommerce_Shops.find(el => el.url === order.woocommerce.woo_url);
+
+    await shop.put(`orders/${order.woocommerce.id}`, { status: 'cancelled' }).then(async () => {
         console.log('Order status successfully changed to "Canceled" in WooCommerce!');
     }).catch((error) => {
         console.error('Error updating order status to "Canceled" in WooCommerce!');
@@ -283,6 +305,8 @@ export async function WooCancelOrder(id) {
     });
 }
 
+// TODO
+/* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
 async function getNewOrders() {
     // This function gets all orders of type "Processing" and checks if they are in the app.
     if (!WooCommerce) return;

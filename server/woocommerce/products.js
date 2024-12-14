@@ -308,7 +308,9 @@ export async function WooDeleteProduct(wooData) {
 
     for (let shop of WooCommerce_Shops) {
         await retry(async () => {
-            await shop.delete(`products/${wooData.find(el => el.woo_url == shop.url).id}`).then(async () => {
+            await shop.delete(`products/${wooData.find(el => el.woo_url == shop.url).id}`, {
+                force: true
+            }).then(async () => {
                 // Success
                 console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
             }).catch((error) => {

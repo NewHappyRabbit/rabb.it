@@ -12,16 +12,18 @@ export function woocommerceRoutes() {
     woocommerceRoutes.post('/woocommerce/hooks/order', WooHookAuth, async (req, res) => {
         // Use this URL for the WooCommerce hook. Example: https://example.com/server/woocommerce/hooks/order
         try {
+            const shop = req.shop; // Which Woo shop the request is coming from
             const data = req.body;
 
-            const { status, message } = await WooHookCreateOrder(data);
+            const { status, message } = await WooHookCreateOrder({ shop, data });
             if (status !== 201) {
-                console.error('Error creating the woo order from hook: ' + message);
+                console.error(`Error creating the woo order with ID: ${data.id} from hook: ${message}`);
+                console.error('Shop: ' + shop)
                 console.error('Data: ' + JSON.stringify(data));
                 return res.status(status).send(message)
             };
 
-            console.log('Order from Woo transfered to app!')
+            console.log(`Order with ID: ${data.id} from Woo transfered to app! [${shop.url}]`);
 
             res.status(200).send();
         } catch (error) {

@@ -13,12 +13,11 @@ for (let shop of shops) {
             version: "wc/v3",
         });
 
+        t.hook_secret = shop.WOO_HOOKS_SECRET;
         t.custom = shop.custom;
         WooCommerce_Shops.push(t);
     }
 }
-
-// console.log(JSON.parse(process.env.WOO_SHOPS));
 
 // FIXME REMOVE BELOW CODE AND USE ONLY WOOCOMMERCE_SHOPS VARIABLE
 export const WooCommerce = WooCommerce_Shops[0] || undefined;
