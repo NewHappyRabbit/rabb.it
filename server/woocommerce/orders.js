@@ -27,7 +27,9 @@ export async function WooHookCreateOrder({ shop, data }) {
         woocommerce: {
             woo_url: shop.url,
             id: data.id,
-            status: data.status,
+            //FIXME Svilen wants the order to be completed on saving. It doesnt matter what status is sent by woocommerce, we set here as 'completed'. So once the order is saved for the first time in our app, this status will be sent back to woocommerce and mark it as completed. (Because he is too lazy to select the "Completed" status from a dropdown...)
+            // status: data.status,
+            status: 'completed',
             total: Number(data.total),
             payment_method: data.payment_method || 'cod',
             payment_method_title: data.payment_method_title || 'Наложен платеж',
