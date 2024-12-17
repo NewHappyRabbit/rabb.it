@@ -164,7 +164,7 @@ const modalForm = (category) => html`
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
         ${category && loggedInUser.role === 'admin' ? html`<button type="submit" action="delete" @click=${createEditDeleteCategory} class="btn btn-danger">Изтрий</button>` : ''}
-        <button type="submit" action=${category ? "edit" : "create"} @click=${createEditDeleteCategory} class="btn btn-primary"><i class="bi bi-check-lg"></i> Запази</button>
+        <button type="submit" action=${category ? "edit" : "create"} @click=${createEditDeleteCategory} class="btn btn-primary"><i class="bi bi-check-lg  pe-none"></i> Запази</button>
     </div>
 `;
 

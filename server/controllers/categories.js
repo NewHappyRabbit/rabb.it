@@ -1,3 +1,4 @@
+import e from "cors";
 import { Category } from "../models/category.js"
 import { slugify } from "../models/functions/global.js";
 import { Product } from "../models/product.js";
@@ -67,14 +68,32 @@ export const CategoryController = {
 
         data.order === '' ? data.order = 0 : data.order = parseInt(data.order);
 
-        // Check if parent exists
-        // data.parent is parentId
+        // Update path for this category and all categories that have this one as a parrent
+        const parent = data.parent ? await Category.findById(data.parent) : undefined;
+        let newPath;
+
         if (data.parent) {
-            const parent = await Category.findById(data.parent);
+            if (parent.path) newPath = `${parent.path}${parent.slug},`;
+            else newPath = `,${parent.slug},`
+        } else newPath = null;
+
+        // Find all categories this is a parent to and update their path
+        // update subcategories path
+        const oldSubPath = currentCategory.path ? `${currentCategory.path}${currentCategory.slug},` : `,${currentCategory.slug},`
+        const newSubPath = newPath ? `${newPath}${currentCategory.slug},` : `,${currentCategory.slug},`
+        const categories = await Category.find({ path: { $regex: oldSubPath } });
+        await Promise.all(categories.map(async category => {
+            category.path = category.path.replace(oldSubPath, newSubPath);
+            await category.save();
+        }))
+        data.path = newPath;
+
+        /* 
+        if (data.parent) {
             if (!parent) return { status: 400, message: 'Родителската категория не съществува', property: 'parent' };
 
             parent.path ? data.path = `${parent.path}${parent.slug},` : data.path = `,${parent.slug},`;
-        }
+        } */
 
         // create new slug if name has changed
         if (data.name !== currentCategory.name) {

@@ -45,7 +45,7 @@ async function checkParentId({ data, category, shop }) {
         const parentSlug = category.path.split(',').filter(el => el != '').slice(-1)[0];
         const parent = await Category.findOne({ slug: parentSlug });
         if (parent) data.parent = parent.woocommerce?.find(el => el.woo_url == shop.url).id;
-    }
+    } else data.parent = null;
 }
 
 export async function WooCreateCategory(category) {
