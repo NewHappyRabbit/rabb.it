@@ -96,7 +96,7 @@ async function createEditDeleteCategory(e) {
             resetForm();
             document.querySelector('#createEditModal [data-bs-dismiss="modal"]').click();
             e.target.disabled = false;
-            return page('/categories');
+            location.reload();
         }
     } catch (err) {
         e.target.disabled = false;
