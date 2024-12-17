@@ -5,7 +5,15 @@ import { uploadImg } from "./common.js";
 import fs from 'fs';
 
 export const CategoryController = {
-    get: async () => await Category.find().sort({ path: 1, order: 1 }),
+    get: async (filters) => {
+        const categories = await Category.find().sort({ path: 1, order: 1 }).lean();
+        if (filters.productsCount == 'true') {
+            await Promise.all(categories.map(async (category) => {
+                category.productsCount = await Product.find({ category: category._id, deleted: false }).countDocuments();
+            }));
+        }
+        return categories;
+    },
     post: async ({ data, img }) => {
         if (!data.name)
             return { status: 400, message: 'Въведете име', property: 'name' };

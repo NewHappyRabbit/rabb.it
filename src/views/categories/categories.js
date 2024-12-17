@@ -25,7 +25,7 @@ function renderCategories(categories) {
     const categoryTemplate = (category) => html`
         <div class="list-group">
             <div class="list-group-item depth depth-${category.depth.length}" slug="${category.slug}" path="${category.path}" order="${category.order}">
-                ${['manager', 'admin'].includes(loggedInUser.role) ? html`<button class="btn" data-bs-toggle="modal" data-bs-target="#createEditModal" @click=${() => renderForm(category)}>${category.name}</button>` : html`<button class="btn" >${category.name}</button>`}
+                ${['manager', 'admin'].includes(loggedInUser.role) ? html`<button class="btn" data-bs-toggle="modal" data-bs-target="#createEditModal" @click=${() => renderForm(category)}>${category.name} (${category.productsCount})</button>` : html`<button class="btn">${category.name} (${category.productsCount})</button>`}
                 ${categories.filter(cat => cat.path == `${category.path}${category.slug},` || cat.path == `,${category.slug},`).map(child => categoryTemplate(child))}
             </div>
         </div>`;
@@ -223,7 +223,7 @@ function renderForm(category) {
 export async function categoriesPage() {
     selectedCategoryId = null;
     async function loadCategories() {
-        const req = await axios.get('/categories');
+        const req = await axios.get('/categories', { params: { productsCount: true } });
         categories = req.data;
 
         formOptions = categoriesOptions({ categories });

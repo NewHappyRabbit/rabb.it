@@ -10,7 +10,8 @@ export function categoriesRoutes() {
 
     categoriesRouter.get('/categories', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const categories = await CategoryController.get();
+            const filters = req.query;
+            const categories = await CategoryController.get(filters);
 
             res.json(categories);
         } catch (error) {
