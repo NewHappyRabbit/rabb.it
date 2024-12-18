@@ -10,11 +10,11 @@ import fs from 'fs';
 import { slugify } from "../models/functions/global.js";
 
 async function changeCategory() {
-    const from = await Category.findById('67176f05ad5fe8600f404ca1');
-    const to = await Category.findById('66edb0cbb491562a132a7176');
+    const from = await Category.findById('66fa80aa0792ff30b8257f1b');
+    const to = await Category.findById('66edb2148148f5a08f2003ec');
 
     // Find all products and replace category id
-    const products = await Product.find({ category: from });
+    const products = await Product.find({ category: from._id });
     const wooProducts = [];
     for (let product of products) {
         if (product.woocommerce?.length > 0 && product.deleted === false && product.hidden === false)
@@ -29,6 +29,7 @@ async function changeCategory() {
     }
     products.forEach(p => p.category = to._id);
     console.log(products.length, wooProducts.length)
+    // return;
 
     // Save products in db
     await Promise.all(products.map(async p => await p.save()));
