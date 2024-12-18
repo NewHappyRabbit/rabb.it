@@ -494,5 +494,19 @@ export const ProductController = {
         } else await product.deleteOne();
 
         return { status: 204, wooData };
+    },
+    markOutOfStock: async (id) => {
+        const product = await Product.findById(id);
+        if (!product) return { status: 404, message: 'Продуктът не е намерен' };
+
+        if (product.sizes.length > 0) {
+            for (const size of product.sizes)
+                size.quantity = 0;
+        }
+        product.quantity = 0;
+        product.outOfStock = true;
+        await product.save();
+
+        return { status: 200, product };
     }
 }
