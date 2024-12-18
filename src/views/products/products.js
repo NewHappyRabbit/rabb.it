@@ -137,7 +137,7 @@ const table = ({ count, products, pageCount }) => html`
                             <td>${product.code}</td>
                             <td>${product.name}</td>
                             <td>${product.description || ''}</td>
-                            <td class="text-nowrap">${product.quantity} бр.</td>
+                            <td class="text-nowrap">${product.quantity} бр.${product?.sizes.some(s => s.quantity !== product.sizes[0].quantity) ? ' + Р' : ''}</td>
                             <td>${product.sizes.length > 0 ? sizesTemplate(product.sizes) : ''}</td>
                             <td class="text-nowrap">
                                 ${product.sizes.length > 0 ? html`<div>${formatPrice(product.deliveryPrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}

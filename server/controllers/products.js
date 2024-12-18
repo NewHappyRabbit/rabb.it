@@ -277,6 +277,9 @@ export const ProductController = {
 
         data.outOfStock = false;
 
+        if (data.sizes.length !== 0)
+            data.openedPackages = data.sizes.some(s => s.quantity !== data.sizes[0].quantity);
+
         // Check if product quantity is 0 or each size qty is 0 (depending if product is simple or variable)
         if (data.sizes.length && data.sizes.filter(size => size.quantity > 0).length === 0) {
             data.outOfStock = true;
@@ -505,6 +508,7 @@ export const ProductController = {
         }
         product.quantity = 0;
         product.outOfStock = true;
+        product.openedPackages = false;
         await product.save();
 
         return { status: 200, product };
