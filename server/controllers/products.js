@@ -299,7 +299,7 @@ export const ProductController = {
                     for (let size of found.sizes) size.quantity += +product.quantity * found.multiplier;
 
                     // set package quantity to smallest size quantity
-                    found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / product.multiplier);
+                    found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / found.multiplier);
                 } else found.quantity += +product.quantity; // simple product
 
                 continue; // start next iteration
