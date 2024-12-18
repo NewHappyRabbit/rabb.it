@@ -7,6 +7,113 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+import { slugify } from "../models/functions/global.js";
+
+async function changeCategory() {
+    const from = await Category.findById('67176f05ad5fe8600f404ca1');
+    const to = await Category.findById('66edb0cbb491562a132a7176');
+
+    // Find all products and replace category id
+    const products = await Product.find({ category: from });
+    const wooProducts = [];
+    for (let product of products) {
+        if (product.woocommerce?.length > 0 && product.deleted === false && product.hidden === false)
+            wooProducts.push({
+                id: product.woocommerce[0].id,
+                categories: [
+                    {
+                        id: to.woocommerce[0].id
+                    }
+                ]
+            });
+    }
+    products.forEach(p => p.category = to._id);
+    console.log(products.length, wooProducts.length)
+
+    // Save products in db
+    await Promise.all(products.map(async p => await p.save()));
+
+    for (let i = 0; i < wooProducts.length; i += 100) {
+        const batch = wooProducts.slice(i, i + 100);
+        console.log('Starting work on batch: ' + i)
+        await WooCommerce_Shops[0].post('products/batch', { update: batch }).then(() => {
+            console.log('Products successfully updated in WooCommerce!')
+        }).catch((error) => {
+            console.error('Error batch updating products in WooCommerce!')
+            console.error(error);
+        });
+    }
+
+    console.log('Done!')
+}
+// changeCategory();
+
+async function fixSlugs() {
+    const categories = await Category.find();
+
+    for (let category of categories) {
+        // create slug
+        var slug = slugify(category.name);
+
+        // Check if exact match
+        const exactMatch = await Category.findOne({ slug: slug });
+        if (exactMatch && exactMatch._id.toString() !== category._id.toString()) {
+            // Check if more than one (ex. test-1, test-2 ....)
+            let freeSlug = false, i = 1;
+            while (freeSlug === false) {
+                const testSlug = slug + '-' + i;
+                const temp = await Category.findOne({ slug: testSlug });
+                if (temp) {
+                    i++
+                    continue;
+                };
+
+                freeSlug = true;
+                slug = testSlug;
+            }
+        }
+
+        category.slug = slug;
+    }
+
+    for (let i = 0; i < categories.length; i += 100) {
+        const batch = categories.slice(i, i + 100).map(c => ({ id: c.woocommerce[0].id, slug: c.slug }));
+        console.log('Starting work on batch: ' + i)
+        await WooCommerce_Shops[0].post('products/categories/batch', { update: batch }).then(() => {
+            console.log('Categories successfully updated in WooCommerce!')
+        }).catch((error) => {
+            console.error('Error batch updating categories in WooCommerce!')
+            console.error(error);
+        });
+    }
+
+    await Promise.all(categories.map(async c => await c.save()));
+}
+// fixSlugs();
+
+async function fixParent() {
+    const categories = await Category.find({ path: { $regex: 'detski-drehi' } });
+
+    console.log(categories.length);
+    for (let category of categories) {
+        category.path = category.path.replace(',detski-drehi', '');
+        if (category.path === ',') category.path = null;
+    }
+
+    for (let i = 0; i < categories.length; i += 100) {
+        const batch = categories.slice(i, i + 100).map(c => ({ id: c.woocommerce[0].id, parent: 0 }));
+        console.log('Starting work on batch: ' + i)
+        await WooCommerce_Shops[0].post('products/categories/batch', { update: batch }).then(() => {
+            console.log('Categories successfully updated in WooCommerce!')
+        }).catch((error) => {
+            console.error('Error batch updating categories in WooCommerce!')
+            console.error(error);
+        });
+    }
+
+    await Promise.all(categories.map(async c => await c.save()));
+}
+// fixParent();
 
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});

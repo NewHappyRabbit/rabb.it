@@ -1,5 +1,6 @@
 import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
+import { Customer } from "../models/customer.js";
 import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
@@ -43,6 +44,15 @@ export async function FirstInitWooCommerce() {
         }
         await Promise.all(productAttributes.map(async (p) => await p.save()));
         console.log('Product attributes data type fixed!');
+         */
+    /* 
+        //Fix customers to use new data type
+        const customers = await Customer.find({ "woocommerce": { $exists: true }, "woocommerce.woo_url": { $exists: false } });
+        for (const customer of customers) {
+            customer.woocommerce[0].woo_url = WooCommerce_Shops[0].url
+        }
+        await Promise.all(customers.map(async (c) => await c.save()));
+        console.log('Customers data type fixed!');
          */
     // Check if all products attributes exist in WooCommerce, if not - create them
     // await WooCheckProductAttributesINIT();

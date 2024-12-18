@@ -7,7 +7,7 @@ import fs from 'fs';
 
 export const CategoryController = {
     get: async (filters) => {
-        const categories = await Category.find().sort({ path: 1, order: 1 }).lean();
+        const categories = await Category.find().sort({ name: 1, order: 1 }).lean();
         if (filters.productsCount == 'true') {
             await Promise.all(categories.map(async (category) => {
                 category.productsCount = await Product.find({ category: category._id, deleted: false }).countDocuments();
@@ -87,13 +87,6 @@ export const CategoryController = {
             await category.save();
         }))
         data.path = newPath;
-
-        /* 
-        if (data.parent) {
-            if (!parent) return { status: 400, message: 'Родителската категория не съществува', property: 'parent' };
-
-            parent.path ? data.path = `${parent.path}${parent.slug},` : data.path = `,${parent.slug},`;
-        } */
 
         // create new slug if name has changed
         if (data.name !== currentCategory.name) {
