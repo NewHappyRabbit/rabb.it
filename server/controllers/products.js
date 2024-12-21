@@ -277,6 +277,9 @@ export const ProductController = {
 
         data.outOfStock = false;
 
+        if (data.sizes.length !== 0)
+            data.openedPackages = data.sizes.some(s => s.quantity !== data.sizes[0].quantity);
+
         // Check if product quantity is 0 or each size qty is 0 (depending if product is simple or variable)
         if (data.sizes.length && data.sizes.filter(size => size.quantity > 0).length === 0) {
             data.outOfStock = true;
@@ -299,7 +302,7 @@ export const ProductController = {
                     for (let size of found.sizes) size.quantity += +product.quantity * found.multiplier;
 
                     // set package quantity to smallest size quantity
-                    found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / product.multiplier);
+                    found.quantity = parseInt(Math.min(...found.sizes.map(s => s.quantity)) / found.multiplier);
                 } else found.quantity += +product.quantity; // simple product
 
                 continue; // start next iteration
@@ -494,5 +497,20 @@ export const ProductController = {
         } else await product.deleteOne();
 
         return { status: 204, wooData };
+    },
+    markOutOfStock: async (id) => {
+        const product = await Product.findById(id);
+        if (!product) return { status: 404, message: 'Продуктът не е намерен' };
+
+        if (product.sizes.length > 0) {
+            for (const size of product.sizes)
+                size.quantity = 0;
+        }
+        product.quantity = 0;
+        product.outOfStock = true;
+        product.openedPackages = false;
+        await product.save();
+
+        return { status: 200, product };
     }
 }

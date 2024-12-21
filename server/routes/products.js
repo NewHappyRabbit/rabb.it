@@ -196,6 +196,24 @@ export function productsRoutes() {
         }
     });
 
+    productsRouter.put('/products/markOutOfStock/:id', permit('manager', 'admin'), async (req, res) => {
+        try {
+            const id = req.params.id;
+
+            const { product, status, message } = await ProductController.markOutOfStock(id);
+            if (status !== 201)
+                return res.status(status).send(message);
+
+            WooUpdateQuantityProducts([product]);
+
+            res.status(status).json(product);
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     productsRouter.put('/products/:id', permit('manager', 'admin'), imageUploader.fields([{ name: 'image', maxCount: 1 }, { name: 'additionalImages', maxCount: 10 }]), async (req, res) => {
         try {
             const id = req.params.id;
@@ -211,13 +229,13 @@ export function productsRoutes() {
             else if (product.hidden === true && product?.woocommerce?.length) {
                 console.log('Product changed from non-hidden to hidden -> Deleting it from WooCommerce!');
                 // Product was probably changed from non-hidden to hidden
-                await WooDeleteProduct(product.woocommerce.id); // Delete from Woo
+                await WooDeleteProduct(product.woocommerce); // Delete from Woo
                 product.woocommerce = undefined;
                 await product.save();
             } else if (product.hidden === false && !product.woocommerce.length) {
                 console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
                 // Product was probably changed from hidden to non-hidden
-                await WooCreateProduct(product);
+                WooCreateProduct(product);
             }
 
             res.status(status).json(product);
