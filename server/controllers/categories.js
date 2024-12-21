@@ -7,7 +7,8 @@ import fs from 'fs';
 
 export const CategoryController = {
     get: async (filters) => {
-        const categories = await Category.find().sort({ name: 1, order: 1 }).lean();
+        const categories = await Category.find().sort({ order: 1, name: 1 }).lean();
+        // const categories = await Category.find().sort({ name: 1, order: 1 }).lean();
         if (filters.productsCount == 'true') {
             await Promise.all(categories.map(async (category) => {
                 category.productsCount = await Product.find({ category: category._id, deleted: false }).countDocuments();
