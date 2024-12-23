@@ -22,7 +22,6 @@ async function loadCategories(product) {
         categories,
         ...(product && { selected: product.category }),
         showNoParent: false,
-        disableWithChilden: true,
     }
 
     return categoriesOptions(options);
