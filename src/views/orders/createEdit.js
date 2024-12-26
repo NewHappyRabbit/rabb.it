@@ -133,7 +133,7 @@ const secondTopRow = () => html`
     <div class="col-6 col-sm-3">
         <div class="form-check form-switch p-0">
             <label class="form-check-label d-block" for="returnQuantity">Върни бройки в склад:</label>
-            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="returnQuantity" ?checked=${order?.returnQuantity} name="returnQuantity">
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="returnQuantity" ?checked=${order?.returnQuantity || true} name="returnQuantity">
         </div>
     </div>
 `;
@@ -604,7 +604,7 @@ async function addProduct(e) {
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
     if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
 
-    var product, quantity = order?.type === 'credit' || documentType === 'credit' ? -1 : 1;
+    var product, quantity = 1;
 
     // check if quantity was entered in input field
     if (e.target.value.split('*').length === 1)
@@ -837,7 +837,7 @@ function validateOrder(data) {
             } else if (sizeEl && product.size) markValidEl(sizeEl);
         }
 
-        if (!product.quantity || order?.type !== 'credit' && documentType !== 'credit' && product.quantity < 1) {
+        if (!product.quantity || product.quantity < 1) {
             markInvalidEl(row.querySelector('input[name="quantity"]'));
             invalidFlag = true;
         } else markValidEl(row.querySelector('input[name="quantity"]'));
@@ -854,7 +854,7 @@ function validateOrder(data) {
 
         // Only check if quantity exists on retail or wholesale but product is simple
         if (orderType === 'retail' || (orderType === 'wholesale' && !row.querySelector('input[name="size"]'))) {
-            if (!product.quantity || order?.type !== 'credit' && documentType !== 'credit' && product.quantity < 1) {
+            if (!product.quantity || product.quantity < 1) {
                 markInvalidEl(row.querySelector('input[name="quantity"]'));
                 invalidFlag = true;
             } else markValidEl(row.querySelector('input[name="quantity"]'));

@@ -60,7 +60,7 @@ async function validateOrder(data) {
         if (data.orderType === 'wholesale' && existingProduct && existingProduct.sizes.length > 0 && (!product.selectedSizes || product.selectedSizes?.length === 0))
             return { status: 400, message: `Трябва да изберете поне 1 размер за продукта: ${existingProduct.name} [${existingProduct.code}]`, property: 'size', _id: existingProduct._id };
 
-        if (!product.quantity || data.type !== 'credit' && product.quantity <= 0)
+        if (!product.quantity || product.quantity <= 0)
             return { status: 400, message: `Въведете количество за продукта: ${product.name}`, property: 'quantity', ...(existingProduct ? { _id: existingProduct._id } : {}) };
 
         if (!product.price)
@@ -85,7 +85,7 @@ function pad(toPad, padChar, length) {
 
 async function removeProductsQuantities({ data, returnedProducts }) {
     var total = 0;
-    var updatedProducts = returnedProducts ? [...returnedProducts] : []; // If PUT, get returnedProducts quantities and save them here at the end if all is good
+    var updatedProducts = returnedProducts || []; // If PUT, get returnedProducts quantities and save them here at the end if all is good
     // Calculate total and remove quantity from stock
     for (let i = 0; i < data.products.length; i++) {
         const product = data.products[i];
@@ -129,7 +129,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             if (existingProduct.quantity < product.quantity)
                 return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${existingProduct.quantity}` };
 
-            existingProduct.quantity -= product.quantity;
+            existingProduct.quantity -= Number(product.quantity);
 
             // If no quantity left, mark as out of stock
             if (existingProduct.quantity <= 0) existingProduct.outOfStock = true;
@@ -157,7 +157,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             if (existingProduct.quantity < product.quantity)
                 return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${existingProduct.quantity}` };
 
-            existingProduct.quantity -= product.quantity;
+            existingProduct.quantity -= Number(product.quantity);
 
             // If no quantity left, mark as out of stock
             if (existingProduct.quantity <= 0) existingProduct.outOfStock = true;
@@ -173,21 +173,25 @@ async function removeProductsQuantities({ data, returnedProducts }) {
 
     return { total, updatedProducts };
 }
-async function returnProductsQuantities(order) {
-    var savedProducts = [];
+async function returnProductsQuantities({ data, returnedProducts }) {
+    var total = 0;
+    var updatedProducts = returnedProducts || [];
 
-    for (let i = 0; i < order.products.length; i++) {
-        const product = order.products[i];
+    for (let i = 0; i < data.products.length; i++) {
+        const product = data.products[i];
 
-        if (!product.product) continue; // if product not in db, skip
+        if (!product.product) {
+            total += (product.quantity * product.price) * (1 - product.discount / 100);
+            continue;
+        }
 
         // Check if in doneProducts first, otherwise search db
-        const alreadyInDoneProducts = savedProducts.find(p => p._id.toString() === product.product.toString());
+        const alreadyInDoneProducts = updatedProducts.find(p => p._id.toString() === product.product.toString());
         const productInDb = await Product.findById(product.product);
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
-        if (order.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
+        if (data.orderType === 'wholesale' && existingProduct.sizes.length > 0) {
             // Return quantity to each selected size (can be all of them, or just some (sell open package))
 
             let sizesToReturn;
@@ -213,13 +217,13 @@ async function returnProductsQuantities(order) {
         }
 
         // Wholesale + Simple product
-        if (order.orderType === 'wholesale' && existingProduct?.sizes?.length === 0) {
-            existingProduct.quantity += product.quantity;
+        if (data.orderType === 'wholesale' && existingProduct?.sizes?.length === 0) {
+            existingProduct.quantity += Number(product.quantity);
             existingProduct.outOfStock = false;
         }
 
         // Retail + Variable product
-        if (order.orderType === 'retail' && existingProduct.sizes.length > 0) {
+        if (data.orderType === 'retail' && existingProduct.sizes.length > 0) {
             existingProduct.sizes.filter(size => size.size === product.size)[0].quantity += product.quantity;
 
             // Update package quantity to be the lowest of all selected sizes quantity
@@ -229,17 +233,19 @@ async function returnProductsQuantities(order) {
         }
 
         // Retail + Simple product
-        if (order.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
-            existingProduct.quantity += product.quantity;
+        if (data.orderType === 'retail' && existingProduct?.sizes?.length === 0) {
+            existingProduct.quantity += Number(product.quantity);
 
             existingProduct.outOfStock = false;
         }
 
         // Add product to array to save later
-        if (!alreadyInDoneProducts) savedProducts.push(existingProduct);
+        if (!alreadyInDoneProducts) updatedProducts.push(existingProduct);
+        total += (product.quantity * product.price) * (1 - product.discount / 100);
     }
+    total = total.toFixed(2);
 
-    return savedProducts;
+    return { total, updatedProducts };
 }
 
 export const OrderController = {
@@ -318,7 +324,7 @@ export const OrderController = {
 
         data.user = userId;
 
-        let { total, updatedProducts, message, status } = await removeProductsQuantities({ data });
+        let { total, updatedProducts, message, status } = data.type !== 'credit' ? await removeProductsQuantities({ data }) : await returnProductsQuantities({ data }); // If credit, return quantity instead of removing it
         if (status) return { status, message };
 
         data.total = total;
@@ -390,9 +396,11 @@ export const OrderController = {
         data.user = userId;
 
         // First return all initial order products quantity to stock without saving them to DB
-        let returnedProducts = await returnProductsQuantities(order);
+        let { updatedProducts: returnedProducts } = data.type !== 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
         // Then remove quantities of new products from stock, save is done here since the returnedProducts array is used to check the quantities before saving them
-        let { total, updatedProducts, message, status } = await removeProductsQuantities({ data, returnedProducts });
+        let { total, updatedProducts, message, status } = data.type !== 'credit' ? await removeProductsQuantities({ data, returnedProducts }) : await returnProductsQuantities({ data, returnedProducts }); // If credit, return quantity instead of removing it
+
+        // let { total, updatedProducts, message, status } = await removeProductsQuantities({ data, returnedProducts });
 
         if (status) return { status, message };
 
@@ -453,15 +461,15 @@ export const OrderController = {
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
-        const returnedProducts = await returnProductsQuantities(order);
+        const { updatedProducts } = order.type !== 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
 
         // Update all products in paralel with promies
         if (returnQuantity === true)
-            await Promise.all(returnedProducts.map(async (product) => await product.save()));
+            await Promise.all(updatedProducts.map(async (product) => await product.save()));
 
         order.deleted = true;
         await order.save();
 
-        return { status: 204, returnedProducts };
+        return { status: 204, updatedProducts };
     }
 }

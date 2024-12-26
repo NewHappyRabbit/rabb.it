@@ -118,12 +118,12 @@ export async function ordersRoutes() {
     ordersRouter.delete('/orders/:id', permit('admin'), async (req, res) => {
         try {
             const { returnQuantity } = req.body;
-            const { status, message, returnedProducts } = await OrderController.delete(req.params.id, returnQuantity);
+            const { status, message, updatedProducts } = await OrderController.delete(req.params.id, returnQuantity);
 
             if (status !== 204) return res.status(status).send(message);
 
             WooCancelOrder(req.params.id);
-            WooUpdateQuantityProducts(returnedProducts);
+            WooUpdateQuantityProducts(updatedProducts);
 
             res.status(204).send();
         } catch (error) {
