@@ -64,8 +64,8 @@ export function productsRoutes() {
 
     productsRouter.get('/products/find', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { search } = req.query;
-            const { product, status, message } = await ProductController.find(search);
+            const { search, filter } = req.query;
+            const { product, status, message } = await ProductController.find({ search, filter });
             if (status !== 200)
                 return res.status(status).send(message);
 

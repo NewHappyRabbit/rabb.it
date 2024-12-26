@@ -619,7 +619,7 @@ async function addProduct(e) {
 
     // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
     // make a query to get the product from db
-    const res = await axios.get('/products/find', { params: { search: product } });
+    const res = await axios.get('/products/find', { params: { search: product, filter: { deleted: false } } });
     const productInDB = res.data || null;
 
     // Wholesale + IN DB + variable

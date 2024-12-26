@@ -125,7 +125,7 @@ const table = ({ count, products, pageCount }) => html`
                         <th scope="col">Размери</th>
                         <th scope="col" class="text-nowrap">Доставна</th>
                         <th scope="col" class="text-nowrap">Едро</th>
-                        <!-- <th scope="col">Дребно</th> -->
+                        <th scope="col">Дребно</th>
                         <th scope="col">Действия</th>
                     </tr>
                 </thead>
@@ -147,7 +147,7 @@ const table = ({ count, products, pageCount }) => html`
                                 ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
                                 <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.wholesalePrice)}</div>
                             </td>
-                            <!-- <td class="text-nowrap">${formatPrice(product.retailPrice)}</td> -->
+                            <td class="text-nowrap">${formatPrice(product.retailPrice)}</td>
                             <td class="text-nowrap">
                                 <a href="/products/${product._id}" class="btn btn-primary"><i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</span></a>
                                 <button @click=${() => selectedProduct = product} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"> Етикети</span></button>

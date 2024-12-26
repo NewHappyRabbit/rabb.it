@@ -34,8 +34,8 @@ async function validateProduct(data) {
     if (!regex.test(retailPrice))
         return { status: 400, message: 'Грешна цена на дребно', property: 'retailPrice' };
 
-    if (Number(wholesalePrice) <= Number(deliveryPrice))
-        return { status: 400, message: 'Цената на едро трябва да е по-голяма от доставната', property: 'wholesalePrice' };
+    if ((sizes.length === 0 && Number(wholesalePrice) <= Number(retailPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(wholesalePrice / (sizes.length * multiplier)))
+        return { status: 400, message: 'Цената на дребно трябва да е по-голяма от цената на едро', property: 'retailPrice' };
 
     if ((sizes.length === 0 && Number(retailPrice) <= Number(deliveryPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(deliveryPrice / (sizes.length * multiplier)))
         return { status: 400, message: 'Цената на дребно трябва да е по-голяма от доставната', property: 'retailPrice' };
@@ -98,15 +98,16 @@ export const ProductController = {
         await Promise.all(doneProducts.map(async (p) => await p.save()));
         return { status: 200 }
     },
-    find: async (search) => {
+    find: async ({ search, filter }) => {
         // Find product using searh as code or barcode
-
-
         const query = {
             noInvoice: { $ne: true },
             outOfStock: { $ne: true },
-            $or: [{ code: search }, { barcode: search }, { barcode: search.slice(0, -1) }]
+            $or: [{ code: search }, { barcode: search }, { barcode: search.slice(0, -1) }],
         }
+
+        if (filter?.deleted === 'false')
+            query.deleted = { $ne: true };
 
         if (search.length === 12) { // scanned with barcode gun, add checkdigit to barcode
             query.$or.push({ barcode: `0${search}` });
