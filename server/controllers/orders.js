@@ -400,8 +400,6 @@ export const OrderController = {
         // Then remove quantities of new products from stock, save is done here since the returnedProducts array is used to check the quantities before saving them
         let { total, updatedProducts, message, status } = data.type !== 'credit' ? await removeProductsQuantities({ data, returnedProducts }) : await returnProductsQuantities({ data, returnedProducts }); // If credit, return quantity instead of removing it
 
-        // let { total, updatedProducts, message, status } = await removeProductsQuantities({ data, returnedProducts });
-
         if (status) return { status, message };
 
         data.total = total;

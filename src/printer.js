@@ -136,11 +136,41 @@ export function printLabel(product, quantity = 1) {
 ^BY3,2,72^FT87,120^BEN,,Y,N
 ^FH\^FD${product.barcode}^FS
 ^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes[0].size}-${product.sizes[product.sizes.length - 1].size}]` : ''}^FS^CI27
-^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)}^FS^CI27
+^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)} (${product.retailPrice})^FS^CI27
 ^FT303,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
 ^PQ${quantity},0
 ^XZ
 `;
+    /* const zplCommand = `^XA
+~TA024
+~JSN
+^LT0
+^MNW
+^MTT
+^PON
+^PMN
+^LH0,0
+^JMA
+^PR4,4
+~SD17
+^JUS
+^LRN
+^CI27
+^PA0,1,1,0
+^XZ
+^XA
+^MMT
+^PW440
+^LL200
+^LS0
+^BY3,2,72^FT87,120^BEN,,Y,N
+^FH\^FD${product.barcode}^FS
+^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes[0].size}-${product.sizes[product.sizes.length - 1].size}]` : ''}^FS^CI27
+^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)}^FS^CI27
+^FT303,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
+^PQ${quantity},0
+^XZ
+`; */
 
     if (!selectedPrinter) {
         // Try finding printer
