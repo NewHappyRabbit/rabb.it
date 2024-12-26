@@ -34,7 +34,7 @@ async function validateProduct(data) {
     if (!regex.test(retailPrice))
         return { status: 400, message: 'Грешна цена на дребно', property: 'retailPrice' };
 
-    if ((sizes.length === 0 && Number(wholesalePrice) <= Number(retailPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(wholesalePrice / (sizes.length * multiplier)))
+    if ((sizes.length === 0 && Number(wholesalePrice) >= Number(retailPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(wholesalePrice / (sizes.length * multiplier)))
         return { status: 400, message: 'Цената на дребно трябва да е по-голяма от цената на едро', property: 'retailPrice' };
 
     if ((sizes.length === 0 && Number(retailPrice) <= Number(deliveryPrice)) || sizes.length !== 0 && Number(retailPrice) <= Number(deliveryPrice / (sizes.length * multiplier)))
