@@ -47,8 +47,8 @@ export const ReferencesController = {
 
         return { orders, count, pageCount };
     },
-    getAccounting: async ({ from, to }) => {
-        const query = { type: 'invoice', deleted: { $ne: true } };
+    getAccounting: async ({ from, to, company }) => {
+        const query = { type: { $in: ['credit', 'invoice'] }, deleted: { $ne: true } };
 
         if (from || to) {
             query.date = {
@@ -57,7 +57,10 @@ export const ReferencesController = {
             }
         }
 
-        const orders = await Order.find(query).select('number customer company total date paymentType').sort({ _id: -1 }).populate('customer company');
+        if (company)
+            query.company = company;
+
+        const orders = await Order.find(query).select('type number customer company total date paymentType').sort({ _id: -1 }).populate('customer company');
         return { orders };
     }
 }
