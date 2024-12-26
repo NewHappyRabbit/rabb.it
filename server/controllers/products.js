@@ -279,7 +279,7 @@ export const ProductController = {
         data.outOfStock = false;
 
         if (data.sizes.length !== 0)
-            data.openedPackages = data.sizes.some(s => s.quantity !== data.sizes[0].quantity);
+            data.openedPackages = data.sizes.length > 1 ? data.sizes.some(s => s.quantity !== data.sizes[0].quantity) || !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1)) : !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1));
 
         // Check if product quantity is 0 or each size qty is 0 (depending if product is simple or variable)
         if (data.sizes.length && data.sizes.filter(size => size.quantity > 0).length === 0) {
@@ -421,7 +421,7 @@ export const ProductController = {
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 
         if (data.sizes.length !== 0)
-            data.openedPackages = data.sizes.some(s => s.quantity !== data.sizes[0].quantity);
+            data.openedPackages = data.sizes.length > 1 ? data.sizes.some(s => s.quantity !== data.sizes[0].quantity) || !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1)) : !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1));
 
         // Update upsaleAmount in settings
         await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });

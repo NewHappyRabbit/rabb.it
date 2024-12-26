@@ -218,6 +218,7 @@ function removeSize(e) {
     if (selectedSizes.length === 0) {
         document.getElementById('deliveryPricePerUnit').disabled = true;
         document.getElementById('multiplier').disabled = true;
+        document.getElementById('multiplier').value = '';
     }
 
     const addedSizes = document.getElementById('addedSizes');
