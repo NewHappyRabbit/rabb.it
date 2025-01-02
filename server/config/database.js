@@ -11,7 +11,8 @@ async function mongoConfig() {
         pass,
         dbName: env,
         authSource: 'admin',
-        autoIndex: env === 'dev'
+        autoIndex: true
+        // autoIndex: env === 'dev'
     }
 
 

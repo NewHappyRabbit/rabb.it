@@ -134,16 +134,19 @@ const productSchema = new Schema({
         type: Boolean,
         default: false,
         required: true,
+        index: true
     },
     image: imageSchema,
     additionalImages: [imageSchema],
     deleted: {
         type: Boolean,
-        default: false
+        default: false,
+        index: true
     },
     outOfStock: {
         type: Boolean,
         default: false,
+        index: true
     },
     woocommerce: [{
         _id: false,

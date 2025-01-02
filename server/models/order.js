@@ -41,10 +41,12 @@ const orderSchema = new Schema({
     number: {
         type: String,
         required: true,
+        index: true
     },
     date: {
         type: Date,
         required: true,
+        index: true
     },
     taxEventDate: {
         type: Date,
@@ -55,12 +57,14 @@ const orderSchema = new Schema({
         type: String,
         enum: Object.keys(documentTypes),
         required: true,
-        default: Object.keys(documentTypes)[0]
+        default: Object.keys(documentTypes)[0],
+        index: true
     },
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        required: true,
+        index: true
     },
     orderType: {
         type: String,
@@ -117,12 +121,14 @@ const orderSchema = new Schema({
     unpaid: {
         type: Boolean,
         required: true,
-        default: true
+        default: true,
+        index: true
     },
     company: { // which company that issued the document
         type: Schema.Types.ObjectId,
         ref: 'Company',
-        required: true
+        required: true,
+        index: true
     },
     user: { // which user created the document
         type: Schema.Types.ObjectId,
@@ -139,7 +145,8 @@ const orderSchema = new Schema({
     },
     deleted: {
         type: Boolean,
-        default: false
+        default: false,
+        index: true
     },
     woocommerce: {
         woo_url: String,
