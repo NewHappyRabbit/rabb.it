@@ -1,4 +1,4 @@
-import { WooCommerce, WooCommerce_Shops } from "../config/woocommerce.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { OrderController } from "../controllers/orders.js";
 import { SettingsController } from "../controllers/settings.js";
 import { Customer } from "../models/customer.js";
@@ -309,7 +309,7 @@ export async function WooCancelOrder(id) {
 /* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
 async function getNewOrders() {
     // This function gets all orders of type "Processing" and checks if they are in the app.
-    if (!WooCommerce) return;
+    if (WooCommerce_Shops.length === 0) return;
 
     console.log('Look for new orders from WooCommerce...');
 

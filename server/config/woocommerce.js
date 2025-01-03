@@ -1,7 +1,6 @@
 import pkg from "@woocommerce/woocommerce-rest-api";
 const WooCommerceRestApi = pkg.default;
 
-
 const shops = process.env.WOO_SHOPS ? JSON.parse(process.env.WOO_SHOPS) : [];
 export var WooCommerce_Shops = [];
 for (let shop of shops) {
@@ -19,8 +18,4 @@ for (let shop of shops) {
     }
 }
 
-// FIXME REMOVE BELOW CODE AND USE ONLY WOOCOMMERCE_SHOPS VARIABLE
-export const WooCommerce = WooCommerce_Shops[0] || undefined;
-export const WooCommerce_Retail = WooCommerce_Shops[1] || undefined;
-
-if (WooCommerce) console.log('WooCommerce instantiated');
+if (WooCommerce_Shops.length) console.log('WooCommerce instantiated');

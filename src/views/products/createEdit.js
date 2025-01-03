@@ -721,6 +721,17 @@ const attributesTemplate = (product) => html`
         </div>
 
         <div class="col">
+            <label for="sizes_groups">Размери:</label>
+            <select id="sizes_groups" name="sizes_groups" class="form-control">
+                <option ?selected=${!product} value="">Избери</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Бебешки (0-24 м.)'))} value='Бебешки (0-24 м.)'>Бебешки (0-24 м.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Детски (2-10 г.)'))} value='Детски (2-10 г.)'>Детски (2-10 г.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Юношески (10-18 г.)'))} value='Юношески (10-18 г.)'>Юношески (10-18 г.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Възрастни (S,M,L,XL,...)'))} value='Възрастни (S,M,L,XL,...)'>Възрастни (S,M,L,XL,...)</option>
+            </select>
+        </div>
+
+        <div class="col">
             <label for="sex">Пол:</label>
             <select id="sex" name="sex" class="form-control" multiple>
                 <option ?selected=${!product} value="">Избери</option>

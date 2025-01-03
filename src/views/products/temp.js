@@ -27,12 +27,14 @@ async function save() {
         const _id = tr.getAttribute('id');
         let season = Array.from(tr.querySelector('#season').selectedOptions).map(({ value }) => value).filter(e => e !== '');
         let in_category = tr.querySelector('#in_category').value;
+        let sizes_groups = tr.querySelector('#sizes_groups').value;
         let sex = Array.from(tr.querySelector('#sex').selectedOptions).map(({ value }) => value).filter(e => e !== '');
         data.push({
             _id, attributes: {
                 ...(season.length > 0 ? { season } : {}),
                 ...(sex.length > 0 ? { sex } : {}),
                 ...(in_category !== '' ? { in_category } : {}),
+                ...(sizes_groups !== '' ? { sizes_groups } : {})
             }
         });
     }
@@ -74,16 +76,16 @@ const table = ({ products }) => html`
     <button type="button" class="btn btn-primary" @click=${save}>Запази</button>
 `;
 
-function onSelectAttrCategory(e) {
+function onSelectAttrCategory(e, _id) {
     const category = e.target.value;
 
-    document.querySelectorAll('#sex option').forEach(opt => opt.selected = false);
+    document.querySelectorAll(`#sex.id-${_id} option`).forEach(opt => opt.selected = false);
     if (category === 'Мъжки')
-        document.querySelector('#sex [value="За него"]').selected = true;
+        document.querySelector(`#sex.id-${_id} [value="За него"]`).selected = true;
     else if (category === 'Дамски')
-        document.querySelector('#sex [value="За нея"]').selected = true;
+        document.querySelector(`#sex.id-${_id} [value = "За нея"]`).selected = true;
     else if (category === 'Детски')
-        document.querySelectorAll('#sex option').forEach(opt => opt.selected = true);
+        document.querySelectorAll(`#sex.id-${_id} option`).forEach(opt => opt.selected = true);
 }
 
 const attributesTemplate = (product) => html`
@@ -92,28 +94,39 @@ const attributesTemplate = (product) => html`
         <label for="season">Сезон:</label>
         <select id="season" name="season" class="form-control" multiple>
             <option ?selected=${!product?.attributes?.find(a => a.attribute.slug === 'season')} value="">Избери</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Пролет/Лято' || a.value.includes('Пролет/Лято'))} value='Пролет/Лято'>Пролет/Лято</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value === 'Есен/Зима' || a.value.includes('Есен/Зима'))} value='Есен/Зима'>Есен/Зима</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value.includes('Пролет/Лято'))} value='Пролет/Лято'>Пролет/Лято</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'season' && a.value.includes('Есен/Зима'))} value='Есен/Зима'>Есен/Зима</option>
         </select>
     </div>
 
     <div>
         <label for="in_category">Категория:</label>
-        <select @change=${onSelectAttrCategory} id="in_category" name="in_category" class="form-control">
+        <select @change=${(e) => onSelectAttrCategory(e, product._id)} id="in_category" name="in_category" class="form-control">
+            ${console.log(product?.attributes?.find(a => a.attribute.slug === 'in_category'))}
             <option ?selected=${!product?.attributes?.find(a => a.attribute.slug === 'in_category')} value="">Избери</option>
-            ${console.log(product?.attributes)}
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Детски')} value='Детски'>Детски</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Мъжки')} value='Мъжки'>Мъжки</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value === 'Дамски')} value='Дамски'>Дамски</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Детски'))} value='Детски'>Детски</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Мъжки'))} value='Мъжки'>Мъжки</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Дамски'))} value='Дамски'>Дамски</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="sizes_groups">Размери:</label>
+        <select id="sizes_groups" name="sizes_groups" class="form-control">
+            <option ?selected=${!product?.attributes?.find(a => a.attribute.slug === 'sizes_groups')} value="">Избери</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Бебешки (0-24 м.)'))} value='Бебешки (0-24 м.)'>Бебешки (0-24 м.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Детски (2-10 г.)'))} value='Детски (2-10 г.)'>Детски (2-10 г.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Юношески (10-18 г.)'))} value='Юношески (10-18 г.)'>Юношески (10-18 г.)</option>
+                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Възрастни (S,M,L,XL,...)'))} value='Възрастни (S,M,L,XL,...)'>Възрастни (S,M,L,XL,...)</option>
         </select>
     </div>
 
     <div>
         <label for="sex">Пол:</label>
-        <select id="sex" name="sex" class="form-control" multiple>
+        <select id="sex" name="sex" class="form-control id-${product._id}" multiple>
             <option ?selected=${!product?.attributes?.find(a => a.attribute.slug === 'sex')} value="">Избери</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За него' || a.value.includes('За него'))} value='За него'>За него</option>
-            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value === 'За нея' || a.value.includes('За нея'))} value='За нея'>За нея</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value.includes('За него'))} value='За него'>За него</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sex' && a.value.includes('За нея'))} value='За нея'>За нея</option>
         </select>
     </div>
     </div>

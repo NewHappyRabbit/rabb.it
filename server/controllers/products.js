@@ -79,7 +79,7 @@ export const ProductController = {
             if (product.attributes.season) {
                 const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
                 if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
-                productDB.attributes.push({ attribute: seasonAttr._id, value: JSON.stringify(product.attributes.season) });
+                productDB.attributes.push({ attribute: seasonAttr._id, value: product.attributes.season });
             }
 
             if (product.attributes.in_category) {
@@ -88,15 +88,21 @@ export const ProductController = {
                 productDB.attributes.push({ attribute: inCategoryAttr._id, value: product.attributes.in_category });
             }
 
+            if (product.attributes.sizes_groups) {
+                const sizesGroupsAttr = await ProductAttribute.findOne({ slug: 'sizes_groups' });
+                if (!sizesGroupsAttr) return { status: 400, message: 'Атрибутът "sizes_groups" не е намерен' };
+                productDB.attributes.push({ attribute: sizesGroupsAttr._id, value: product.attributes.sizes_groups });
+            }
+
             if (product.attributes.sex) {
                 const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
                 if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
-                productDB.attributes.push({ attribute: sexAttr._id, value: JSON.stringify(product.attributes.sex) });
+                productDB.attributes.push({ attribute: sexAttr._id, value: product.attributes.sex });
             }
             doneProducts.push(productDB);
         }
         await Promise.all(doneProducts.map(async (p) => await p.save()));
-        return { status: 200 }
+        return { status: 200, doneProducts }
     },
     find: async ({ search, filter }) => {
         // Find product using searh as code or barcode
@@ -125,7 +131,7 @@ export const ProductController = {
         // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
         if (page && page === 'temp') {
             // const products = await Product.find({ hidden: false, outOfStock: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(50);
-            const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(50);
+            const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }, { attributes: { $size: 3 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(50);
             return { products, status: 200 };
         }
 
@@ -273,6 +279,12 @@ export const ProductController = {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
             data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+        }
+
+        if (data.sizes_groups) {
+            const sizesGroupsAttr = await ProductAttribute.findOne({ slug: 'sizes_groups' });
+            if (!sizesGroupsAttr) return { status: 400, message: 'Атрибутът "sizes_groups" не е намерен' };
+            data.attributes.push({ attribute: sizesGroupsAttr._id, value: data.sizes_groups });
         }
 
         data.outOfStock = false;
@@ -442,6 +454,12 @@ export const ProductController = {
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
             data.attributes.push({ attribute: sexAttr._id, value: data.sex });
+        }
+
+        if (data.sizes_groups) {
+            const sizesGroupsAttr = await ProductAttribute.findOne({ slug: 'sizes_groups' });
+            if (!sizesGroupsAttr) return { status: 400, message: 'Атрибутът "sizes_groups" не е намерен' };
+            data.attributes.push({ attribute: sizesGroupsAttr._id, value: data.sizes_groups });
         }
 
         if (data.sizes.length > 0) {

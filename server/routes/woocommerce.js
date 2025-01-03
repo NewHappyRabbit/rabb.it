@@ -2,10 +2,10 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooHookAuth } from '../middleware/woocommerce.js'
 import { WooHookCreateOrder } from "../woocommerce/orders.js";
-import { WooCommerce } from "../config/woocommerce.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 
 export function woocommerceRoutes() {
-    if (!WooCommerce) return;
+    if (WooCommerce_Shops.length === 0) return;
 
     const woocommerceRoutes = express.Router();
 

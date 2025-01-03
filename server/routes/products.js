@@ -3,7 +3,7 @@ import { app, basePath, io } from '../app.js';
 import express from 'express';
 import { Product } from "../models/product.js";
 import fs from 'fs';
-import { WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
+import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
 import { WooCommerce_Shops } from "../config/woocommerce.js";
@@ -52,8 +52,9 @@ export function productsRoutes() {
     productsRouter.post('/productstempsave', permit('user', 'manager', 'admin'), async (req, res) => {
         //FIXME DELETE THIS ROUTE AFTER ALL PRODUCTS ARE SAVED WITH ATTRIBUTES
         try {
-            const { status } = await ProductController.saveTemp(req.body);
+            const { status, doneProducts } = await ProductController.saveTemp(req.body);
             if (status !== 200) return res.status(status).send('ERROR');
+            tempWooUpdateAttributes(doneProducts);
             res.status(200).send('ok');
         } catch (error) {
             console.error(error);
