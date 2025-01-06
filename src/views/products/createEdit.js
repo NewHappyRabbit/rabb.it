@@ -722,7 +722,7 @@ const attributesTemplate = (product) => html`
 
         <div class="col">
             <label for="sizes_groups">Размери:</label>
-            <select id="sizes_groups" name="sizes_groups" class="form-control">
+            <select id="sizes_groups" name="sizes_groups" class="form-control" multiple>
                 <option ?selected=${!product} value="">Избери</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Бебешки (0-24 м.)'))} value='Бебешки (0-24 м.)'>Бебешки (0-24 м.)</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Детски (2-10 г.)'))} value='Детски (2-10 г.)'>Детски (2-10 г.)</option>

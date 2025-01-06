@@ -130,8 +130,7 @@ export const ProductController = {
 
         // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
         if (page && page === 'temp') {
-            // const products = await Product.find({ hidden: false, outOfStock: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(50);
-            const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }, { attributes: { $size: 3 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(50);
+            const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }, { attributes: { $size: 3 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(5);
             return { products, status: 200 };
         }
 

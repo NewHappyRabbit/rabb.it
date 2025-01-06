@@ -607,7 +607,7 @@ export async function tempWooUpdateAttributes(products) {
     const sexAttr = mongoAttributes.find(m => m.slug == 'sex');
     const sizesGroupsAttr = mongoAttributes.find(m => m.slug == 'sizes_groups');
 
-    async function formatData(product, shop) {
+    function formatData(product, shop) {
         const data = {
             attributes: [],
         }
@@ -682,20 +682,17 @@ export async function tempWooUpdateAttributes(products) {
         return data;
     }
 
-    const fixedProducts = [];
-    await Promise.all(filtered.map(async p => fixedProducts.push(await formatData(p, WooCommerce_Shops[0]))));
+    const fixedProducts = filtered.map(p => formatData(p, WooCommerce_Shops[0]));
 
     console.log('Starting update for ' + fixedProducts.length + ' products...')
     for (let i = 0; i < fixedProducts.length; i += 100) {
         const batch = fixedProducts.slice(i, i + 100);
-        await retry(async () => {
-            console.log('Starting work on simple products batch: ' + i)
-            await WooCommerce_Shops[0].post('products/batch', { update: batch }).then((res) => {
-                console.log('Products attributes successfully updated in WooCommerce!')
-            }).catch((error) => {
-                console.error('Error batch updating products attributes in WooCommerce!')
-                console.error(error);
-            });
+        console.log('Starting work on simple products batch: ' + i)
+        await WooCommerce_Shops[0].post('products/batch', { update: batch }).then((res) => {
+            console.log('Products attributes successfully updated in WooCommerce!')
+        }).catch((error) => {
+            console.error('Error batch updating products attributes in WooCommerce!')
+            console.error(error);
         });
     }
 }
