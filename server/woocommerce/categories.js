@@ -35,6 +35,7 @@ export async function WooCreateCategoriesINIT() {
                 id: response.data.id,
             });
             await category.save();
+            console.log(`Created category '${category.name}' in WooCommerce [${shop.url}]!`);
         }
     }
     console.log("Categories successfully created in WooCommerce!")
