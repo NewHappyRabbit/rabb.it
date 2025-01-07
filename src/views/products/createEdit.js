@@ -170,15 +170,15 @@ function addSize(e, type) {
 
     if (type === 'simpleSizesContainer') {
         const el = document.getElementById('simpleSize');
-        const value = el.value;
+        const value = el.value.trim();
         clearSizesInputs(el);
 
         if (!value || value === '') return;
         size = value;
     } else if (type === 'suffixSizesContainer') {
         const el = document.getElementById('suffixSize');
-        const suffixSize = el.value;
-        const suffix = document.getElementById('suffix').value;
+        const suffixSize = el.value.trim();
+        const suffix = document.getElementById('suffix').value.trim();
         clearSizesInputs(el);
 
         if (!suffixSize || suffixSize === '' || !suffix || suffix === '') return;
@@ -186,8 +186,8 @@ function addSize(e, type) {
     } else if (type === 'rangeSizesContainer') {
         const fromEl = document.getElementById('rangeFrom');
         const toEl = document.getElementById('rangeTo');
-        const from = fromEl.value;
-        const to = toEl.value;
+        const from = fromEl.value.trim();
+        const to = toEl.value.trim();
         clearSizesInputs(toEl);
         clearSizesInputs(fromEl);
 
@@ -195,7 +195,7 @@ function addSize(e, type) {
         size = from + '-' + to;
     }
 
-    if (!selectedSizes.find(s => s.size.toLowerCase() === size.toLowerCase())) {
+    if (!selectedSizes.find(s => s.size.toLowerCase().trim() === size.toLowerCase().trim())) {
         selectedSizes.push({ size, quantity: product ? 0 : selectedSizes[0]?.quantity || 0 });
 
         updateSizeQty();

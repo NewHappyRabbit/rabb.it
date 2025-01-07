@@ -232,6 +232,11 @@ export function productsRoutes() {
                 // Product was probably changed from non-hidden to hidden
                 await WooDeleteProduct(product.woocommerce); // Delete from Woo
                 product.woocommerce = undefined;
+                if (product.sizes.length > 0) {
+                    for (let size of product.sizes) {
+                        size.woocommerce = undefined;
+                    }
+                }
                 await product.save();
             } else if (product.hidden === false && !product.woocommerce.length) {
                 console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
