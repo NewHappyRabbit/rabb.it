@@ -414,7 +414,7 @@ export async function WooEditProduct(product) {
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
                     console.log(`Product variations successfully edited in WooCommerce [${shop.url}]!`);
                 }).catch((error) => {
-                    console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                    console.error(`Failed to update product variations in WooCommerce [${shop.url}] with _id: ${product._id}`);
                     console.error(error);
                 });
             }
@@ -583,7 +583,7 @@ export async function WooUpdateQuantityProducts(products) {
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
                     console.log(`Products variations quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
-                    console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                    console.error(`Failed to update product variations quantity in WooCommerce [${shop.url}] with _id: ${product._id}`);
                     console.error(error);
                 });
             }
