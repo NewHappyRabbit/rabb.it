@@ -340,50 +340,6 @@ const quantityTemplate = () => html`
             </div>
         </div>
     `;
-/* const quantityTemplate = () => html`
-        <div class="row mb-3" id="qtyTemplate">
-            <div class="col-12 col-sm-4 mb-3">
-                <label for="size" class="form-label">Размери | Суфикс</label>
-                <div class="input-group">
-                    <input class="form-control" name="size" id="size" autocomplete="off"">
-                    <input class="form-control" name="suffix" id="suffix" autocomplete="off" placeholder="г. / м.">
-                    <button @click=${addSize} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
-                </div>
-                <div id="addedSizes" class="d-flex gap-1 mt-1 flex-wrap"></div>
-            </div>
-
-            <div class="col-12 col-sm-4 mb-3">
-                <label for="quantity" class="form-label">Брой | Мярка</label>
-                <div class="input-group">
-                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
-                    <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
-                    <datalist id="unitOfMeasureOptions">
-                        <option value="пакет"></option>
-                        <option value="бр."></option>
-                        <option value="кг."></option>
-                        <option value="л."></option>
-                    </datalist>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-4 mb-3">
-                <label for="multiplier" class="form-label">Повтарящи бр. от размер</label>
-                <input @change=${updateMultiplier} @keyup=${updateMultiplier} class="form-control" type="number" inputmode="numeric" name="multiplier" id="multiplier" min="1" step="1" required .value=${product && product.multiplier} placeholder="1" autocomplete="off" ?disabled="${selectedSizes.length === 0}">
-            </div>
-
-            <div class="col-12 col-sm-3 mb-3 d-none">
-                <label for="minQty" class="form-label">Мин. брой за на едро</label>
-                <input class="form-control" type="number" inputmode="numeric" name="minQty" id="minQty" min="0" step="1" aria-describedby="minQtyHelp" .value=${product && product.minQty} autocomplete="off">
-                <div id="minQtyHelp" class="form-text">Бройки които да се запазят за продажби на едро. Няма да може да се продават на дребно.</div>
-            </div>
-
-            <div class="col-12 col-sm-4">
-                <label for="totalQty" class="form-label">Общ брой</label>
-                <input class="form-control" type="number" .value=${product?.sizes?.length > 0 ? product.sizes.map(s => s.quantity).reduce((a, b) => a + b, 0) : ''} id="totalQty" min="0" step="1" disabled>
-            </div>
-        </div>
-    `; */
-
 const pricesTemplate = () => html`
         <div class="row mb-3 row-gap-3 align-items-end">
             <div class="col ${!['both', 'unit'].includes(deliveryPriceFields) ? 'd-none' : ''}">

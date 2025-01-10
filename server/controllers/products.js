@@ -253,7 +253,6 @@ export const ProductController = {
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
         if (!data.description && data.sizes.length > 0)
             data.description = `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
-        // data.description = `${data.name} - ${data.sizes[0].size}-${data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
         else if (!data.description)
             data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
 
@@ -263,24 +262,28 @@ export const ProductController = {
         data.attributes = [];
         // Check if attributes were used
         if (data.season) {
+            data.season = data.season.filter(e => e !== '');
             const seasonAttr = await ProductAttribute.findOne({ slug: 'season' });
             if (!seasonAttr) return { status: 400, message: 'Атрибутът "season" не е намерен' };
             data.attributes.push({ attribute: seasonAttr._id, value: data.season });
         }
 
         if (data.in_category) {
+            data.in_category = data.in_category.filter(e => e !== '');
             const inCategoryAttr = await ProductAttribute.findOne({ slug: 'in_category' });
             if (!inCategoryAttr) return { status: 400, message: 'Атрибутът "in_category" не е намерен' };
             data.attributes.push({ attribute: inCategoryAttr._id, value: data.in_category });
         }
 
         if (data.sex) {
+            data.sex = data.sex.filter(e => e !== '');
             const sexAttr = await ProductAttribute.findOne({ slug: 'sex' });
             if (!sexAttr) return { status: 400, message: 'Атрибутът "sex" не е намерен' };
             data.attributes.push({ attribute: sexAttr._id, value: data.sex });
         }
 
         if (data.sizes_groups) {
+            data.sizes_groups = data.sizes_groups.filter(e => e !== '');
             const sizesGroupsAttr = await ProductAttribute.findOne({ slug: 'sizes_groups' });
             if (!sizesGroupsAttr) return { status: 400, message: 'Атрибутът "sizes_groups" не е намерен' };
             data.attributes.push({ attribute: sizesGroupsAttr._id, value: data.sizes_groups });
