@@ -551,9 +551,9 @@ export async function WooUpdateQuantityProducts(products) {
             await retry(async () => {
                 console.log('Starting work on simple products batch: ' + i)
                 await shop.post('products/batch', { update: batch }).then(() => {
-                    console.log('Products quantity successfully updated in WooCommerce!')
+                    console.log(`Products quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
-                    console.error('Error batch updating products quantity in WooCommerce!')
+                    console.error(`Error batch updating products quantity in WooCommerce [${shop.url}]!`)
                     console.error(error);
                 });
             });
