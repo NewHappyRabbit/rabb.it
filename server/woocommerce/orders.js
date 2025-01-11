@@ -285,8 +285,7 @@ export async function WooUpdateOrder({ id, updatedProducts }) {
     await WooUpdateQuantityProducts(updatedProducts);
 }
 
-
-export async function WooCancelOrder(id) {
+export async function WooCancelOrder(id, updatedProducts) {
     if (WooCommerce_Shops.length === 0) return;
 
     const order = await Order.findById(id).populate('products.product');
@@ -299,6 +298,7 @@ export async function WooCancelOrder(id) {
 
     await shop.put(`orders/${order.woocommerce.id}`, { status: 'cancelled' }).then(async () => {
         console.log('Order status successfully changed to "Canceled" in WooCommerce!');
+        await WooUpdateQuantityProducts(updatedProducts);
     }).catch((error) => {
         console.error('Error updating order status to "Canceled" in WooCommerce!');
         console.error(error);

@@ -122,8 +122,7 @@ export async function ordersRoutes() {
 
             if (status !== 204) return res.status(status).send(message);
 
-            WooCancelOrder(req.params.id);
-            WooUpdateQuantityProducts(updatedProducts);
+            WooCancelOrder(req.params.id, updatedProducts);
 
             res.status(204).send();
         } catch (error) {
