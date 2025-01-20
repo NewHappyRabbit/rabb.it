@@ -1,4 +1,5 @@
 import { Order } from "../models/order.js";
+import { Product } from "../models/product.js";
 
 export const ReferencesController = {
     get: async ({ pageNumber, pageSize, print = false, user, from, to, type, orderType, customer, company, paymentType, unpaid, numberFrom, numberTo, product }) => {
@@ -62,5 +63,21 @@ export const ReferencesController = {
 
         const orders = await Order.find(query).select('type number customer company total date paymentType').sort({ _id: -1 }).populate('customer company');
         return { orders };
+    },
+    getStocks: async ({ pageSize, pageNumber, print }) => {
+        const dbQuery = { $and: [{ deleted: { $ne: true } }] }
+
+
+
+        let products;
+        if (print)
+            products = await Product.find(dbQuery).sort({ _id: -1 });
+        else products = await Product.find(dbQuery).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ _id: -1 });
+        const count = await Product.countDocuments(dbQuery);
+        const pageCount = Math.ceil(count / pageSize);
+
+        if (!products || products.length === 0) return { products: [], count, pageCount };
+
+        return { products, count, pageCount };
     }
 }

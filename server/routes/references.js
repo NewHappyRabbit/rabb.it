@@ -20,6 +20,20 @@ export function referencesSalesRoutes() {
         }
     });
 
+    referencesRouter.get('/references/stocks', permit('manager', 'admin'), async (req, res) => {
+        try {
+            const { pageSize = 15, pageNumber = 1, print = false } = req.query;
+
+            const { products, count, pageCount } = await ReferencesController.getStocks({ pageSize, pageNumber, print });
+
+            res.json({ products, count, pageCount });
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     referencesRouter.get('/references/accounting', permit('manager', 'admin'), async (req, res) => {
         try {
             const { from, to, company } = req.query;

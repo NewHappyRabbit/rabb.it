@@ -15,6 +15,7 @@ export function mainPage() {
             <!-- MANAGER AND ADMIN ONLY PAGES -->
             ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`
                 <a href="/references/orders" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки по продажби</a>
+                <a href="/references/stocks" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки по наличности</a>
                 <a href="/references/accounting" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки към счетоводство</a>
             ` : ''}
 

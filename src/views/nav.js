@@ -69,6 +69,7 @@ export const nav = () => html`
                             </a>
                             <ul class="dropdown-menu dropdown-menu-md-end">
                                 <li><a class="dropdown-item" href="/references/orders"><i class="bi bi-file-earmark-text"></i> Справка по продажби</a></li>
+                                <li><a class="dropdown-item" href="/references/stocks"><i class="bi bi-file-earmark-text"></i> Справка по наличности</a></li>
                                 <li><a class="dropdown-item" href="/references/accounting"><i class="bi bi-file-earmark-text"></i> Експорт към счетоводство</a></li>
                             </ul>
                         </li>

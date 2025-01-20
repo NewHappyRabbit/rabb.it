@@ -9,7 +9,7 @@ import { usersRoutes } from '@/views/admin/users/routes.js';
 import { salesRoutes } from '@/views/orders/routes.js';
 import { settingsRoutes } from '@/views/admin/settings/routes.js';
 import { companiesRoutes } from '@/views/admin/companies/routes.js';
-import { referencesSalesRoutes } from '@/views/references/orders/routes.js';
+import { referencesSalesRoutes } from '@/views/references/routes.js';
 import { statisticsRoutes } from '@/views/admin/statistics/routes.js';
 import { toggleDarkMode, initSocket } from '@/api';
 import { printerSetup } from '@/printer';
