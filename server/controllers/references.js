@@ -65,9 +65,7 @@ export const ReferencesController = {
         return { orders };
     },
     getStocks: async ({ pageSize, pageNumber, print }) => {
-        const dbQuery = { $and: [{ deleted: { $ne: true } }] }
-
-
+        const dbQuery = { $and: [{ deleted: false, outOfStock: false }] }
 
         let products;
         if (print)

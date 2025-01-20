@@ -99,15 +99,20 @@ const table = ({ products, count, pageCount, total, print = false }) => html`
                 ${products?.map(product => html`
                     <tr>
                         <td>${product?.image?.url ? html`<img class="img-thumbnail w-100" src=${product.image.url}/>` : ''}</td>
-                        <td>${`${product.name} [${product.code}] ${product?.selectedSizes?.length ? '(' + product.selectedSizes.join(', ') + ')' : ''}`}</td>
-                        <td>${formatPrice(product.deliveryPrice)}</td>
-                        <td>${formatPrice(product.wholesalePrice)}</td>
+                        <td>${`${product.name} [${product.code}]`}</td>
+                        <td>${formatPrice(product.deliveryPrice)}${product.sizes.length ? html`<br>${formatPrice(product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length))}/бр.` : ''}</td>
+                        <td>${formatPrice(product.wholesalePrice)}${product.sizes.length ? html`<br>${formatPrice(product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length))}/бр.` : ''}</td>
                         <td>${formatPrice(product.retailPrice)}</td>
+
                         <td>${product.quantity}</td>
-                        <td>${product.sizes?.length && product.sizes.reduce((acc, size) => acc + size.quantity, 0)}</td>
-                        <td>${formatPrice(product.deliveryPrice * product.quantity)}</td>
-                        <td>${formatPrice(product.wholesalePrice * product.quantity)}</td>
-                        <td>${formatPrice(product.retailPrice * (product.sizes.length ? product.sizes.reduce((acc, size) => acc + size.quantity, 0) : product.quantity))}</td>
+
+                        <td>${product.sizes?.length ? html`${product.sizes.map(s => html`${s.size}: ${s.quantity}<br>`)}Общо: ${product.sizes.reduce((acc, size) => acc + size.quantity, 0)}` : ''}</td>
+
+                        <td>${formatPrice(product.sizes.length ? (product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length) * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.deliveryPrice * product.quantity)}</td>
+
+                        <td>${formatPrice(product.sizes.length ? (product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length) * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.wholesalePrice * product.quantity)}</td>
+
+                        <td>${formatPrice(product.sizes.length ? (product.retailPrice * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.retailPrice * product.quantity)}</td>
                     </tr>
                 `)}
                 <tr class="fw-bold">
@@ -145,9 +150,12 @@ function calculateTotals(products) {
         total.quantity += product.quantity;
         if (product.sizes?.length)
             total.pieces += product.sizes.reduce((acc, size) => acc + size.quantity, 0);
-        total.delivery += (product.deliveryPrice * product.quantity);
-        total.wholesale += (product.wholesalePrice * product.quantity);
-        total.retail += (product.retailPrice * (product.quantity * (product.sizes.length || 1) * (product.multiplier || 1)));
+
+        total.delivery += product.sizes.length ? (product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length) * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.deliveryPrice * product.quantity;
+
+        total.wholesale += product.sizes.length ? (product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length) * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.wholesalePrice * product.quantity;
+
+        total.retail += product.sizes.length ? (product.retailPrice * product.sizes.reduce((acc, size) => acc + size.quantity, 0)) : product.retailPrice * product.quantity;
     }
 
     return total;
