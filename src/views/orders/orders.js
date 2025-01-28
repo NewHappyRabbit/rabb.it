@@ -110,7 +110,7 @@ const table = ({ count, orders, pageCount }) => html`
             </thead>
             <tbody>
                 ${orders?.map(order => html`
-                    <tr class="${order.unpaid === true ? "table-danger" : ""}">
+                    <tr class="${loggedInUser.role !== 'user' && order.unpaid === true ? "table-danger" : ""}">
                         <td class="text-start">${params.documentTypes[order.type]}${order?.woocommerce ? html`<i class="bi bi-globe text-primary ms-2 fs-5"></i>` : ''}</td>
                         <td>${order.number}</td>
                         <td>${order.customer.name}</td>
