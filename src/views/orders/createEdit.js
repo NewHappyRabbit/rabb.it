@@ -175,7 +175,7 @@ const bottomRow = (params, companies) => html`
 
     <div class="col-12 col-sm">
         <label for="paidAmount" class="form-label">Платена сума:</label>
-        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
+        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${!['manager', 'admin'].includes(loggedInUser.role)}/>
     </div>
 
     ${documentType === 'invoice' ? html`
