@@ -69,8 +69,8 @@ export const ReferencesController = {
 
         let products;
         if (print)
-            products = await Product.find(dbQuery).sort({ _id: -1 });
-        else products = await Product.find(dbQuery).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ _id: -1 });
+            products = await Product.find(dbQuery).sort({ name: 1 });
+        else products = await Product.find(dbQuery).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ name: 1 });
         const count = await Product.countDocuments(dbQuery);
         const pageCount = Math.ceil(count / pageSize);
 

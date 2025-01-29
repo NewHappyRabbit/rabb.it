@@ -11,70 +11,30 @@ import { loggedInUser } from "@/views/login";
 var pageCtx, path, params, pageCount, selectedFilters = {};
 var temp;
 
+function switchPage() {
+    page(`/references/stocks?pageNumber=${selectedFilters.pageNumber}`);
+}
+
 function goToPage(e) {
     const pageNumber = Number(e.target.value);
 
     if (!pageNumber || pageNumber < 1) selectedFilters.pageNumber = 1;
     else if (pageNumber > pageCount) selectedFilters.pageNumber = pageCount;
     else selectedFilters.pageNumber = pageNumber;
-
-    applyFilters();
+    switchPage();
 }
 
 function prevPage() {
     if (!selectedFilters.pageNumber || selectedFilters.pageNumber === 1) return;
     else selectedFilters.pageNumber = selectedFilters.pageNumber - 1;
-    applyFilters();
+    switchPage();
 }
 
 function nextPage() {
     if (Number(selectedFilters.pageNumber) === pageCount || (!selectedFilters.pageNumber && pageCount < 2)) return;
     else if (!selectedFilters.pageNumber && pageCount > 1) selectedFilters.pageNumber = 2;
     else selectedFilters.pageNumber = Number(selectedFilters.pageNumber) + 1;
-    applyFilters();
-}
-
-async function applyFilters(e) {
-    const formData = new FormData(document.getElementById('filters'));
-    const data = Object.fromEntries(formData.entries());
-    data.pageNumber = selectedFilters.pageNumber;
-
-    if (data.customer) {
-        var selectedId = document.querySelector(`datalist option[value='${data.customer}']`).getAttribute('_id');
-        data.customer = selectedId;
-    }
-
-    if (data.company) {
-        var selectedId2 = document.querySelector(`datalist option[value='${data.company}']`).getAttribute('_id');
-        data.company = selectedId2;
-    }
-
-    if (data.user) {
-        var selectedId3 = document.querySelector(`datalist option[value='${data.user}']`).getAttribute('_id');
-        data.user = selectedId3;
-    }
-
-    if (data.product) {
-        var selectedId4 = document.querySelector(`datalist option[value='${data.product}']`).getAttribute('_id');
-        data.product = selectedId4;
-    }
-
-    selectedFilters = data;
-
-    if (data.unpaid)
-        selectedFilters.unpaid = true;
-
-    if (e) // if coming from filters and not pagination
-        delete selectedFilters.pageNumber;
-
-    Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
-
-    const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
-
-    if (uri.length)
-        page('/references/orders?' + uri);
-    else
-        page('/references/orders');
+    switchPage();
 }
 
 const table = ({ products, count, pageCount, total, print = false }) => html`
