@@ -639,10 +639,12 @@ async function addProduct(e) {
                 unitPrice: productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
                 discount: selectedCustomer?.discount || 0,
                 multiplier: productInDB.multiplier,
+                unitOfMeasure: productInDB.unitOfMeasure
             };
 
             if (temp.selectedSizes.length !== productInDB.sizes.length) {
-                const unitPrice = productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier);
+                const unitPrice = productInDB.wholesalePric
+                e / (productInDB.sizes.length * productInDB.multiplier);
                 temp.price = (unitPrice * temp.selectedSizes.length).toFixed(2);
             }
 
@@ -672,7 +674,7 @@ async function addProduct(e) {
 
     // Retail + IN DB + variable
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length > 0) {
-        const inArray = addedProducts.find(p => p.product._id === productInDB._id && !p.size);
+        const inArray = addedProducts.find(p => p.product?._id === productInDB._id && !p.size);
         // Check if already in addedProducts and NO size is selected
         if (inArray) {
             inArray.quantity = +inArray.quantity + quantity;
@@ -689,7 +691,7 @@ async function addProduct(e) {
 
     // Retail + IN DB + simple
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product._id === productInDB._id);
+        const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
         // Check if already in addedProducts
         if (inArray) {
             inArray.quantity = +inArray.quantity + quantity;
@@ -730,6 +732,8 @@ async function addProduct(e) {
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
         });
+
+    console.log(addedProducts)
 
     successScan(e.target);
     rerenderTable();
@@ -859,6 +863,8 @@ function validateOrder(data) {
                 invalidFlag = true;
             } else markValidEl(row.querySelector('input[name="quantity"]'));
         }
+
+        console.log(product)
 
         if (!product.unitOfMeasure) {
             markInvalidEl(row.querySelector('input[name="unitOfMeasure"]'));
