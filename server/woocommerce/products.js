@@ -591,6 +591,16 @@ export async function WooUpdateQuantityProducts(products) {
     }
 }
 
+async function updateAllProductsWooQuantity() {
+    const products = await Product.find({ deleted: false, hidden: false, 'woocommerce.woo_url': { $exists: true } });
+
+    console.log('STARTING...')
+    await WooUpdateQuantityProducts(products);
+    console.log('DONE!!!')
+}
+
+// updateAllProductsWooQuantity();
+
 export async function tempWooUpdateAttributes(products) {
     //FIXME DELETE THIS FUNCTINO WHEN DELETING /products/temp ROUTE
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
