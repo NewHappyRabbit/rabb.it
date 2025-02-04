@@ -65,12 +65,12 @@ export const ReferencesController = {
         return { orders };
     },
     getStocks: async ({ pageSize, pageNumber, print }) => {
-        const dbQuery = { $and: [{ deleted: false, outOfStock: false }] }
-
+        const dbQuery = { deleted: false, outOfStock: false }
+        const skip = parseInt(pageSize * (Number(pageNumber) - 1)) || 0;
         let products;
         if (print)
             products = await Product.find(dbQuery).sort({ category: 1 });
-        else products = await Product.find(dbQuery).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ category: 1 });
+        else products = await Product.find(dbQuery).sort({ category: 1, _id: -1 }).skip(skip).limit(pageSize);
         const count = await Product.countDocuments(dbQuery);
         const pageCount = Math.ceil(count / pageSize);
 
