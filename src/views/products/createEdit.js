@@ -312,7 +312,7 @@ const quantityTemplate = () => html`
             <div class="col-12 col-sm-4 mb-3">
                 <label for="quantity" class="form-label">Брой | Мярка</label>
                 <div class="input-group">
-                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0}">
+                    <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0 || editPage && loggedInUser.role !== 'admin'}">
                     <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
                     <datalist id="unitOfMeasureOptions">
                         <option value="пакет"></option>
@@ -400,7 +400,7 @@ const sizesTemplate = () => html`
     ${selectedSizes.map(size => html`
         <div class="input-group sizeElement">
             <label for="${size.size}-quantity" class="input-group-text border-primary">${size.size}</label>
-            <input class="form-control border-primary" type="text" @keyup=${updateSizeQuantity} name="${size.size}-quantity" id="${size.size}-quantity" inputmode="decimal" required .value=${size.quantity} autocomplete="off">
+            <input class="form-control border-primary" type="text" @keyup=${updateSizeQuantity} name="${size.size}-quantity" id="${size.size}-quantity" inputmode="decimal" required .value=${size.quantity} autocomplete="off" ?readonly=${editPage && loggedInUser.role !== 'admin'}>
             <button class="btn btn-outline-secondary bgDangerHover" id="size-${size.size}" @click=${removeSize} type="button">X</button>
         </div>`)
     }
