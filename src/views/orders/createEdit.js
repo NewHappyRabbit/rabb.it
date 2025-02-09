@@ -173,9 +173,9 @@ const bottomRow = (params, companies) => html`
         </select>
     </div>
 
-    <div class="col-12 col-sm">
+    <div class="col-12 col-sm ${loggedInUser.role === 'admin' ? '' : 'd-none'}">
         <label for="paidAmount" class="form-label">Платена сума:</label>
-        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${!loggedInUser.role !== 'admin'}/>
+        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${loggedInUser.role !== 'admin'}/>
     </div>
 
     ${documentType === 'invoice' ? html`
@@ -643,8 +643,7 @@ async function addProduct(e) {
             };
 
             if (temp.selectedSizes.length !== productInDB.sizes.length) {
-                const unitPrice = productInDB.wholesalePric
-                e / (productInDB.sizes.length * productInDB.multiplier);
+                const unitPrice = productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier);
                 temp.price = (unitPrice * temp.selectedSizes.length).toFixed(2);
             }
 
@@ -732,8 +731,6 @@ async function addProduct(e) {
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
         });
-
-    console.log(addedProducts)
 
     successScan(e.target);
     rerenderTable();

@@ -151,8 +151,8 @@ const table = ({ count, products, pageCount }) => html`
                             <td class="text-nowrap">
                                 <a href="/products/${product._id}" class="btn btn-primary"><i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</span></a>
                                 <button @click=${() => selectedProduct = product} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"> Етикети</span></button>
-                                ${['manager', 'admin'].includes(loggedInUser.role) ? html`<button @click=${() => markOutOfStock(product)} class="btn btn-danger"><i class="bi bi-box"></i> <i class="bi bi-0-square"></i><span class="d-none d-sm-inline"> Занули брой</span></button>` : ''}
                                 ${loggedInUser.role === 'admin' ? html`
+                                <button @click=${() => markOutOfStock(product)} class="btn btn-danger"><i class="bi bi-box"></i> <i class="bi bi-0-square"></i><span class="d-none d-sm-inline"> Занули брой</span></button>
                                 <button @click=${() => selectedProduct = product._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash"></i><span class="d-none d-sm-inline"> Изтрий</span></button>` : ''}
                             </td>
                         </tr>

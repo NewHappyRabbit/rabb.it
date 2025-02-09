@@ -104,7 +104,7 @@ const table = ({ count, orders, pageCount }) => html`
                     <th scope="col">Стойност</th>
                     <th scope="col">Начин на плащане</th>
                     <th scope="col">Тип на продажба</th>
-                    <th scope="col">Задължения</th>
+                    ${loggedInUser.role === 'admin' ? html`<th scope="col">Задължения</th>` : ''}
                     <th scope="col">Действия</th>
                 </tr>
             </thead>
@@ -119,7 +119,7 @@ const table = ({ count, orders, pageCount }) => html`
                         <td>${formatPrice(order.total)}</td>
                         <td>${params.paymentTypes[order.paymentType]}</td>
                         <td>${params.orderTypes[order.orderType]}</td>
-                        <td class="paidAmount">${order.unpaid === true ? formatPrice(order.total - order.paidAmount) : ""}</td>
+                        ${loggedInUser.role === 'admin' ? html`<td class="paidAmount">${order.unpaid === true ? formatPrice(order.total - order.paidAmount) : ""}</td>` : ''}
                         <td>
                             <a href="/orders/${order._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</a>
                             ${loggedInUser.role === 'admin' && order.unpaid ? submitBtn({ func: (e) => markPaid(e, order._id), icon: 'bi bi-cash', text: 'Маркирай като платена', type: 'button', classes: 'btn-success' }) : ''}
