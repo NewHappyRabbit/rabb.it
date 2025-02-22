@@ -202,7 +202,7 @@ export function productsRoutes() {
             const id = req.params.id;
 
             const { product, status, message } = await ProductController.markOutOfStock(id);
-            if (status !== 201)
+            if (status !== 200)
                 return res.status(status).send(message);
 
             WooUpdateQuantityProducts([product]);
