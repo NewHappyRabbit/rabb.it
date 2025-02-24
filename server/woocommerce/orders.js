@@ -130,6 +130,19 @@ export async function WooHookCreateOrder({ shop, data }) {
 
     if (data.coupon_lines.length > 0)
         wooData.coupons = data.coupon_lines;
+
+    // Check if customer already in db
+    var customer;
+    customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
+
+    // Try to find by email
+    if (!customer && wooData.customer?.email)
+        customer = await Customer.findOne({ email: wooData.customer.email });
+    // Try to find by vat
+    if (!customer && wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
+        customer = await Customer.findOne({ vat: wooData.customer.vat })
+    if (!customer) customer = null;
+
     // Products
     let index = 0;
     for (let product of data.line_items) {
@@ -137,6 +150,15 @@ export async function WooHookCreateOrder({ shop, data }) {
         if (!productInDb) return { status: 404, message: 'Продуктът не е намерен' };
         const dbPrice = shop.custom.type === 'wholesale' ? productInDb.wholesalePrice : productInDb.retailPrice;
 
+        // Check if the product price is different from the one in the database. If its differennt, calculate the % difference and set as product discount
+        const siteDiscount = parseFloat(Math.abs(((product.price - dbPrice) / dbPrice) * 100).toFixed(2));
+
+        let discount = 0;
+
+        /* This code checks if the web price is different from the one in the database. If it is, apply it as discount. Otherwise check if the customer already exists in the DB and has a discount set. Not used currently.
+        if (siteDiscount && siteDiscount !== 0) discount = siteDiscount;
+        else if (customer?.discount && customer.discount !== 0) discount = customer.discount;
+        */
         const productData = {
             index: index++,
             id: product.product_id,
@@ -144,7 +166,7 @@ export async function WooHookCreateOrder({ shop, data }) {
             unitOfMeasure: productInDb.unitOfMeasure,
             quantity: Number(product.quantity),
             price: Number(dbPrice),
-            discount: parseFloat(Math.abs(((product.price - dbPrice) / dbPrice) * 100).toFixed(2)),
+            discount,
         }
 
         //TODO Edit this when sale price is implemented to check sale price as well
@@ -171,25 +193,12 @@ export async function WooHookCreateOrder({ shop, data }) {
 
         wooData.products.push(productData);
     }
-    // Check if customer already in db
-    var customer;
-    customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
-
-    // Try to find by email
-    if (!customer && wooData.customer?.email)
-        customer = await Customer.findOne({ email: wooData.customer.email });
-    // Try to find by vat
-    if (!customer && wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
-        customer = await Customer.findOne({ vat: wooData.customer.vat })
-    if (!customer) customer = null;
 
     if (customer && (customer.woocommerce?.length === 0 || !customer.woocommerce?.find(el => el.woo_url === shop.url))) {
         // Customer found in DB but not connected to this shop. Add shop customer id to customer db
         customer.woocommerce.push({ id: wooData.customer.id, woo_url: shop.url });
         await customer.save();
     } else if (!customer) {
-        console.log('2')
-
         // Create new customer
         if (shop.custom.type === 'wholesale' && wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,10}$/gm)) {
             // Check if customer entered VAT number or company name

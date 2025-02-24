@@ -646,12 +646,24 @@ function onSelectAttrCategory(e) {
     const category = e.target.value;
 
     document.querySelectorAll('#sex option').forEach(opt => opt.selected = false);
-    if (category === 'Мъжки')
+    document.querySelectorAll('#sizes_groups option').forEach(opt => opt.selected = false);
+    document.querySelectorAll('#sizeType option').forEach(opt => opt.selected = false);
+
+    if (category === 'Мъжки') {
         document.querySelector('#sex [value="За него"]').selected = true;
-    else if (category === 'Дамски')
+        document.querySelector('#sizes_groups [value="Възрастни (S,M,L,XL,...)"]').selected = true;
+        document.querySelector('#sizeType [value="simpleSizesContainer"]').selected = true;
+    }
+    else if (category === 'Дамски') {
         document.querySelector('#sex [value="За нея"]').selected = true;
-    else if (category === 'Детски')
+        document.querySelector('#sizes_groups [value="Възрастни (S,M,L,XL,...)"]').selected = true;
+        document.querySelector('#sizeType [value="simpleSizesContainer"]').selected = true;
+    }
+    else if (category === 'Детски') {
         document.querySelectorAll('#sex option').forEach(opt => opt.selected = true);
+        document.querySelector('#sizeType [value="suffixSizesContainer"]').selected = true;
+    }
+    showSizeContainer();
 }
 
 const attributesTemplate = (product) => html`
