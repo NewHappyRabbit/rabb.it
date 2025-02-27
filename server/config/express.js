@@ -25,6 +25,7 @@ function expressConfig() {
     // Enable requests to have file-type/json
     app.use(
         express.json({
+            limit: '5mb',
             verify: function (req, res, buf) {
                 req.rawBody = buf;
             },
