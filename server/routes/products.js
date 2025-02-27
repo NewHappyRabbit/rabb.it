@@ -226,22 +226,22 @@ export function productsRoutes() {
                 return res.status(status).send(message);
 
             if (product.hidden === false && product?.woocommerce?.length) // if hidden then its not in the website
-                WooEditProduct(product);
-            else if (product.hidden === true && product?.woocommerce?.length) {
+                await WooEditProduct(product);
+            else if (product.hidden === true && product?.woocommerce?.length > 0) {
                 console.log('Product changed from non-hidden to hidden -> Deleting it from WooCommerce!');
                 // Product was probably changed from non-hidden to hidden
                 await WooDeleteProduct(product.woocommerce); // Delete from Woo
-                product.woocommerce = undefined;
+                product.woocommerce = [];
                 if (product.sizes.length > 0) {
                     for (let size of product.sizes) {
-                        size.woocommerce = undefined;
+                        size.woocommerce = [];
                     }
                 }
                 await product.save();
             } else if (product.hidden === false && !product.woocommerce.length) {
                 console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
                 // Product was probably changed from hidden to non-hidden
-                WooCreateProduct(product);
+                await WooCreateProduct(product);
             }
 
             res.status(status).json(product);
