@@ -385,15 +385,13 @@ export async function WooCreateProduct(product) {
         var data;
         if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
-        await retry(async () => {
-            await shop.post("products", data).then(async (response) => {
-                await addWooDataToProduct(response.data, product, shop);
-                await product.save();
-                console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
-            }).catch((error) => {
-                console.error(`Failed to create product in WooCommerce [${shop.url}] with _id: ${product._id}`);
-                console.error(error);
-            });
+        await shop.post("products", data).then(async (response) => {
+            await addWooDataToProduct(response.data, product, shop);
+            await product.save();
+            console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
+        }).catch((error) => {
+            console.error(`Failed to create product in WooCommerce [${shop.url}] with _id: ${product._id}`);
+            console.error(error);
         });
     }
 }
@@ -402,7 +400,6 @@ export async function WooEditProduct(product) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
     for (let shop of WooCommerce_Shops) {
-        // for (let shop of WooCommerce_Shops) {
         var data;
         if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(product, shop);
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(product, shop);
@@ -433,23 +430,34 @@ export async function WooEditProduct(product) {
     }
 }
 
-export async function WooDeleteProduct(wooData) {
+export async function WooDeleteProduct(wooData, isProductReference) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
+    // isProductReference is used in the edit page, in order to save the product in DB after edit
+    const product = isProductReference ? wooData : { woocommerce: wooData };
+
     for (let shop of WooCommerce_Shops) {
-        await retry(async () => {
-            await shop.delete(`products/${wooData.find(el => el.woo_url == shop.url).id}`, {
-                force: true
-            }).then(async () => {
-                // Success
-                console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
-            }).catch((error) => {
-                // Invalid request, for 4xx and 5xx statuses
-                console.error(`Failed to delete product in WooCommerce [${shop.url}]`);
-                console.error(error);
-            });
+        await shop.delete(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}`, {
+            force: true
+        }).then(async () => {
+            // Success
+            console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
+        }).catch((error) => {
+            // Invalid request, for 4xx and 5xx statuses
+            console.error(`Failed to delete product in WooCommerce [${shop.url}]`);
+            console.error(error);
         });
     }
+
+    if (!isProductReference) return;
+
+    product.woocommerce = [];
+    if (product.sizes.length > 0) {
+        for (let size of product.sizes) {
+            size.woocommerce = [];
+        }
+    }
+    await product.save();
 }
 
 export async function WooCheckProductAttributesINIT() {
@@ -548,14 +556,12 @@ export async function WooUpdateQuantityProducts(products) {
         console.log('Starting update for ' + products.length + ' products...')
         for (let i = 0; i < products.length; i += 100) {
             const batch = products.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: p.quantity }));
-            await retry(async () => {
-                console.log('Starting work on simple products batch: ' + i)
-                await shop.post('products/batch', { update: batch }).then(() => {
-                    console.log(`Products quantity successfully updated in WooCommerce [${shop.url}]!`)
-                }).catch((error) => {
-                    console.error(`Error batch updating products quantity in WooCommerce [${shop.url}]!`)
-                    console.error(error);
-                });
+            console.log('Starting work on simple products batch: ' + i)
+            await shop.post('products/batch', { update: batch }).then(() => {
+                console.log(`Products quantity successfully updated in WooCommerce [${shop.url}]!`)
+            }).catch((error) => {
+                console.error(`Error batch updating products quantity in WooCommerce [${shop.url}]!`)
+                console.error(error);
             });
         }
     }
