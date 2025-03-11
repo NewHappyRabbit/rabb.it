@@ -5,7 +5,7 @@ function validateCustomer(data) {
     const { name, vat, discount } = data;
     if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
 
-    if (vat && (vat.length < 9 || vat.length > 10)) return { status: 400, message: 'Невалиден ЕИК', property: 'vat' };
+    if (vat && (vat.length < 9 || vat.length > 15)) return { status: 400, message: 'Невалиден ЕИК', property: 'vat' };
 
     // if discount entered, check if format is X or X.Y (ex. 1 or 1.5 or 1.55)
     if (discount && (discount < 0 || discount > 100 || discount.toString().match(/^(\d)+(\.\d{0,2}){0,1}$/) === null))

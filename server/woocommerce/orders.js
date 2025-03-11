@@ -139,7 +139,7 @@ export async function WooHookCreateOrder({ shop, data }) {
     if (!customer && wooData.customer?.email)
         customer = await Customer.findOne({ email: wooData.customer.email });
     // Try to find by vat
-    if (!customer && wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,10}$/gm))
+    if (!customer && wooData.customer?.vat?.length > 0 && wooData.customer.vat.match(/^\d{9,15}$/gm))
         customer = await Customer.findOne({ vat: wooData.customer.vat })
     if (!customer) customer = null;
 
@@ -200,7 +200,7 @@ export async function WooHookCreateOrder({ shop, data }) {
         await customer.save();
     } else if (!customer) {
         // Create new customer
-        if (shop.custom.type === 'wholesale' && wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,10}$/gm)) {
+        if (shop.custom.type === 'wholesale' && wooData.customer.vat?.length > 0 && !wooData.customer.vat.match(/^\d{9,15}$/gm)) {
             // Check if customer entered VAT number or company name
             wooData.customer.vat = '';
             wooData.customer.taxvat = '';

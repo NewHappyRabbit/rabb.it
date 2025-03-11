@@ -17,7 +17,7 @@ const customerSchema = new Schema({
         type: String,
         sparse: true,
         unique: true,
-        match: /^[0-9]{9,10}$/,
+        match: /^[0-9]{9,15}$/,
     },
     taxvat: String, // example: BG123123123
     address: String,

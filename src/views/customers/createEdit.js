@@ -15,7 +15,7 @@ function validateCustomer(data) {
         invalidFlag = markInvalid('name');
     else markValid('name');
 
-    if (data.vat && (data.vat.length > 10 || data.vat.length < 9))
+    if (data.vat && (data.vat.length > 15 || data.vat.length < 9))
         invalidFlag = markInvalid('vat');
     else markValid('vat');
 
@@ -108,7 +108,7 @@ export const customerForm = ({ customer, modal = false, alertElId, functionToRun
     <div class="col-sm-6">
         <label for="vat" class="form-label">ЕИК/ЕГН</label>
         <div class="input-group">
-            <input class="form-control" type="text" id="vat" name="vat" .value=${customer?.vat || ''} placeholder="9/10 цифри" pattern="[0-9]{9,10}" inputmode="numeric" maxlength="10" autocomplete="off">
+            <input class="form-control" type="text" id="vat" name="vat" .value=${customer?.vat || ''} placeholder="9-15 цифри" pattern="[0-9]{9,15}" inputmode="numeric" maxlength="15" autocomplete="off">
         </div>
     </div>
 
