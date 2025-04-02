@@ -1036,6 +1036,17 @@ async function printSale(data) {
     // Check if any product has discount, if none - dont show column
     flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
 
+    if (flags.tableShowDiscounts === true) {
+        // Calculate discount total
+        let discountTotal = 0;
+        data.products.forEach(product => {
+            if (product.discount > 0) {
+                discountTotal += product.quantity * product.price * (product.discount / 100);
+            }
+        });
+        flags.discountTotal = discountTotal;
+    }
+
     // Check if any product has qtyInPackage, if none - dont show column
     flags.tableShowQtyInPackage = data.products.some(product => product.qtyInPackage > 0);
 
@@ -1108,6 +1119,8 @@ const printContainer = ({ data, param, flags }) => html`
         <div class="d-flex flex-column text-end">
             ${param?.stokova || data.type === 'stokova' ? '' : html`<div>Данъчна основа ${data.company.tax}%: ${formatPrice(deductVat(data.total, data.company.tax))}</div>`}
             ${param?.stokova || data.type === 'stokova' ? '' : html`<div>ДДС ${data.company.tax}%: ${formatPrice(data.total - deductVat(data.total, data.company.tax))}</div>`}
+            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Сума преди остъпка: ${formatPrice(data.total + flags.discountTotal)}</div>` : ''}
+            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Отстъпка: ${formatPrice(flags.discountTotal)}</div>` : ''}
             <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)}</div>
         </div>
 
