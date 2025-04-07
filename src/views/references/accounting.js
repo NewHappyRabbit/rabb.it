@@ -1,6 +1,6 @@
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
-import { formatPrice, deductVat, getVat } from '@/api.js';
+import { formatPrice, deductVat, getVat, calculateTotalVats } from '@/api.js';
 import { nav } from "@/views/nav";
 import axios from "axios";
 import { until } from "lit/directives/until.js";
@@ -8,11 +8,7 @@ import { spinner } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login";
 
-let params, selectedFilters = {}, path, companies, temp, total = {
-    vat: 0,
-    totalNoVat: 0,
-    total: 0,
-};
+let params, selectedFilters = {}, path, companies, total;
 
 // set selectedFilters.from to start of month
 const today = new Date();
@@ -28,8 +24,10 @@ const table = ({ orders }) => html`
                 <th scope="col">Партньор</th>
                 <th scope="col">Обект</th>
                 <th scope="col">Начин на плащане</th>
-                <th scope="col">Сума без ДДС</th>
-                <th scope="col">ДДС</th>
+                <th scope="col">Сума без ДДС (20%)</th>
+                <th scope="col">ДДС (20%)</th>
+                <th scope="col">Сума без ДДС (9%)</th>
+                <th scope="col">ДДС (9%)</th>
                 <th scope="col">Сума с ДДС</th>
             </tr>
         </thead>
@@ -42,15 +40,19 @@ const table = ({ orders }) => html`
                     <td>${order.customer.name} ${order.customer.vat ? `(${order.customer.vat})` : ''}</td>
                     <td>${order.company.name} (${order.company.vat})</td>
                     <td>${params.paymentTypes[order.paymentType]}</td>
-                    <td class="text-nowrap">${formatPrice(deductVat(order.total, order.company.tax))}</td>
-                    <td class="text-nowrap">${formatPrice(getVat(order.total, order.company.tax))}</td>
+                    <td class="text-nowrap">${formatPrice(deductVat(order.TOTALS[20]))}</td>
+                    <td class="text-nowrap">${formatPrice(getVat(order.TOTALS[20]))}</td>
+                    <td class="text-nowrap">${formatPrice(deductVat(order.TOTALS[9], 9))}</td>
+                    <td class="text-nowrap">${formatPrice(getVat(order.TOTALS[9], 9))}</td>
                     <td class="text-nowrap">${formatPrice(order.total)}</td>
                 </tr>
             `)}
             <tr class="fw-bold">
-                <td colspan="5">Общо</td>
-                <td class="text-nowrap">${formatPrice(total.totalNoVat)}</td>
-                <td class="text-nowrap">${formatPrice(total.vat)}</td>
+                <td colspan="6">Общо</td>
+                <td class="text-nowrap">${formatPrice(deductVat(total[20]))}</td>
+                <td class="text-nowrap">${formatPrice(getVat(total[20]))}</td>
+                <td class="text-nowrap">${formatPrice(deductVat(total[9], 9))}</td>
+                <td class="text-nowrap">${formatPrice(getVat(total[9], 9))}</td>
                 <td class="text-nowrap">${formatPrice(total.total)}</td>
             </tr>
         </tbody>
@@ -63,16 +65,29 @@ async function loadReferences() {
         const { orders } = req.data;
 
         total = {
-            vat: 0,
-            totalNoVat: 0,
+            20: 0,
+            9: 0,
             total: 0,
         };
 
         for (const order of orders) {
-            const vat = getVat(order.total, order.company.tax);
-            total.vat += vat;
-            total.totalNoVat += order.total - vat;
-            total.total += order.total;
+            const totals = calculateTotalVats(order.products);
+            order.TOTALS = {
+                20: 0,
+                9: 0,
+            }
+
+            if (totals[20]) {
+                total[20] += totals[20];
+                total.total += totals[20];
+                order.TOTALS[20] = totals[20];
+            }
+
+            if (totals[9]) {
+                total[9] += totals[9];
+                total.total += totals[9];
+                order.TOTALS[9] = totals[9];
+            }
         }
 
         return html`${table({ orders })}`

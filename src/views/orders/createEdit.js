@@ -8,7 +8,7 @@ import { submitBtn, toggleSubmitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
-import { numberToBGText, priceRegex, fixInputPrice, pad } from "@/api";
+import { numberToBGText, priceRegex, fixInputPrice, pad, calculateTotalVats } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
 var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
@@ -1097,14 +1097,7 @@ async function printSale(data) {
     flags.tableShowSizes = data.products.some(product => product.size);
 
     // Calculate totals for different VATS (ex some products have 20% vat, some have 9%)
-    const totals = {};
-    for (const product of data.products) {
-        if (!totals[product.vat]) {
-            totals[product.vat] = 0;
-        }
-
-        totals[product.vat] += (product.price * product.quantity) * ((100 - product.discount) / 100);
-    }
+    const totals = calculateTotalVats(data.products);
 
     // should print something like this: invoice original, invoice copy, etc etc depending on whats selected as type
     const printPages = [];

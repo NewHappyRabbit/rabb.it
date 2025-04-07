@@ -61,7 +61,7 @@ export const ReferencesController = {
         if (company)
             query.company = company;
 
-        const orders = await Order.find(query).select('type number customer company total date paymentType').sort({ _id: -1 }).populate('customer company');
+        const orders = await Order.find(query).select('type number customer company total date paymentType products').sort({ _id: -1 }).populate('customer company');
         return { orders };
     },
     getStocks: async ({ pageSize, pageNumber, print }) => {
