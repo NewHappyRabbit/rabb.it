@@ -1206,7 +1206,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
                 <td>Брой в пакет</td>
                 <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
                 <td>Цена</td>
-                <td>ДДС</td>
+                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1231,7 +1231,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    <td class="text-nowrap">${product.vat}%</td>
+                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
@@ -1256,7 +1256,7 @@ const printTableRetail = ({ products, type, flags }) => html`
                 ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
                 <td>Цена</td>
-                <td>ДДС</td>
+                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1280,7 +1280,7 @@ const printTableRetail = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    <td class="text-nowrap">${product.vat}%</td>
+                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
