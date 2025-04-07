@@ -100,6 +100,12 @@ const productSchema = new Schema({
         type: Number,
         default: 0,
     },
+    vat: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 20,
+    },
     deliveryPrice: {
         type: Number,
         match: [/^\d{1,}(\.\d{1,2})?$/, 'Цената трябва да е: пример 5.0, 3, 1.20!'],

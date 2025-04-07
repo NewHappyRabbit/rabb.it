@@ -100,6 +100,10 @@ const orderSchema = new Schema({
                 required: true,
                 min: 0.1
             },
+            vat: {
+                type: Number,
+                default: 20,
+            },
             discount: Number, // discount in percent (ex. 20, 50)
         }
     ],

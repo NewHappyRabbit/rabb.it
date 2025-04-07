@@ -782,6 +782,15 @@ export async function createEditProductPage(ctx, next) {
                 ${pricesTemplate()}
 
                 <div class="row mb-3">
+                    <label for="vat" class="form-label">ДДС %</label>
+                    <select name="vat" class="form-control">
+                        <option ?selected=${product && product.vat === 0} value='0'>0%</option>
+                        <option ?selected=${product && product.vat === 9} value='9'>9%</option>
+                        <option ?selected=${!product || product?.vat === 20} value='20'>20%</option>
+                    </select>
+                </div>
+
+                <div class="row mb-3">
                     <label for="description" class="form-label">Описание</label>
                     <textarea class="form-control" name="description" id="description" rows="3" placeholder="Много готина тениска" .value=${product && product.description} autocomplete="off"></textarea>
                 </div>

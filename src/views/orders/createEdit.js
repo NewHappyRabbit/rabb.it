@@ -292,6 +292,21 @@ function updateSize(e) {
     rerenderTable();
 }
 
+function updateVat(e) {
+    const target = e.target;
+
+    let value = target.value;
+
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+
+    value = target.value
+
+    addedProducts[arrayIndex].vat = value;
+    rerenderTable();
+}
+
 function updateDiscount(e) {
     const target = e.target;
     fixInputPrice({ target });
@@ -369,7 +384,7 @@ const addProductRow = () => html`
             <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
         </div>
     </td>
-    <td colspan="8">
+    <td colspan="9">
         <div id="barcodeVideo"></div>
     </td>
 </tr>
@@ -430,6 +445,7 @@ const wholesaleProductsTable = (products) => html`
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
+                <th>ДДС %</th>
                 <th>Сума</th>
                 <th>Действия</th>
             </tr>
@@ -466,7 +482,17 @@ const wholesaleProductsTable = (products) => html`
                     <td><input @change=${updatePrice} @keyup=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+
+                    <td>
+                        <select ?disabled=${product?.product && product.vat} style="min-width: 60px" @change=${updateVat} name="vat" class="form-control">
+                            <option ?selected=${product && product.vat === 0} value='0'>0%</option>
+                            <option ?selected=${product && product.vat === 9} value='9'>9%</option>
+                            <option ?selected=${!product || product?.vat === 20} value='20'>20%</option>
+                        </select>
+                    </td>
+
                     <td name="subtotal"  class="text-nowrap">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
+
                     <td style="text-align: end">
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
                 </tr>
@@ -488,6 +514,7 @@ const retailProductsTable = (products) => html`
                 <th>Количество</th>
                 <th>Цена</th>
                 <th>Отстъпка %</th>
+                <th>ДДС %</th>
                 <th>Сума</th>
                 <th>Действия</th>
             </tr>
@@ -496,7 +523,7 @@ const retailProductsTable = (products) => html`
             ${products?.map(product => html`
                 <tr addedProductsIndex=${product.index}>
                     <td>${product.index + 1}</td>
-                    
+
                     <td>${product?.product?.name || product.name} ${product.product && '[#' + product.product.code + ']'}</td>
 
                     <td>
@@ -520,6 +547,14 @@ const retailProductsTable = (products) => html`
                     <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+
+                    <td>
+                        <select style="min-width: 60px" @change=${updateVat} name="vat" class="form-control" ?disabled=${product?.product && product.vat}>
+                            <option ?selected=${product && product.vat === 0} value='0'>0%</option>
+                            <option ?selected=${product && product.vat === 9} value='9'>9%</option>
+                            <option ?selected=${!product || product?.vat === 20} value='20'>20%</option>
+                        </select>
+                    </td>
 
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
 
@@ -635,6 +670,7 @@ async function addProduct(e) {
                 selectedSizes: productInDB.sizes.filter(s => s.quantity > 0).map(s => s.size), // selected (checked) sizes
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
+                vat: productInDB.vat,
                 price: productInDB.wholesalePrice,
                 unitPrice: productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
                 discount: selectedCustomer?.discount || 0,
@@ -666,6 +702,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
+                vat: productInDB.vat,
                 price: productInDB.wholesalePrice,
                 discount: selectedCustomer?.discount || 0
             });
@@ -683,6 +720,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity,
+                vat: productInDB.vat,
                 price: productInDB.retailPrice,
                 discount: selectedCustomer?.discount || 0
             });
@@ -704,6 +742,7 @@ async function addProduct(e) {
                 product: productInDB,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
                 price: productInDB.retailPrice,
+                vat: productInDB.vat,
                 unitOfMeasure: productInDB.unitOfMeasure === 'пакет' ? 'бр.' : productInDB.unitOfMeasure,
                 discount: selectedCustomer?.discount || 0
             });
@@ -716,6 +755,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
+            vat: 20,
             qtyInPackage: 0,
             unitOfMeasure: 'пакет',
             discount: selectedCustomer?.discount || 0
@@ -728,6 +768,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
+            vat: 20,
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
         });
@@ -861,8 +902,6 @@ function validateOrder(data) {
             } else markValidEl(row.querySelector('input[name="quantity"]'));
         }
 
-        console.log(product)
-
         if (!product.unitOfMeasure) {
             markInvalidEl(row.querySelector('input[name="unitOfMeasure"]'));
             invalidFlag = true;
@@ -892,6 +931,7 @@ async function createEditOrder(e) {
                         product: product.product._id,
                         quantity: product.quantity,
                         price: product.price,
+                        vat: product.vat,
                         discount: product.discount,
                         selectedSizes: product.selectedSizes,
                         unitOfMeasure: product.product.unitOfMeasure,
@@ -905,6 +945,7 @@ async function createEditOrder(e) {
                         index: product.index,
                         product: product.product._id,
                         quantity: product.quantity,
+                        vat: product.vat,
                         price: product.price,
                         discount: product.discount,
                         unitOfMeasure: product.product.unitOfMeasure
@@ -915,6 +956,7 @@ async function createEditOrder(e) {
                     index: product.index,
                     name: product.name,
                     quantity: product.quantity,
+                    vat: product.vat,
                     price: product.price,
                     ...(product.qtyInPackage > 0 && { qtyInPackage: product.qtyInPackage }),
                     discount: product.discount,
@@ -928,6 +970,7 @@ async function createEditOrder(e) {
                     index: product.index,
                     product: product.product._id,
                     quantity: product.quantity,
+                    vat: product.vat,
                     price: product.price,
                     ...(product.size && { size: product.size }),
                     discount: product.discount,
@@ -938,6 +981,7 @@ async function createEditOrder(e) {
                     index: product.index,
                     name: product.name,
                     quantity: product.quantity,
+                    vat: product.vat,
                     price: product.price,
                     size: product.size,
                     discount: product.discount,
@@ -995,7 +1039,6 @@ async function createEditOrder(e) {
                 return page(`/orders/${req.data}?print`);
 
             page('/orders/create')
-            // page(`/orders/${req.data}`);
         }
     } catch (err) {
         toggleSubmitBtn(e.target);
@@ -1053,14 +1096,24 @@ async function printSale(data) {
     // Check if any product has size, if none - dont show column
     flags.tableShowSizes = data.products.some(product => product.size);
 
+    // Calculate totals for different VATS (ex some products have 20% vat, some have 9%)
+    const totals = {};
+    for (const product of data.products) {
+        if (!totals[product.vat]) {
+            totals[product.vat] = 0;
+        }
+
+        totals[product.vat] += (product.price * product.quantity) * ((100 - product.discount) / 100);
+    }
+
     // should print something like this: invoice original, invoice copy, etc etc depending on whats selected as type
     const printPages = [];
-    printPages.push(printContainer({ data, flags }));
+    printPages.push(printContainer({ totals, data, flags }));
     if (printCopy === true) // print a copy of the invoice
-        printPages.push(printContainer({ data, param: { copy: true }, flags }));
+        printPages.push(printContainer({ totals, data, param: { copy: true }, flags }));
 
     if (printStokova === true) // print stokova of the invoice
-        printPages.push(printContainer({ data, param: { stokova: true }, flags }));
+        printPages.push(printContainer({ totals, data, param: { stokova: true }, flags }));
 
     render(printPages, document.getElementById('printContainer'));
     try {
@@ -1074,7 +1127,7 @@ async function printSale(data) {
 
 // invoice should have deducted tax in product price and shown as sum at the end
 // stokova should have all products with tax included in price and shown as sum at the end
-const printContainer = ({ data, param, flags }) => html`
+const printContainer = ({ totals, data, param, flags }) => html`
     <div style="break-after:page; padding: 1rem">
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
@@ -1111,14 +1164,17 @@ const printContainer = ({ data, param, flags }) => html`
             </table>
         </div>
 
-        ${data.orderType === 'wholesale' ? printTableWholesale({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags }) : printTableRetail({ tax: data.company.tax, products: data.products, type: param?.stokova ? 'stokova' : data.type, flags })}
+        ${data.orderType === 'wholesale' ? printTableWholesale({ products: data.products, type: param?.stokova ? 'stokova' : data.type, flags }) : printTableRetail({ products: data.products, type: param?.stokova ? 'stokova' : data.type, flags })}
         <div style="font-size: 1rem">
             Словом: ${numberToBGText(data.total)}
         </div>
 
         <div class="d-flex flex-column text-end">
-            ${param?.stokova || data.type === 'stokova' ? '' : html`<div>Данъчна основа ${data.company.tax}%: ${formatPrice(deductVat(data.total, data.company.tax))}</div>`}
-            ${param?.stokova || data.type === 'stokova' ? '' : html`<div>ДДС ${data.company.tax}%: ${formatPrice(data.total - deductVat(data.total, data.company.tax))}</div>`}
+            ${param?.stokova || data.type === 'stokova' ? '' : Object.keys(totals).map(key => html`
+                <div>Данъчна основа ${key}%: ${formatPrice(deductVat(totals[key], Number(key)))}</div>
+                <div>ДДС ${key}%: ${formatPrice(totals[key] - deductVat(totals[key], Number(key)))}</div>
+            `)}
+
             ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Сума преди остъпка: ${formatPrice(data.total + flags.discountTotal)}</div>` : ''}
             ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Отстъпка: ${formatPrice(flags.discountTotal)}</div>` : ''}
             <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)}</div>
@@ -1145,7 +1201,7 @@ const printContainer = ({ data, param, flags }) => html`
     </div >
     `;
 
-const printTableWholesale = ({ tax, products, type, flags }) => html`
+const printTableWholesale = ({ products, type, flags }) => html`
     <table id="printProductWholesaleTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
@@ -1157,6 +1213,7 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
                 <td>Брой в пакет</td>
                 <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
                 <td>Цена</td>
+                <td>ДДС</td>
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1177,15 +1234,17 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
 
                     <td>${product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage}</td>
 
-                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), tax)) : ''}</td>
+                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), product.vat)) : ''}</td>
 
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
+
+                    <td class="text-nowrap">${product.vat}%</td>
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
-                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), tax)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>` : ''}
+                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), product.vat)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>` : ''}
 
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), product.vat))}</td>
                 </tr>
             `)}
         </tbody>
@@ -1193,7 +1252,7 @@ const printTableWholesale = ({ tax, products, type, flags }) => html`
     `;
 
 // Add same styling as wholesale table
-const printTableRetail = ({ tax, products, type, flags }) => html`
+const printTableRetail = ({ products, type, flags }) => html`
     <table id="printProductRetailTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
@@ -1204,6 +1263,7 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
                 ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
                 <td>Цена</td>
+                <td>ДДС</td>
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1213,17 +1273,27 @@ const printTableRetail = ({ tax, products, type, flags }) => html`
             ${products.map((product, index) => html`
                 <tr class="text-center">
                     <td>${++index}</td>
+
                     <td>${product?.product?.code || ''}</td>
+
                     <td>${product?.product?.name || product.name}</td>
+
                     <!-- if product with sizes, its probably "брой", else its "пакет" -->
                     <td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
-                    ${flags.tableShowSizes ? html`<td>${product?.size}</td>` : ''}
-                    <td class="text-nowrap">${product.quantity}</td>
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, tax))}</td>
-                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
-                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), tax)) : ''}</td>` : ''}
 
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), tax))}</td>
+                    ${flags.tableShowSizes ? html`<td>${product?.size}</td>` : ''}
+
+                    <td class="text-nowrap">${product.quantity}</td>
+
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
+
+                    <td class="text-nowrap">${product.vat}%</td>
+
+                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
+
+                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), product.vat)) : ''}</td>` : ''}
+
+                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), product.vat))}</td>
                 </tr>
             `)}
         </tbody>
@@ -1333,8 +1403,10 @@ export async function createEditOrderPage(ctx, next) {
             // if order was just created and print was requested
             if (ctx.querystring.includes('print')) {
                 printSale(order);
-                return page('/orders/create')
-                // return page(`/orders/${ctx.params.id}`);
+
+                //FIXME UNCOMMENT
+                // return page('/orders/create')
+                return page(`/orders/${ctx.params.id}`);
             }
         } else {
             order = undefined;

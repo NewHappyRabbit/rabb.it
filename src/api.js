@@ -233,11 +233,16 @@ export function numberToBGText(number) {
 }
 
 export function getVat(price, vat = 20) {
+    if (vat == undefined)
+        vat = 20;
     // Extract vat from price (price already includes vat)
     return price - deductVat(price, vat);
 }
 
-export function deductVat(price, vat = 20) {
+export function deductVat(price, vat) {
+    if (vat == undefined)
+        vat = 20;
+
     // Return the original price with deducted vat
     return price / ((100 + vat) / 100);
 }
