@@ -8,7 +8,7 @@ import { submitBtn, toggleSubmitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
-import { numberToBGText, priceRegex, fixInputPrice, pad } from "@/api";
+import { numberToBGText, priceRegex, fixInputPrice, pad, calculateTotalVats } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
 var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
@@ -1097,14 +1097,7 @@ async function printSale(data) {
     flags.tableShowSizes = data.products.some(product => product.size);
 
     // Calculate totals for different VATS (ex some products have 20% vat, some have 9%)
-    const totals = {};
-    for (const product of data.products) {
-        if (!totals[product.vat]) {
-            totals[product.vat] = 0;
-        }
-
-        totals[product.vat] += (product.price * product.quantity) * ((100 - product.discount) / 100);
-    }
+    const totals = calculateTotalVats(data.products);
 
     // should print something like this: invoice original, invoice copy, etc etc depending on whats selected as type
     const printPages = [];
@@ -1213,7 +1206,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
                 <td>Брой в пакет</td>
                 <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
                 <td>Цена</td>
-                <td>ДДС</td>
+                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1238,7 +1231,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    <td class="text-nowrap">${product.vat}%</td>
+                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
@@ -1263,7 +1256,7 @@ const printTableRetail = ({ products, type, flags }) => html`
                 ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
                 <td>Цена</td>
-                <td>ДДС</td>
+                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1287,7 +1280,7 @@ const printTableRetail = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    <td class="text-nowrap">${product.vat}%</td>
+                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 

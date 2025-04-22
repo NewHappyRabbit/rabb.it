@@ -335,3 +335,26 @@ export function fixInputPrice({ target, round = false, int = false }) {
     else if (target.value.slice(-1) !== '.' && !priceRegex.test(value)) // may be used in orders page, currently using round
         target.value = value.toFixed(2);
 }
+
+export function calculateTotalVats(products) {
+    // Calculate seperate totals for different VATS (ex some products have 20% vat, some have 9%).
+    // Each returned key has the value with VAT included! For example if it returns { 20: 145 }, it means that the sum of all products with 20% vat is 145BGN (VAT included).
+    const totals = {};
+    for (const product of products) {
+        if (!totals[product.vat]) {
+            totals[product.vat] = 0;
+        }
+
+        totals[product.vat] += (product.price * product.quantity) * ((100 - product.discount) / 100);
+    }
+
+    /* Example result:
+    totals = {
+    0: 50,  // 0% vat = 50bgn
+    9: 10,  // 9%vat = 10bgn
+    20: 150, // 20%vat = 150bgn
+    }
+    */
+
+    return totals;
+}

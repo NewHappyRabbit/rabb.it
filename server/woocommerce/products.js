@@ -2,119 +2,7 @@ import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
-import { retry } from "./common.js";
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fs from 'fs';
-import { slugify } from "../models/functions/global.js";
 
-async function changeCategory() {
-    const from = await Category.findById('66fa80aa0792ff30b8257f1b');
-    const to = await Category.findById('66edb2148148f5a08f2003ec');
-
-    // Find all products and replace category id
-    const products = await Product.find({ category: from._id });
-    const wooProducts = [];
-    for (let product of products) {
-        if (product.woocommerce?.length > 0 && product.deleted === false && product.hidden === false)
-            wooProducts.push({
-                id: product.woocommerce[0].id,
-                categories: [
-                    {
-                        id: to.woocommerce[0].id
-                    }
-                ]
-            });
-    }
-    products.forEach(p => p.category = to._id);
-    console.log(products.length, wooProducts.length)
-    // return;
-
-    // Save products in db
-    await Promise.all(products.map(async p => await p.save()));
-
-    for (let i = 0; i < wooProducts.length; i += 100) {
-        const batch = wooProducts.slice(i, i + 100);
-        console.log('Starting work on batch: ' + i)
-        await WooCommerce_Shops[0].post('products/batch', { update: batch }).then(() => {
-            console.log('Products successfully updated in WooCommerce!')
-        }).catch((error) => {
-            console.error('Error batch updating products in WooCommerce!')
-            console.error(error);
-        });
-    }
-
-    console.log('Done!')
-}
-// changeCategory();
-
-async function fixSlugs() {
-    const categories = await Category.find();
-
-    for (let category of categories) {
-        // create slug
-        var slug = slugify(category.name);
-
-        // Check if exact match
-        const exactMatch = await Category.findOne({ slug: slug });
-        if (exactMatch && exactMatch._id.toString() !== category._id.toString()) {
-            // Check if more than one (ex. test-1, test-2 ....)
-            let freeSlug = false, i = 1;
-            while (freeSlug === false) {
-                const testSlug = slug + '-' + i;
-                const temp = await Category.findOne({ slug: testSlug });
-                if (temp) {
-                    i++
-                    continue;
-                };
-
-                freeSlug = true;
-                slug = testSlug;
-            }
-        }
-
-        category.slug = slug;
-    }
-
-    for (let i = 0; i < categories.length; i += 100) {
-        const batch = categories.slice(i, i + 100).map(c => ({ id: c.woocommerce[0].id, slug: c.slug }));
-        console.log('Starting work on batch: ' + i)
-        await WooCommerce_Shops[0].post('products/categories/batch', { update: batch }).then(() => {
-            console.log('Categories successfully updated in WooCommerce!')
-        }).catch((error) => {
-            console.error('Error batch updating categories in WooCommerce!')
-            console.error(error);
-        });
-    }
-
-    await Promise.all(categories.map(async c => await c.save()));
-}
-// fixSlugs();
-
-async function fixParent() {
-    const categories = await Category.find({ path: { $regex: 'detski-drehi' } });
-
-    console.log(categories.length);
-    for (let category of categories) {
-        category.path = category.path.replace(',detski-drehi', '');
-        if (category.path === ',') category.path = null;
-    }
-
-    for (let i = 0; i < categories.length; i += 100) {
-        const batch = categories.slice(i, i + 100).map(c => ({ id: c.woocommerce[0].id, parent: 0 }));
-        console.log('Starting work on batch: ' + i)
-        await WooCommerce_Shops[0].post('products/categories/batch', { update: batch }).then(() => {
-            console.log('Categories successfully updated in WooCommerce!')
-        }).catch((error) => {
-            console.error('Error batch updating categories in WooCommerce!')
-            console.error(error);
-        });
-    }
-
-    await Promise.all(categories.map(async c => await c.save()));
-}
-// fixParent();
 
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});
@@ -346,6 +234,24 @@ async function generateVariationsData(product, shop) {
     return data;
 }
 
+async function generateSingleVariationData(product, size, shop) {
+    const sizeAttr = await ProductAttribute.findOne({ slug: 'size' });
+    const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
+
+    const data = {
+        ...(size.woocommerce.length > 0 && { id: size.woocommerce.find(el => el.woo_url == shop.url).id }),
+        "manage_stock": true,
+        stock_quantity: size.quantity,
+        regular_price: product.retailPrice.toString(),
+        attributes: [{
+            id: sizeId,
+            option: size.size,
+        }],
+    };
+
+    return data;
+}
+
 async function addWooDataToProduct(wooResponse, product, shop) {
     if (!product.woocommerce) product.woocommerce = [];
     product.woocommerce.push({
@@ -405,21 +311,43 @@ export async function WooEditProduct(product) {
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(product, shop);
 
         await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}`, data).then(async () => {
-            // If product has sizes and was already a variable product
-            if (shop.custom.type === 'retail' && product.sizes.length > 0 && product.sizes[0].woocommerce?.length > 0) {
-                const variations = await generateVariationsData(product, shop);
-                await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
-                    console.log(`Product variations successfully edited in WooCommerce [${shop.url}]!`);
-                }).catch((error) => {
-                    console.error(`Failed to update product variations in WooCommerce [${shop.url}] with _id: ${product._id}`);
-                    console.error(error);
+            // If product has sizes
+
+            if (shop.custom.type === 'retail' && product.sizes.length > 0) {
+                // Get all variations ids
+                const variationsInWoo = await shop.get(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations`, {
+                    per_page: 100
+                }).then((response) => {
+                    const ids = [];
+                    response.data.forEach(el => ids.push(el.id));
+                    return ids;
                 });
+
+                // Check if any size was delete in app (doesnt exist in woo) and delete it
+                for (let size of variationsInWoo) {
+                    if (product.sizes.find(s => s.woocommerce.find(el => el.woo_url == shop.url && el.id == size))) continue;
+                    console.log(`Deleting product variation in WooCommerce [${shop.url}] for product with id: ${product._id}, variation id: ${size}`);
+                    await shop.delete(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/${size}`, { force: true });
+                }
+
+                // Check if any size was created in app and create it in woo, or otherwise update it
+                for (let size of product.sizes) {
+                    if (!size.woocommerce?.find(el => el.woo_url == shop.url)) {
+                        // create it
+                        console.log(`Creating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
+                        await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations`, await generateSingleVariationData(product, size, shop)).then(async (response) => {
+                            if (!size.woocommerce) size.woocommerce = [];
+                            size.woocommerce.push({ id: response.data.id, woo_url: shop.url });
+                            await product.save();
+                        });
+                    } else {
+                        // update it
+                        console.log(`Updating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
+                        await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/${size.woocommerce.find(el => el.woo_url == shop.url).id}`, await generateSingleVariationData(product, size, shop));
+                    }
+                }
             }
-            // If product has sizes and was a simple product
-            else if (shop.custom.type === 'retail' && product.sizes.length > 0 && (!product.sizes.woocommerce || product.sizes[0].WooCommerce_Shops?.length === 0)) {
-                await createWooVariations(product.woocommerce.find(el => el.woo_url == shop.url).id, product, shop);
-                await product.save();
-            }
+
             // Success
             console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
         }).catch((error) => {
@@ -587,9 +515,10 @@ export async function WooUpdateQuantityProducts(products) {
                     variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity });
 
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
-                    console.log(`Products variations quantity successfully updated in WooCommerce [${shop.url}]!`)
+                    console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
                     console.error(`Failed to update product variations quantity in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                    console.error(product);
                     console.error(error);
                 });
             }
@@ -752,6 +681,15 @@ export async function WooCreateProductsINIT() {
         console.log(`All products successfully created in WooCommerce [${shop.url}]!`);
     }
 }
+
+async function updateAllProductsQuantities() {
+    const products = await Product.find({ hidden: false, deleted: false }).sort({ _id: -1 });
+
+    console.log('Starting update for ' + products.length + ' products...')
+    await WooUpdateQuantityProducts(products);
+    console.log('All products quantity successfully updated in WooCommerce!');
+}
+// updateAllProductsQuantities();
 
 
 // TODO
