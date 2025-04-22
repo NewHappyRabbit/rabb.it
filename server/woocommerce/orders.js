@@ -7,7 +7,6 @@ import { User } from "../models/user.js";
 import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
-import { retry } from "./common.js";
 import { WooUpdateQuantityProducts } from "./products.js";
 
 export async function WooHookCreateOrder({ shop, data }) {
@@ -146,19 +145,19 @@ export async function WooHookCreateOrder({ shop, data }) {
     // Products
     let index = 0;
     for (let product of data.line_items) {
-        const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString() });
+        const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString(), "woocommerce.woo_url": shop.url });
         if (!productInDb) return { status: 404, message: 'Продуктът не е намерен' };
         const dbPrice = shop.custom.type === 'wholesale' ? productInDb.wholesalePrice : productInDb.retailPrice;
 
+        let discount = 0;
         // Check if the product price is different from the one in the database. If its differennt, calculate the % difference and set as product discount
         const siteDiscount = parseFloat(Math.abs(((product.price - dbPrice) / dbPrice) * 100).toFixed(2));
 
-        let discount = 0;
 
         /* This code checks if the web price is different from the one in the database. If it is, apply it as discount. Otherwise check if the customer already exists in the DB and has a discount set. Not used currently.
+        */
         if (siteDiscount && siteDiscount !== 0) discount = siteDiscount;
         else if (customer?.discount && customer.discount !== 0) discount = customer.discount;
-        */
         const productData = {
             index: index++,
             id: product.product_id,
@@ -312,43 +311,4 @@ export async function WooCancelOrder(id, updatedProducts) {
         console.error('Error updating order status to "Canceled" in WooCommerce!');
         console.error(error);
     });
-}
-
-// TODO
-/* BELOW FUNCTIONS NOT YET DONE FOR MULTI WOO STORES AND RETAIL */
-async function getNewOrders() {
-    // This function gets all orders of type "Processing" and checks if they are in the app.
-    if (WooCommerce_Shops.length === 0) return;
-
-    console.log('Look for new orders from WooCommerce...');
-
-    // Get latest woo order id from db
-    const latestWooOrder = await Order.findOne({ "woocommerce.id": { $exists: true } }).sort({ _id: -1 });
-
-    // Get date for that order from woocommerce
-    const orderReq = await WooCommerce.get(`orders/${latestWooOrder.woocommerce.id}`);
-    const order = orderReq.data;
-
-    const orderDate = order.date_created_gmt;
-
-    const ordersReq = await WooCommerce.get('orders', { status: 'processing', after: orderDate, "per_page": 50, "order": "asc" });
-    const orders = ordersReq.data;
-
-    if (orders.length === 0 || (orders.length === 1 && orders[0].id == latestWooOrder.woocommerce.id)) return console.log('No new orders from WooCommerce.');
-
-    // Check if orders are already in db
-    for (let order of orders) {
-        const orderInDb = await Order.findOne({ "woocommerce.id": order.id });
-        if (orderInDb) continue;
-        else {
-            console.log(`Found new order with ID: ${order.id} from WooCommerce. Attempting to create it...`);
-            const { status, message } = await WooHookCreateOrder(order);
-            if (status !== 201) {
-                console.error('Failed to created Woo order with ID: ' + order.id);
-                console.error(message);
-            } else {
-                console.log('Successfully created Woo order with ID: ' + order.id);
-            }
-        }
-    }
 }

@@ -18,7 +18,7 @@ export function woocommerceRoutes() {
             const { status, message } = await WooHookCreateOrder({ shop, data });
             if (status !== 201) {
                 console.error(`Error creating the woo order with ID: ${data.id} from hook: ${message}`);
-                console.error('Shop: ' + shop)
+                console.error('Shop: ' + shop.url)
                 console.error('Data: ' + JSON.stringify(data));
                 return res.status(status).send(message)
             };
