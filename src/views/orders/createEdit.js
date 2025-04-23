@@ -657,6 +657,8 @@ async function addProduct(e) {
     const res = await axios.get('/products/find', { params: { search: product, filter: { deleted: false } } });
     const productInDB = res.data || null;
 
+    const productVat = selectedCompany.tax === 0 ? 0 : productInDB?.vat || 20;
+
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
@@ -670,7 +672,7 @@ async function addProduct(e) {
                 selectedSizes: productInDB.sizes.filter(s => s.quantity > 0).map(s => s.size), // selected (checked) sizes
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
-                vat: productInDB.vat,
+                vat: productVat,
                 price: productInDB.wholesalePrice,
                 unitPrice: productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
                 discount: selectedCustomer?.discount || 0,
@@ -702,7 +704,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
-                vat: productInDB.vat,
+                vat: productVat,
                 price: productInDB.wholesalePrice,
                 discount: selectedCustomer?.discount || 0
             });
@@ -720,7 +722,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity,
-                vat: productInDB.vat,
+                vat: productVat,
                 price: productInDB.retailPrice,
                 discount: selectedCustomer?.discount || 0
             });
@@ -742,7 +744,7 @@ async function addProduct(e) {
                 product: productInDB,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
                 price: productInDB.retailPrice,
-                vat: productInDB.vat,
+                vat: productVat,
                 unitOfMeasure: productInDB.unitOfMeasure === 'пакет' ? 'бр.' : productInDB.unitOfMeasure,
                 discount: selectedCustomer?.discount || 0
             });
@@ -755,7 +757,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
-            vat: 20,
+            vat: productVat,
             qtyInPackage: 0,
             unitOfMeasure: 'пакет',
             discount: selectedCustomer?.discount || 0
@@ -768,7 +770,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
-            vat: 20,
+            vat: productVat,
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
         });
