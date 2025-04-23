@@ -181,7 +181,8 @@ export async function WooHookCreateOrder({ shop, data }) {
             if (productInDb.multiplier)
                 productData.multiplier = productInDb.multiplier;
         } else if (shop.custom.type === 'retail' && productInDb.sizes.length > 0) {
-            const selectedSize = productInDb.sizes.find(s => s.woocommerce.map(el => el.woo_url === shop.url && el.id === product.variation_id));
+            const selectedSize = productInDb.sizes.find(size => size.woocommerce.some(item => item.woo_url === shop.url && item.id === product.variation_id.toString()
+            ));
 
             if (selectedSize.quantity < product.quantity) return { status: 400, message: `Няма достатъчно количество от продукта: ${productInDb.name} с размер ${selectedSize.size} (наличност: ${selectedSize.quantity}) [${productInDb.code}]` };
 
