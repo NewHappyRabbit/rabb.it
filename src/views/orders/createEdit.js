@@ -1098,6 +1098,15 @@ async function printSale(data) {
     // Check if any product has size, if none - dont show column
     flags.tableShowSizes = data.products.some(product => product.size);
 
+    // Check if company is vat exempt
+    flags.noVat = selectedCompany.tax == 0;
+
+    if (flags.noVat) {
+        data.products.forEach(product => {
+            product.vat = 0;
+        })
+    }
+
     // Calculate totals for different VATS (ex some products have 20% vat, some have 9%)
     const totals = calculateTotalVats(data.products);
 
@@ -1165,7 +1174,10 @@ const printContainer = ({ totals, data, param, flags }) => html`
         </div>
 
         <div class="d-flex flex-column text-end">
-            ${param?.stokova || data.type === 'stokova' ? '' : Object.keys(totals).map(key => html`
+            ${param?.stokova || data.type === 'stokova' ? '' : flags.noVat ? html`
+                <div>Данъчна основа: ${formatPrice(totals[0])}</div>
+                <div>ДДС: ${formatPrice(0)}</div>
+            ` : Object.keys(totals).map(key => html`
                 <div>Данъчна основа ${key}%: ${formatPrice(deductVat(totals[key], Number(key)))}</div>
                 <div>ДДС ${key}%: ${formatPrice(totals[key] - deductVat(totals[key], Number(key)))}</div>
             `)}
@@ -1208,7 +1220,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
                 <td>Брой в пакет</td>
                 <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
                 <td>Цена</td>
-                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
+                ${type === 'stokova' || flags.noVat ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1233,7 +1245,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
+                    ${type === 'stokova' || flags.noVat ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
@@ -1258,7 +1270,7 @@ const printTableRetail = ({ products, type, flags }) => html`
                 ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
                 <td>Цена</td>
-                ${type === 'stokova' ? '' : html`<td>ДДС</td>`}
+                ${type === 'stokova' || flags.noVat ? '' : html`<td>ДДС</td>`}
                 ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
@@ -1282,7 +1294,7 @@ const printTableRetail = ({ products, type, flags }) => html`
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
 
-                    ${type === 'stokova' ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
+                    ${type === 'stokova' || flags.noVat ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
 
                     ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
