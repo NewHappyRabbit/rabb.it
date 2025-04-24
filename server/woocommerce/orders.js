@@ -145,7 +145,7 @@ export async function WooHookCreateOrder({ shop, data }) {
     // Products
     let index = 0;
     for (let product of data.line_items) {
-        const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString(), "woocommerce.woo_url": shop.url });
+        const productInDb = await Product.findOne({ "woocommerce.id": product.product_id.toString(), "woocommerce.woo_url": shop.url, code: product.sku });
         if (!productInDb) return { status: 404, message: 'Продуктът не е намерен' };
         const dbPrice = shop.custom.type === 'wholesale' ? productInDb.wholesalePrice : productInDb.retailPrice;
 
