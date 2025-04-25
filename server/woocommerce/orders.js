@@ -301,12 +301,34 @@ export async function WooCancelOrder(id, updatedProducts) {
 
     if (!order) return { status: 404, message: 'Продажбата не е намерена' };
 
-    if (!order?.woocommerce?.id) return; // Order was not made from woo
+    if (!order?.woocommerce?.id) // Order was not made from woo, just update product quantity
+        return await WooUpdateQuantityProducts(updatedProducts);
 
     const shop = WooCommerce_Shops.find(el => el.url === order.woocommerce.woo_url);
 
     await shop.put(`orders/${order.woocommerce.id}`, { status: 'cancelled' }).then(async () => {
         console.log('Order status successfully changed to "Canceled" in WooCommerce!');
+        await WooUpdateQuantityProducts(updatedProducts);
+    }).catch((error) => {
+        console.error('Error updating order status to "Canceled" in WooCommerce!');
+        console.error(error);
+    });
+}
+
+export async function WooRestoreOrder(id, updatedProducts) {
+    if (WooCommerce_Shops.length === 0) return;
+
+    const order = await Order.findById(id).populate('products.product');
+
+    if (!order) return { status: 404, message: 'Продажбата не е намерена' };
+
+    if (!order?.woocommerce?.id) // Order was not made from woo, just update product quantity
+        return await WooUpdateQuantityProducts(updatedProducts);
+
+    const shop = WooCommerce_Shops.find(el => el.url === order.woocommerce.woo_url);
+
+    await shop.put(`orders/${order.woocommerce.id}`, { status: 'processing' }).then(async () => {
+        console.log('Order restored in WooCommerce!');
         await WooUpdateQuantityProducts(updatedProducts);
     }).catch((error) => {
         console.error('Error updating order status to "Canceled" in WooCommerce!');

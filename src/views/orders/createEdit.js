@@ -198,8 +198,8 @@ const bottomRow = (params, companies) => html`
     <div class="col-12 col-sm text-center">
         <div >Общо: <span id="total"></span></div>
         <div class="d-flex gap-3">
-            ${submitBtn({ func: createEditOrder, text: "Запази", type: "button" })}
-            ${submitBtn({ func: createEditOrder, id: "submitWithPrint", text: "Запази и принтирай", type: "button" })}
+            ${order?.deleted ? '' : submitBtn({ func: createEditOrder, text: "Запази", type: "button" })}
+            ${order?.deleted ? '' : submitBtn({ func: createEditOrder, id: "submitWithPrint", text: "Запази и принтирай", type: "button" })}
         </div>
     </div>
 `;

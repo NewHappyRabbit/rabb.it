@@ -3,7 +3,7 @@ import { app, basePath } from '../app.js';
 import express from 'express';
 import { WooUpdateQuantityProducts } from "../woocommerce/products.js";
 import { OrderController } from "../controllers/orders.js";
-import { WooCancelOrder, WooUpdateOrder } from "../woocommerce/orders.js";
+import { WooCancelOrder, WooRestoreOrder, WooUpdateOrder } from "../woocommerce/orders.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 
 export async function ordersRoutes() {
@@ -37,9 +37,9 @@ export async function ordersRoutes() {
 
     ordersRouter.get('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { from, to, type, orderType, customer, company, paymentType, unpaid, number, pageSize = 15, pageNumber = 1, sort = { _id: -1 } } = req.query;
+            const { from, to, type, orderType, customer, company, paymentType, unpaid, number, deleted, pageSize = 15, pageNumber = 1, sort = { _id: -1 } } = req.query;
 
-            const { orders, count, pageCount } = await OrderController.get({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number });
+            const { orders, count, pageCount } = await OrderController.get({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number, deleted });
 
             res.json({ count, orders, pageCount });
         } catch (error) {
@@ -73,6 +73,23 @@ export async function ordersRoutes() {
             WooUpdateQuantityProducts(updatedProducts);
 
             res.status(201).send(order._id.toString());
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
+    ordersRouter.post('/orders/restore/:id', permit('admin'), async (req, res) => {
+        try {
+            const { returnQuantity } = req.body;
+            const { status, message, updatedProducts } = await OrderController.restore(req.params.id, returnQuantity);
+
+            if (status !== 204) return res.status(status).send(message);
+
+            WooRestoreOrder(req.params.id, updatedProducts);
+
+            res.status(204).send();
         } catch (error) {
             console.error(error);
             req.log.debug({ body: req.body }) // Log the body of the request

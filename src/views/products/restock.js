@@ -1,13 +1,13 @@
 import '@/css/products.css';
 import { container } from "@/app.js";
-import { successScan } from "@/api.js";
+import { successScan, formatPrice } from "@/api.js";
 import { html, render } from 'lit/html.js';
 import axios from "axios";
 import { nav } from '@/views/nav';
 import { submitBtn, toggleSubmitBtn } from '@/views/components';
 import Quagga from 'quagga';
 
-var addedProducts = [], products, addedProductsIndex = 0;
+var addedProducts = [], addedProductsIndex = 0;
 
 
 function rerenderTable() {
@@ -79,7 +79,7 @@ function stopBarcode() {
     Quagga.offDetected();
 }
 
-function addProduct(e) {
+async function addProduct(e) {
     e.preventDefault();
 
     if (e.target.value === '') return;
@@ -99,15 +99,15 @@ function addProduct(e) {
         product = e.target.value.split('*')[1];
     }
 
-    // check if product exists in db by code, barcode (13 digit) or barcode (minus the first digit because its skipped by the scanner)
-    const productInDB = products.find(p => p.code === product || p.barcode === product || p.barcode.slice(1) === product);
+    const res = await axios.get('/products/find', { params: { search: product, filter: { deleted: false } } });
+    const productInDB = res.data || null;
 
     if (productInDB) {
-        // check if product already in table and increase quantity
         addedProducts.push({
             _id: productInDB._id,
             index: addedProductsIndex++,
             code: productInDB.code,
+            wholesalePrice: productInDB.wholesalePrice,
             name: productInDB.name,
             ...(productInDB.barcode && { barcode: productInDB.barcode }),
             quantity,
@@ -156,6 +156,9 @@ const table = (products) => html`
                         <button @click=${removeProduct} type="button" class="btn btn-danger">X</button>
                     </td>
                 </tr>`)}
+            <tr>
+                <th colspan="3">Обща сума: ${formatPrice(addedProducts.reduce((total, product) => total + product.quantity * product.wholesalePrice, 0))}</th>
+            </tr>
             <tr id="addNewProduct">
                 <td colspan="3">
                     <div id="barcodeVideo"></div>
@@ -212,7 +215,7 @@ async function restockProducts() {
 
 export async function restockPage() {
     try {
-        products = (await axios.get('/products', { params: { page: 'restock' } })).data.products;
+        // products = (await axios.get('/products', { params: { page: 'restock' } })).data.products;
         addedProducts = [];
         addedProductsIndex = 0;
     } catch (error) {
@@ -240,20 +243,25 @@ export async function restockPage() {
 
     // Add listener for barcode scanner
     const barcodeInput = document.getElementById('product');
-    barcodeInput.addEventListener('textInput', function (e) {
-        if (e.data.length >= 10) {
-            e.preventDefault();
-            // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
-            // simulate Enter key pressed on input field to activate addProduct function
-            const event = new KeyboardEvent('keyup', {
-                key: 'Enter',
-                code: 'Enter',
-                which: 13,
-                keyCode: 13,
-            });
+    if (barcodeInput)
+        barcodeInput.addEventListener('textInput', function (e) {
+            if (e.data.length >= 10) {
+                const now = new Date().getTime();
+                // pause scanning for 0.1 second to skip duplicates
+                if (now < lastScanTime + 100)
+                    return;
 
-            barcodeInput.value += e.data;
-            barcodeInput.dispatchEvent(event);
-        }
-    });
+                lastScanTime = now;
+                // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
+                // simulate Enter key pressed on input field to activate addProduct function
+                const event = new KeyboardEvent('keyup', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    which: 13,
+                    keyCode: 13,
+                });
+
+                barcodeInput.dispatchEvent(event);
+            }
+        });
 }

@@ -55,6 +55,9 @@ async function applyFilters(e) {
     if (data.unpaid)
         selectedFilters.unpaid = true;
 
+    if (data.deleted)
+        selectedFilters.deleted = true;
+
     if (e) // if coming from filters and not pagination
         delete selectedFilters.pageNumber;
 
@@ -121,9 +124,9 @@ const table = ({ count, orders, pageCount }) => html`
                         <td>${params.orderTypes[order.orderType]}</td>
                         ${loggedInUser.role === 'admin' ? html`<td class="paidAmount">${order.unpaid === true ? formatPrice(order.total - order.paidAmount) : ""}</td>` : ''}
                         <td>
-                            <a href="/orders/${order._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</a>
-                            ${loggedInUser.role === 'admin' && order.unpaid ? submitBtn({ func: (e) => markPaid(e, order._id), icon: 'bi bi-cash', text: 'Маркирай като платена', type: 'button', classes: 'btn-success' }) : ''}
-                            ${loggedInUser.role === 'admin' ? html`<button @click=${() => selectedSale = order._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
+                            <a href="/orders/${order._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) && !selectedFilters?.deleted ? 'Редактирай' : 'Преглед'}</a>
+                            ${loggedInUser.role === 'admin' && !selectedFilters?.deleted && order.unpaid ? submitBtn({ func: (e) => markPaid(e, order._id), icon: 'bi bi-cash', text: 'Маркирай като платена', type: 'button', classes: 'btn-success' }) : ''}
+                            ${loggedInUser.role === 'admin' ? selectedFilters?.deleted ? html`<button @click=${() => selectedSale = order._id} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#restoreModal"><i class="bi bi-arrow-counterclockwise"></i> Възстанови</button>` : html`<button @click=${() => selectedSale = order._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
                         </td>
                     </tr>
                 `)}
@@ -206,6 +209,12 @@ const filters = ({ customers, companies, params }) => html`
                     <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="unpaid" ?checked=${selectedFilters?.unpaid} name="unpaid">
                 </div>
             </div>
+            <div class="col-12 col-sm">
+                <div class="form-check form-switch p-0">
+                    <label class="form-check-label d-block" for="unpaid">Само анулирани:</label>
+                    <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="deleted" ?checked=${selectedFilters?.deleted} name="deleted">
+                </div>
+            </div>
         </form>
 `;
 
@@ -235,6 +244,19 @@ async function loadSales() {
 async function deleteSale(returnQuantity = true) {
     try {
         const req = await axios.delete(`/orders/${selectedSale}`, { data: { returnQuantity } });
+
+        if (req.status === 204) {
+            page('/orders');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Възникна грешка');
+    }
+}
+
+async function restoreSale(returnQuantity = true) {
+    try {
+        const req = await axios.post(`/orders/restore/${selectedSale}`, { returnQuantity });
 
         if (req.status === 204) {
             page('/orders');
@@ -275,8 +297,29 @@ export function salesPage(ctx, next) {
         </div>
     </div>`;
 
+    const restoreModal = () => html`
+    <div class="modal fade" id = "restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true" >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="restoreModalLabel">Възстанови продажба</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Сигурни ли сте че искате да възстановите продажбата?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
+                    <button @click=${() => restoreSale(false)} type="button" class="btn btn-primary" data-bs-dismiss="modal">Възстанови</button>
+                    <button @click=${() => restoreSale(true)} type="button" class="btn btn-primary" data-bs-dismiss="modal">Възстанови и премахни количества от склада</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
     const template = () => html`
         ${cancelModal()}
+        ${restoreModal()}
         ${nav()}
         <div class="container-fluid">
             <a href='/orders/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продажба</a>

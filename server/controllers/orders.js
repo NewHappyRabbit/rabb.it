@@ -249,9 +249,9 @@ async function returnProductsQuantities({ data, returnedProducts }) {
 }
 
 export const OrderController = {
-    get: async ({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number }) => {
+    get: async ({ sort, pageNumber, pageSize, from, to, type, orderType, customer, company, paymentType, unpaid, number, deleted }) => {
         let query = {
-            $and: [{ deleted: { $ne: true } }]
+            $and: []
         };
 
         number && query.$and.push({ number });
@@ -267,6 +267,8 @@ export const OrderController = {
         paymentType && query.$and.push({ paymentType });
 
         unpaid && query.$and.push({ unpaid: true });
+
+        deleted ? query.$and.push({ deleted: true }) : query.$and.push({ deleted: { $ne: true } });
 
         customer && query.$and.push({ 'customer': customer });
 
@@ -466,6 +468,22 @@ export const OrderController = {
             await Promise.all(updatedProducts.map(async (product) => await product.save()));
 
         order.deleted = true;
+        await order.save();
+
+        return { status: 204, updatedProducts };
+    },
+    restore: async (id, returnQuantity) => {
+        const order = await Order.findById(id);
+
+        if (!order) return { status: 404, message: 'Документът не е намерен' };
+
+        const { updatedProducts } = order.type === 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
+
+        // Update all products in paralel with promies
+        if (returnQuantity === true)
+            await Promise.all(updatedProducts.map(async (product) => await product.save()));
+
+        order.deleted = false;
         await order.save();
 
         return { status: 204, updatedProducts };
