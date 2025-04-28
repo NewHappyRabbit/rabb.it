@@ -364,6 +364,9 @@ export const ProductController = {
         if (!data.unitOfMeasure && data.sizes?.length === 0)
             data.unitOfMeasure = 'бр.';
 
+        if (!data.multiplier)
+            data.multiplier = 1;
+
         // Calculate quantity on server instead of relying on client
         if (data?.sizes?.length > 0) {
             data.quantity = parseInt(Math.min(...data.sizes.map(s => s.quantity)) / data.multiplier);
