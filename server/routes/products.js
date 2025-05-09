@@ -197,6 +197,43 @@ export function productsRoutes() {
         }
     });
 
+    productsRouter.post('/products/revision', permit('admin'), async (req, res) => {
+        try {
+            let body = { ...req.body };
+            let products = body;
+
+            //TODO BACKEND
+
+            return console.log(products);
+
+            const { doneProducts, status, message } = await ProductController.restock(products);
+            if (status !== 200)
+                return res.status(status).send(message);
+
+            // if no pc with printer connected, do nothing
+            if (printLabelCheck && io.sockets.adapter.rooms.get("printer") !== undefined) {
+                const productsToPrint = await Product.find({ _id: { $in: doneProducts.map(p => p._id) } }).select('name code barcode sizes wholesalePrice multiplier');
+
+                // set the quantity to what we just restocked before sending to print
+                for (const product of productsToPrint) {
+                    // find it in products
+                    const found = products.find(p => p._id == product._id);
+                    product.quantity = found.quantity;
+                }
+
+                io.in('printer').emit('printRestock', productsToPrint);
+            }
+
+            WooUpdateQuantityProducts(doneProducts);
+
+            res.status(status).send();
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     productsRouter.put('/products/markOutOfStock/:id', permit('manager', 'admin'), async (req, res) => {
         try {
             const id = req.params.id;
