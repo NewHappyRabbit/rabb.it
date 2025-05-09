@@ -148,7 +148,7 @@ export const ProductController = {
             return { products, status: 200 };
         } else if (page && page == 'revision') {
             // const products = await Product.find({ deleted: false, outOfStock: false }).sort({ _id: -1 }).select('name code barcode quantity sizes.size sizes.quantity');
-            const products = await Product.find({ deleted: false, outOfStock: false }).limit(3).sort({ _id: -1 }).select('name code barcode quantity sizes.size sizes.quantity');
+            const products = await Product.find({ deleted: false, outOfStock: false }).sort({ _id: -1 }).select('name code barcode quantity sizes.size sizes.quantity');
             return { products, status: 200 };
         }
 
