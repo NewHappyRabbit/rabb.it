@@ -17,7 +17,13 @@ export function mainPage() {
                 <a href="/references/orders" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки по продажби</a>
                 <a href="/references/stocks" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки по наличности</a>
                 <a href="/references/accounting" class="btn btn-warning fs-2"><i class="bi bi-file-earmark-text"></i> Справки към счетоводство</a>
+                ` : ''}
+
+            ${loggedInUser && loggedInUser.role === 'admin' ? html`
+                <a href="/products/revision" class="btn btn-warning fs-2"><i class="bi bi-table"></i> Ревизия</a>
+                
             ` : ''}
+
 
             <!-- ADMIN ONLY PAGES -->
             ${loggedInUser && loggedInUser.role === 'admin' ? html`

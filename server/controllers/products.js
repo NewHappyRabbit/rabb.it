@@ -139,16 +139,16 @@ export const ProductController = {
         if (page && page === 'orders') {
             const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
             return { products, status: 200 };
-        }
-
-        if (page && page === 'references') {
+        } else if (page && page === 'references') {
             const products = await Product.find().select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
             return { products, status: 200 };
-        }
-
-        if (page && page === 'restock') {
+        } else if (page && page === 'restock') {
             const products = await Product.find().select('name code barcode sizes')
 
+            return { products, status: 200 };
+        } else if (page && page == 'revision') {
+            // const products = await Product.find({ deleted: false, outOfStock: false }).sort({ _id: -1 }).select('name code barcode quantity sizes.size sizes.quantity');
+            const products = await Product.find({ deleted: false, outOfStock: false }).limit(3).sort({ _id: -1 }).select('name code barcode quantity sizes.size sizes.quantity');
             return { products, status: 200 };
         }
 
@@ -342,6 +342,45 @@ export const ProductController = {
         //TODO TEST IF THIS FIXES THE WOOCOMMERCE BUG WITH QUANTITIES
         await Promise.all(doneProducts.map(async (product) => await product.save()));
         // doneProducts.forEach(async product => await product.save());
+
+        return { doneProducts, status: 200 };
+    },
+    revision: async (products) => {
+        const doneProducts = [];
+
+        for (const product of products) {
+            // Variable product
+            const dbProduct = await Product.findById(product._id);
+            if (!dbProduct) return { status: 404, message: `Продуктът с код ${product.code} не беше намерен в базата данни` };
+
+            if (product.sizes?.length > 0) {
+                // Change qty
+                for (let size of product.sizes) {
+                    if (size.quantity < 0) return { status: 400, message: `Продуктът с код ${product.code} и размер ${size.size} няма количество`, property: 'quantity', product: product._id };
+
+                    const found = dbProduct.sizes.find(s => s.size === size.size);
+                    if (!found) return { status: 404, message: `Продуктът с код ${product.code} и размер ${size.size} не беше намерен в базата данни` };
+
+                    found.quantity = size.quantity;
+                }
+
+                // set package quantity to smallest size quantity
+                dbProduct.quantity = parseInt(Math.min(...dbProduct.sizes.map(s => s.quantity)) / dbProduct.multiplier);
+
+                dbProduct.outOfStock = dbProduct.sizes.filter(s => s.quantity > 0).length === 0;
+            } else {
+                // Simple product
+                if (product.quantity < 0) return { status: 400, message: `Продуктът с код ${product.code} няма количество`, property: 'quantity', product: product._id };
+
+                dbProduct.quantity = product.quantity;
+
+                dbProduct.outOfStock = product.quantity === 0;
+            }
+
+            doneProducts.push(dbProduct);
+        }
+
+        await Promise.all(doneProducts.map(async (product) => await product.save()));
 
         return { doneProducts, status: 200 };
     },

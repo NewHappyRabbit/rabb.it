@@ -281,6 +281,7 @@ export function productsPage(ctx, next) {
         <div class="container-fluid">
             <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
             <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
+            ${loggedInUser && loggedInUser.role === 'admin' ? html`<a href='/products/revision' class="btn btn-primary"><i class="bi bi-table"></i> Ревизия</a>` : ''}
             <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
                 ${filters()}
             </form>

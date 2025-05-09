@@ -5,42 +5,43 @@ import { html, render } from 'lit/html.js';
 import axios from "axios";
 import { nav } from '@/views/nav';
 import { submitBtn, toggleSubmitBtn } from '@/views/components';
+import page from 'page';
+import { spinner } from '@/views/components';
+import { until } from 'lit/directives/until.js';
 
 let products;
+
+function checkInput(e) {
+    const input = e.target;
+    // get value as int
+    const value = parseInt(input.value);
+
+    if (isNaN(value) || value < 0 || value == 'e' || value == '-') input.value = '';
+    else input.value = value;
+}
 
 const sizesTemplate = (product, empty = false) => html`
 <div class="d-flex gap-2 mt-1 pt-2 flex-wrap">
     ${product.sizes.map(size => html`
         <div class="input-group sizeElement">
             <label for="${size.size}-quantity" class="input-group-text border-primary">${size.size}</label>
-            <input class="form-control border-primary" type="number" .name="${!empty ? '' : product._id + '-' + size.size}" inputmode="numeric" required .value=${empty ? '' : size.quantity} autocomplete="off" ?disabled=${!empty}>
+            <input @keyup=${checkInput} @change=${checkInput} class="form-control border-primary" type="number" .name="${!empty ? '' : product._id + '-' + size.size}" inputmode="numeric" required .value=${empty ? '' : size.quantity} autocomplete="off" ?disabled=${!empty}>
         </div>`)
     }
 </div>
 `;
 
 const table = (products) => html`
-    <table class="table mt-3 table-striped">
-        <thead>
-            <tr>
-                <th>Продукт</th>
-                <th>Бройки в програма</th>
-                <th>Налични бройки</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${products.map(product => html`
-                <tr id=${product._id}>
-                    <td>${product.name} [${product.code}] (${product.barcode})</td>
-                    <td>
-                        ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control" type="text" value=${product.quantity} />`}
-                    </td>
-                    <td>
-                        ${product.sizes.length > 0 ? sizesTemplate(product, true) : html`<input name="${product._id}" class="form-control" type="number" inputmode="numeric" min="0" step="1" required />`}
-                    </td>
-                </tr>`)}
-        </tbody>
-    </table>
+    ${products.map(product => html`
+        <tr id=${product._id}>
+            <td>${product.name} [${product.code}] (${product.barcode})</td>
+            <td>
+                ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control" type="text" value=${product.quantity} />`}
+            </td>
+            <td>
+                ${product.sizes.length > 0 ? sizesTemplate(product, true) : html`<input name="${product._id}" class="form-control" type="number" inputmode="numeric" min="0" step="1" required @keyup=${checkInput} @change=${checkInput} />`}
+            </td>
+        </tr>`)}
 `;
 
 async function sendData(e) {
@@ -71,30 +72,57 @@ async function sendData(e) {
         found.sizes.push({ size, quantity: parsedQty });
     }
 
-    //TODO SEND TO BACKEND '/products/revision'
+    try {
+        const req = await axios.post('/products/revision', products);
+        if (req.status === 200) {
+            alert('Ревизията е успешно завършена!')
+            page('/');
+        } else {
+            console.error(req);
+            alert('Грешка');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Грешка');
+    }
 }
 
-export async function revisionPage() {
+async function loadProducts() {
     try {
-        const req = await axios.get('/products', { params: { pageSize: '2' } });
-        // const req = await axios.get('/products', { params: { pageSize: '0' } });
+        const req = await axios.get('/products', { params: { page: 'revision' } });
         products = req.data.products;
+        toggleSubmitBtn();
+        return table(products);
     } catch (error) {
         alert('Грешка при зареждане на продуктите')
         console.error(error);
+        return;
     }
+}
 
+export async function revisionPage() {
     const template = () => html`
     ${nav()}
     <div class="container-fluid">
         <form @submit=${sendData}>
-            <div id="table" class="table-responsive"></div>
-            <div id="alert" class="d-none alert" role="alert"></div>
-            ${submitBtn({ icon: "bi-boxes", text: "Промени бройки", type: "submit", classes: "d-block mx-auto" })}
+            <div id="table" class="table-responsive">
+                <table class="table mt-3 table-striped">
+                    <thead>
+                        <tr>
+                            <th>Продукт</th>
+                            <th>Бройки в програма</th>
+                            <th>Налични бройки</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${until(loadProducts(), spinner)}
+                    </tbody>
+                </table>
+            </div>
+            ${submitBtn({ icon: "bi-boxes", text: "Промени бройки", type: "submit", classes: "d-block mx-auto", disabled: true })}
         </form>
     </div>
 `;
 
     render(template(), container);
-    render(table(products), document.getElementById('table'));
 }
