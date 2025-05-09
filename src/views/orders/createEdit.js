@@ -662,7 +662,8 @@ async function addProduct(e) {
     // Wholesale + IN DB + variable
     if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length > 0) {
         // Check if already in addedProducts and if all sizes are selected
-        const inArray = addedProducts.find(p => p.product?._id === productInDB._id && p?.selectedSizes.length === p?.product?.sizes.length);
+        const inArray = false;
+        // const inArray = addedProducts.find(p => p.product?._id === productInDB._id && p?.selectedSizes.length === p?.product?.sizes.length);
 
         if (inArray) inArray.quantity = +inArray.quantity + quantity;
         else {
@@ -690,7 +691,8 @@ async function addProduct(e) {
     }
     // Wholesale + IN DB + simple
     else if (orderType === 'wholesale' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
+        const inArray = false;
+        // const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
         // Check if product is already in addedProducts
         if (inArray) {
             inArray.quantity = +inArray.quantity + quantity;
@@ -712,7 +714,8 @@ async function addProduct(e) {
 
     // Retail + IN DB + variable
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length > 0) {
-        const inArray = addedProducts.find(p => p.product?._id === productInDB._id && !p.size);
+        const inArray = false;
+        // const inArray = addedProducts.find(p => p.product?._id === productInDB._id && !p.size);
         // Check if already in addedProducts and NO size is selected
         if (inArray) {
             inArray.quantity = +inArray.quantity + quantity;
@@ -730,7 +733,8 @@ async function addProduct(e) {
 
     // Retail + IN DB + simple
     else if (orderType === 'retail' && productInDB && productInDB.sizes?.length === 0) {
-        const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
+        const inArray = false;
+        // const inArray = addedProducts.find(p => p.product?._id === productInDB._id);
         // Check if already in addedProducts
         if (inArray) {
             inArray.quantity = +inArray.quantity + quantity;

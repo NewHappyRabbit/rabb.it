@@ -107,7 +107,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
                 const quantityToRemove = product.quantity * product.multiplier;
                 // Check if there is enough quantity of selected size
                 if (existingProduct.sizes.find(s => s.size === size).quantity < quantityToRemove)
-                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(s => s.size === size).quantity}` };
+                    return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${productInDb.sizes.find(s => s.size === size).quantity}` };
 
                 existingProduct.sizes.find(s => s.size === size).quantity -= quantityToRemove;
             }
@@ -127,7 +127,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             // Check if there is enough quantity
 
             if (existingProduct.quantity < product.quantity)
-                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${existingProduct.quantity}` };
+                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${productInDb.quantity}` };
 
             existingProduct.quantity -= Number(product.quantity);
 
@@ -139,7 +139,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         if (data.orderType === 'retail' && existingProduct.sizes?.length > 0) {
             // Check if there is enough quantity
             if (existingProduct.sizes.find(size => size.size === product.size).quantity < product.quantity)
-                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} с размер ${product.size} [${existingProduct.code}]! Количество на склад: ${existingProduct.sizes.find(size => size.size === product.size).quantity}` };
+                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} с размер ${product.size} [${existingProduct.code}]! Количество на склад: ${productInDb.sizes.find(size => size.size === product.size).quantity}` };
 
             existingProduct.sizes.find(size => size.size === product.size).quantity -= product.quantity;
 
@@ -155,7 +155,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         if (data.orderType === 'retail' && existingProduct.sizes?.length === 0) {
             // Check if there is enough quantity
             if (existingProduct.quantity < product.quantity)
-                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${existingProduct.quantity}` };
+                return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} [${existingProduct.code}]! Количество на склад: ${productInDb.quantity}` };
 
             existingProduct.quantity -= Number(product.quantity);
 
