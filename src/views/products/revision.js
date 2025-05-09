@@ -33,7 +33,7 @@ const sizesTemplate = (product, empty = false) => html`
 
 const table = (products) => html`
     ${products.map(product => html`
-        <tr id=${product._id}>
+        <tr id=${product._id} code=${product.code} barcode=${product.barcode}>
             <td>${product.name} [${product.code}] (${product.barcode})</td>
             <td>
                 ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control" type="text" value=${product.quantity} />`}
@@ -100,10 +100,37 @@ async function loadProducts() {
     }
 }
 
+function findInPage(e) {
+    const value = e.target.value;
+
+    if (value === '') return;
+    let el;
+    // el = document.querySelector(`tr[code="${value}"]`);
+
+    if (!el) {
+        el = document.querySelector(`tr[barcode="${value}"]`);
+    }
+
+    if (!el) return;
+
+    e.target.value = '';
+    e.target.blur();
+
+    el.classList.add('flash');
+    el.classList.add('table-info');
+
+    setTimeout(() => {
+        el.classList.remove('flash');
+        el.classList.remove('table-info');
+    }, 3000);
+    el.scrollIntoView({ behavior: 'instant', block: 'center' });
+}
+
 export async function revisionPage() {
     const template = () => html`
     ${nav()}
-    <div class="container-fluid">
+    <input placeholder="Търси по баркод" id="search" class="form-control text-center" type="text" @keyup=${findInPage} @change=${findInPage} style="z-index: 1000; margin-top: -8px; position: fixed;" />
+    <div class="container-fluid" style="margin-top: 30px">
         <form @submit=${sendData}>
             <div id="table" class="table-responsive">
                 <table class="table mt-3 table-striped">
