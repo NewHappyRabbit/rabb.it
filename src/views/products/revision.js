@@ -105,10 +105,22 @@ function findInPage(e) {
 
     if (value === '') return;
     let el;
-    // el = document.querySelector(`tr[code="${value}"]`);
 
+    console.log(value)
     if (!el) {
         el = document.querySelector(`tr[barcode="${value}"]`);
+    }
+
+    if (!el) {
+        el = document.querySelector(`tr[barcode="0${value}"]`);
+    }
+
+    if (!el) {
+        el = document.querySelector(`tr[barcode="${value.slice(0, -1)}"]`);
+    }
+
+    if (!el) {
+        el = document.querySelector(`tr[barcode="${value.slice(1)}"]`);
     }
 
     if (!el) return;
