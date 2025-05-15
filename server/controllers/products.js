@@ -147,7 +147,7 @@ export const ProductController = {
 
             return { products, status: 200 };
         } else if (page && page == 'revision') {
-            const products = await Product.find({ deleted: false, outOfStock: false }).sort({ category: 1, updatedAt: -1, }).select('name code barcode quantity sizes.size sizes.quantity');
+            let products = await Product.find({ inRevision: true, deleted: false, outOfStock: false }).sort({ category: 1, updatedAt: -1, }).select('name code barcode quantity sizes.size sizes.quantity');
             return { products, status: 200 };
         }
 
@@ -344,6 +344,10 @@ export const ProductController = {
 
         return { doneProducts, status: 200 };
     },
+    startRevision: async () => {
+        await Product.updateMany({ deleted: false, outOfStock: false }, { $set: { inRevision: true } });
+        return;
+    },
     revision: async (products) => {
         const doneProducts = [];
 
@@ -367,6 +371,7 @@ export const ProductController = {
                 dbProduct.quantity = parseInt(Math.min(...dbProduct.sizes.map(s => s.quantity)) / dbProduct.multiplier);
 
                 dbProduct.outOfStock = dbProduct.sizes.filter(s => s.quantity > 0).length === 0;
+                dbProduct.inRevision = false;
             } else {
                 // Simple product
                 if (product.quantity < 0) return { status: 400, message: `Продуктът с код ${product.code} няма количество`, property: 'quantity', product: product._id };
@@ -374,6 +379,7 @@ export const ProductController = {
                 dbProduct.quantity = product.quantity;
 
                 dbProduct.outOfStock = product.quantity === 0;
+                dbProduct.inRevision = false;
             }
 
             doneProducts.push(dbProduct);

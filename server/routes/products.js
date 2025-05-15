@@ -197,6 +197,17 @@ export function productsRoutes() {
         }
     });
 
+    productsRouter.post('/products/revision/start', permit('admin'), async (req, res) => {
+        try {
+            await ProductController.startRevision();
+            res.status(200).send();
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     productsRouter.post('/products/revision', permit('admin'), async (req, res) => {
         try {
             const products = req.body;

@@ -175,7 +175,11 @@ const productSchema = new Schema({
         {
             _id: false
         }
-    ]
+    ],
+    inRevision: {
+        type: Boolean,
+        default: false,
+    }
 
     //TODO Implement in the future
     //sale_price
