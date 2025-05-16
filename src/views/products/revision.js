@@ -186,6 +186,7 @@ function findInPage(e) {
     document.querySelector('.table-info')?.classList.remove('table-info');
 
     el.classList.add('table-info');
+    el.scrollIntoView({ behavior: 'instant', block: 'center' });
 }
 
 export async function revisionPage() {
