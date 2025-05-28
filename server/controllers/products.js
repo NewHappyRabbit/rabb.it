@@ -109,7 +109,7 @@ export const ProductController = {
         const query = {
             noInvoice: { $ne: true },
             outOfStock: { $ne: true },
-            $or: [{ code: search }, { barcode: search }, { barcode: search.slice(0, -1) }],
+            $or: [],
         }
 
         if (filter?.deleted === 'false')
@@ -118,7 +118,9 @@ export const ProductController = {
         if (search.length === 12) { // scanned with barcode gun, add checkdigit to barcode
             query.$or.push({ barcode: `0${search}` });
             query.$or.push({ barcode: `${search}${checkDigitEAN13(search.toString())}` });
-        }
+        } else if (search.length === 13)
+            query.$or.push({ barcode: search });
+        else query.$or.push({ code: search });
 
         const product = await Product.findOne(query);
 
