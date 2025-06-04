@@ -263,7 +263,9 @@ async function restoreSale(returnQuantity = true) {
         }
     } catch (err) {
         console.error(err);
-        alert('Възникна грешка');
+        if (err.status === 400)
+            alert('Продажбата не може да бъде възстановена: ' + err.response.data);
+        else alert('Възникна грешка');
     }
 }
 

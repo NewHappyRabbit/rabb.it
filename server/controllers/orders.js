@@ -477,7 +477,9 @@ export const OrderController = {
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
-        const { updatedProducts } = order.type === 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
+        const { updatedProducts, status, message } = order.type === 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
+
+        if (status) return { status, message };
 
         // Update all products in paralel with promies
         if (returnQuantity === true)
