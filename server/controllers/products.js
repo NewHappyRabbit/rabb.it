@@ -108,9 +108,11 @@ export const ProductController = {
         // Find product using searh as code or barcode
         const query = {
             noInvoice: { $ne: true },
-            outOfStock: { $ne: true },
             $or: [],
         }
+
+        if (!filter?.includeOutOfStock)
+            query.outOfStock = { $ne: true };
 
         if (filter?.deleted === 'false')
             query.deleted = { $ne: true };

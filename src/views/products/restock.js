@@ -99,7 +99,7 @@ async function addProduct(e) {
         product = e.target.value.split('*')[1];
     }
 
-    const res = await axios.get('/products/find', { params: { search: product, filter: { deleted: false } } });
+    const res = await axios.get('/products/find', { params: { search: product, filter: { deleted: false, includeOutOfStock: true } } });
     const productInDB = res.data || null;
 
     if (productInDB) {
