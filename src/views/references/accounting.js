@@ -71,12 +71,18 @@ async function loadReferences() {
         };
 
         for (const order of orders) {
-            const totals = calculateTotalVats(order.products);
             order.TOTALS = {
                 20: 0,
                 9: 0,
             }
 
+            // If the company that made the order is with 0 VAT, dont calculate products vats
+            if (order.company.tax === 0) {
+                total.total += order.total;
+                continue;
+            }
+
+            const totals = calculateTotalVats(order.products);
             if (totals[20]) {
                 total[20] += totals[20];
                 total.total += totals[20];
