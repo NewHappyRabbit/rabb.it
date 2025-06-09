@@ -4,11 +4,11 @@ import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
 import { Setting } from "../models/setting.js";
-import { uploadImg } from "./common.js";
+import { roundPrice, uploadImg } from "./common.js";
 import fs from 'fs';
 
 async function validateProduct(data) {
-    const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure, multiplier } = data;
+    const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure, multiplier, saleWholesalePrice } = data;
 
     if (!name) return { status: 400, message: 'Въведете име', property: 'name' };
 
@@ -30,6 +30,10 @@ async function validateProduct(data) {
 
     if (!regex.test(wholesalePrice))
         return { status: 400, message: 'Грешна цена на едро', property: 'wholesalePrice' };
+
+    if (saleWholesalePrice && (!regex.test(saleWholesalePrice) || Number(saleWholesalePrice) > Number(wholesalePrice))) {
+        return { status: 400, message: 'Грешна намалена цена на едро', property: 'saleWholesalePrice' };
+    }
 
     if (!regex.test(retailPrice))
         return { status: 400, message: 'Грешна цена на дребно', property: 'retailPrice' };
@@ -128,7 +132,7 @@ export const ProductController = {
 
         return { product, status: 200 };
     },
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, category }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -169,6 +173,10 @@ export const ProductController = {
 
         if (onlyOpenedPackages && onlyOpenedPackages === 'true')
             query.$and.push({ openedPackages: true });
+
+        if (category) {
+            query.$and.push({ category: category });
+        }
 
         var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ updatedAt: -1 }).populate('category', 'name path');
         var count = await Product.countDocuments(query);
@@ -346,6 +354,42 @@ export const ProductController = {
         await Promise.all(doneProducts.map(async (product) => await product.save()));
         // doneProducts.forEach(async product => await product.save());
 
+        return { doneProducts, status: 200 };
+    },
+    applySale: async ({ saleType, saleAmount, products }) => {
+        const doneProducts = [];
+        if (saleType !== 'percent' && saleType !== 'sum') return { status: 400, message: 'Невалиден тип на намалението' };
+
+        if (saleType === 'percent') {
+            if (saleAmount < 0 || saleAmount > 100) return { status: 400, message: 'Невалиден процент' };
+        }
+
+        if (saleType === 'sum') {
+            if (saleAmount < 0) return { status: 400, message: 'Невалидна сума' };
+        }
+
+        if (!products?.length) return { status: 400, message: 'Моля изберете продукти' };
+
+        for (const product of products) {
+            const dbProduct = await Product.findById(product);
+            if (!dbProduct) return { status: 404, message: `Продуктът с id ${product} не беше намерен в базата данни` };
+
+            if (saleAmount === 0) {
+                dbProduct.saleWholesalePrice = undefined;
+            } else if (saleType === 'percent') {
+                dbProduct.saleWholesalePrice = roundPrice(dbProduct.wholesalePrice - (dbProduct.wholesalePrice * saleAmount / 100));
+            } else if (saleType === 'sum') {
+                dbProduct.saleWholesalePrice = roundPrice(dbProduct.wholesalePrice - saleAmount);
+            }
+
+            if (dbProduct.saleWholesalePrice < 0) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от 0 лева` };
+
+            if (dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
+
+            doneProducts.push(dbProduct);
+        }
+
+        await Promise.all(doneProducts.map(async (product) => await product.save()));
         return { doneProducts, status: 200 };
     },
     startRevision: async () => {

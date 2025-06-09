@@ -6,12 +6,12 @@ import { nav } from '@/views/nav.js';
 import { until } from 'lit/directives/until.js';
 import axios from 'axios';
 import { delay, unslugify, formatPrice } from '@/api';
-import { spinner } from '@/views/components';
+import { spinner, toggleSubmitBtn, submitBtn } from '@/views/components';
 import { loggedInUser } from '@/views/login';
 import { socket } from '@/api';
+import { categoriesOptions } from '@/views/categories/categories';
 
 var path, selectedFilters = {}, pageCount;
-
 
 var selectedProduct;
 
@@ -33,9 +33,8 @@ async function deleteProduct() {
     try {
         const req = await axios.delete(`/products/${selectedProduct}`);
 
-        if (req.status === 204) {
-            page('/products');
-        }
+        if (req.status === 204)
+            location.reload();
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
@@ -95,6 +94,76 @@ const printModal = () => html`
             </div>
         </div>`;
 
+async function onSubmitSale(e) {
+    e.preventDefault();
+    const btn = document.getElementById('applySaleBtn');
+
+    const selectedProducts = [];
+    const saleType = document.getElementById('saleType').value;
+    const saleAmount = Number(document.getElementById('saleAmount').value);
+    document.querySelectorAll('.selectedProductCheckbox:checked').forEach(e => selectedProducts.push(e.closest('tr').id));
+
+    if (isNaN(saleAmount)) return alert('Невалидна сума');
+
+    if (!selectedProducts.length) return alert('Моля изберете продукти');
+
+    if (saleType === 'percent') {
+        if (saleAmount < 0 || saleAmount > 100) return alert('Невалиден процент');
+    }
+
+    if (saleType === 'sum') {
+        if (saleAmount < 0) return alert('Невалидна сума');
+    }
+
+    toggleSubmitBtn(btn);
+
+    try {
+        const req = await axios.put('/products/applySale', { saleType, saleAmount, products: selectedProducts });
+
+        if (req.status === 200) {
+            location.reload();
+        }
+    } catch (err) {
+        console.error(err);
+        if (err.status === 400)
+            alert(err.response.data);
+        else alert('Възникна грешка');
+    } finally {
+        toggleSubmitBtn(btn);
+    }
+}
+
+const saleModal = () => html`
+        <div class="modal fade" id="saleModal" tabindex="-1" aria-labelledby="saleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form @submit=${onSubmitSale}>
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="saleModalLabel">Намали артикули</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="col">
+                                <select name="saleType" id="saleType" class="form-select">
+                                    <option value="percent">Намали с процент (%)</option>
+                                    <option value="sum">Намали със сума (лв.)</option>
+                                </select>
+                            </div>
+                            <div class="col pe-0 mt-3">
+                                <input class="form-control border-primary" type="text" name="saleAmount" id="saleAmount" inputmode="decimal" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Затвори</button>
+                            ${submitBtn({ text: 'Намали всички избрани артикули' })}
+                            <!-- <button type="submit" class="btn btn-primary" id="applySaleBtn">Намали всички избрани артикули</button> -->
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>`;
+
 const sizesTemplate = (sizes) => html`
     <!-- Sum of all sizes quantity -->
     <div>${sizes.reduce((a, v) => a + v.quantity, 0)} бр.</div>
@@ -110,12 +179,20 @@ function uslugifyPath(path) {
     return newPath.join(' > ');
 }
 
+function checkAll(e) {
+    const checked = e.target.checked;
+    const checkboxes = document.querySelectorAll('.selectedProductCheckbox');
+
+    checked ? checkboxes.forEach(e => e.checked = true) : checkboxes.forEach(e => e.checked = false);
+}
+
 const table = ({ count, products, pageCount }) => html`
     <div class="mt-2 mb-2">Брой артикули: ${count}</div>
     <div class="table-responsive mt-2">
         <table class="table table-striped table-hover text-center">
                 <thead>
                     <tr>
+                        <th><input class="form-check-input" type="checkbox" value="" @change=${checkAll}></th>
                         <th scope="col">Снимка</th>
                         <th scope="col">Категория</th>
                         <th scope="col">Код</th>
@@ -131,7 +208,8 @@ const table = ({ count, products, pageCount }) => html`
                 </thead>
                 <tbody>
                     ${products.map(product => html`
-                        <tr>
+                        <tr id="${product._id}">
+                            <td><input class="selectedProductCheckbox form-check-input" type="checkbox" value=""></td>
                             <td>${product?.image?.url ? html`<img class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
                             <td>${product.category.path ? `${uslugifyPath(product.category.path)} > ${product.category.name}` : product.category.name}</td>
                             <td>${product.code}</td>
@@ -144,8 +222,16 @@ const table = ({ count, products, pageCount }) => html`
                                 <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.deliveryPrice)}</div>
                             </td>
                             <td class="text-nowrap">
-                                ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
-                                <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.wholesalePrice)}</div>
+                                ${product.saleWholesalePrice ? html`
+                                    <div>
+                                    ${product.sizes.length > 0 ? html`<div>${formatPrice(product.saleWholesalePrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
+                                    <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.saleWholesalePrice)}</div>
+                                    </div>
+                                ` : ''}
+                                <div class="${product?.saleWholesalePrice ? "text-decoration-line-through" : ''}">
+                                    ${product.sizes.length > 0 ? html`<div>${formatPrice(product.wholesalePrice / (product.sizes.length * (product.multiplier || 1)))}/бр.</div>` : ''}
+                                    <div class=${product.sizes.length > 0 ? "text-secondary" : ""}>${formatPrice(product.wholesalePrice)}</div>
+                                </div>
                             </td>
                             <td class="text-nowrap">${formatPrice(product.retailPrice)}</td>
                             <td class="text-nowrap">
@@ -200,6 +286,14 @@ async function applyFilters(e) {
 
     selectedFilters.search = data.search;
 
+    if (data.pageSize)
+        selectedFilters.pageSize = data.pageSize;
+    else selectedFilters.pageSize = '';
+
+    if (data.category)
+        selectedFilters.category = data.category;
+    else selectedFilters.category = '';
+
     if (data.onlyHidden)
         selectedFilters.onlyHidden = true;
     else selectedFilters.onlyHidden = ''
@@ -238,6 +332,19 @@ async function markOutOfStock(product) {
     }
 }
 
+async function loadCategories() {
+    const req = await axios.get('/categories');
+    const categories = req.data;
+
+    const options = {
+        categories,
+        ...(selectedFilters?.category && { selected: selectedFilters.category }),
+        showAllText: true,
+    }
+
+    return categoriesOptions(options);
+}
+
 export function productsPage(ctx, next) {
     path = ctx.path;
 
@@ -251,8 +358,14 @@ export function productsPage(ctx, next) {
 
     const filters = () => html`
     <div class="col-12 col-sm" >
-        <label for="search">Продукт:</label>
+        <label for="search" class="form-label">Продукт:</label>
         <input @keyup=${delay(applyFilters, 300)} value=${selectedFilters?.search ? selectedFilters.search : ''} placeholder = "Въведи име или код" id="search" name="search" class="form-control" autocomplete="off">
+    </div>
+    <div class="col-6 col-sm">
+        <label for="category" class="form-label">Категория:</label>
+        <select class="form-select" name="category" id="category" required>
+            ${until(loadCategories(), html`<option disabled>Зареждане...</option>`)}
+        </select>
     </div>
     <div class="col-6 col-sm">
         <div class="form-check form-switch p-0">
@@ -272,20 +385,33 @@ export function productsPage(ctx, next) {
             <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOpenedPackages" ?checked=${selectedFilters?.onlyOpenedPackages} name="onlyOpenedPackages">
         </div>
     </div>
+    <div class="col-6 col-sm">
+        <label for="pageSize" class="form-label">Броя на страница:</label>
+        <select class="form-select" name="pageSize" id="pageSize" .value=${selectedFilters?.pageSize || 15}>
+            <option value="15">15</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="300">300</option>
+        </select>
+    </div>
 `;
 
     const template = () => html`
         ${deleteModal()}
         ${printModal()}
+        ${saleModal()}
         ${nav()}
         <div class="container-fluid">
             <a href='/products/create' class="btn btn-primary"><i class="bi bi-plus"></i> Създай продукт</a>
             <a href='/products/restock' class="btn btn-primary"><i class="bi bi-boxes"></i> Зареждане на бройки</a>
-            ${loggedInUser && loggedInUser.role === 'admin' ? html`<a href='/products/revision' class="btn btn-primary"><i class="bi bi-table"></i> Ревизия</a>` : ''}
+            ${loggedInUser?.role === 'admin' ? html`
+                <a href='/products/revision' class="btn btn-primary"><i class="bi bi-table"></i> Ревизия</a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#saleModal"><i class="bi bi-cash"></i><span class="d-none d-sm-inline"> Намаления</span></button>
+                    ` : ''}
             <form @change=${applyFilters} id="filters" class="mt-2 row align-items-end w-100">
                 ${filters()}
             </form>
-                    ${until(loadProducts(), spinner)}
+            ${until(loadProducts(), spinner)}
         </div>
     `;
 

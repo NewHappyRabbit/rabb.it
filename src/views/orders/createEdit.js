@@ -674,15 +674,15 @@ async function addProduct(e) {
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
                 vat: productVat,
-                price: productInDB.wholesalePrice,
-                unitPrice: productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
+                price: productInDB.saleWholesalePrice || productInDB.wholesalePrice,
+                unitPrice: (productInDB.saleWholesalePrice || productInDB.wholesalePrice) / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
                 discount: selectedCustomer?.discount || 0,
                 multiplier: productInDB.multiplier,
                 unitOfMeasure: productInDB.unitOfMeasure
             };
 
             if (temp.selectedSizes.length !== productInDB.sizes.length) {
-                const unitPrice = productInDB.wholesalePrice / (productInDB.sizes.length * productInDB.multiplier);
+                const unitPrice = (productInDB.saleWholesalePrice || productInDB.wholesalePrice) / (productInDB.sizes.length * productInDB.multiplier);
                 temp.price = (unitPrice * temp.selectedSizes.length).toFixed(2);
             }
 
@@ -707,7 +707,7 @@ async function addProduct(e) {
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
                 vat: productVat,
-                price: productInDB.wholesalePrice,
+                price: productInDB.saleWholesalePrice || productInDB.wholesalePrice,
                 discount: selectedCustomer?.discount || 0
             });
     }

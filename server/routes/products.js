@@ -3,7 +3,7 @@ import { app, basePath, io } from '../app.js';
 import express from 'express';
 import { Product } from "../models/product.js";
 import fs from 'fs';
-import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts } from "../woocommerce/products.js";
+import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts, WooUpdateSaleWholesalePriceProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
 import { WooCommerce_Shops } from "../config/woocommerce.js";
@@ -80,9 +80,9 @@ export function productsRoutes() {
 
     productsRouter.get('/products', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { pageSize = 15, pageNumber = 1, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, page } = req.query;
+            const { pageSize = 15, pageNumber = 1, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, category, page } = req.query;
 
-            const { count, products, pageCount, status, message } = await ProductController.get({ page, pageSize, pageNumber, search, onlyHidden, onlyOpenedPackages, onlyOutOfStock });
+            const { count, products, pageCount, status, message } = await ProductController.get({ page, pageSize, pageNumber, search, onlyHidden, onlyOpenedPackages, onlyOutOfStock, category });
             if (status !== 200)
                 return res.status(status).send(message);
 
@@ -217,6 +217,24 @@ export function productsRoutes() {
                 return res.status(status).send(message);
 
             WooUpdateQuantityProducts(doneProducts);
+
+            res.status(status).send();
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
+    productsRouter.put('/products/applySale', permit('manager', 'admin'), async (req, res) => {
+        try {
+            const { saleType, saleAmount, products } = req.body;
+
+            const { doneProducts, status, message } = await ProductController.applySale({ saleType, saleAmount, products });
+            if (status !== 200)
+                return res.status(status).send(message);
+
+            WooUpdateSaleWholesalePriceProducts(doneProducts);
 
             res.status(status).send();
         } catch (error) {

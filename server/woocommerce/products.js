@@ -29,6 +29,8 @@ async function generateWholesaleProductsData(products, shop) {
             attributes: [],
         }
 
+        if (product.saleWholesalePrice) data.sale_price = product.saleWholesalePrice.toString();
+
         if (product?.woocommerce.length > 0 && product.woocommerce.find(el => el.woo_url == shop.url))
             data.id = product.woocommerce.find(el => el.woo_url == shop.url).id;
 
@@ -65,7 +67,7 @@ async function generateWholesaleProductsData(products, shop) {
                     id: piecePriceId,
                     visible: true,
                     variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                    options: ((product.saleWholesalePrice || product.wholesalePrice) / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 },
             )
         }
@@ -526,6 +528,28 @@ export async function WooUpdateQuantityProducts(products) {
     }
 }
 
+export async function WooUpdateSaleWholesalePriceProducts(products) {
+    if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
+
+    const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+
+    for (let shop of WooCommerce_Shops) {
+        if (shop.custom.type !== 'wholesale') continue;
+
+        console.log('Starting update for ' + filtered.length + ' products...')
+        for (let i = 0; i < filtered.length; i += 100) {
+            const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, sale_price: p?.saleWholesalePrice || "" }));
+            console.log('Starting work on simple products batch: ' + i)
+            await shop.post('products/batch', { update: batch }).then(() => {
+                console.log(`Products sale price successfully updated in WooCommerce [${shop.url}]!`)
+            }).catch((error) => {
+                console.error(`Error batch updating products sale price in WooCommerce [${shop.url}]!`)
+                console.error(error);
+            });
+        }
+    }
+}
+
 export async function tempWooUpdateAttributes(products) {
     //FIXME DELETE THIS FUNCTINO WHEN DELETING /products/temp ROUTE
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
@@ -578,7 +602,7 @@ export async function tempWooUpdateAttributes(products) {
                     id: piecePriceId,
                     visible: true,
                     variation: false,
-                    options: (product.wholesalePrice / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
+                    options: ((product.saleWholesalePrice || product.wholesalePrice) / (product.sizes.length * product.multiplier)).toFixed(2).toString(),
                 },
             )
         }

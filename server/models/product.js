@@ -179,7 +179,18 @@ const productSchema = new Schema({
     inRevision: {
         type: Boolean,
         default: false,
-    }
+    },
+    saleWholesalePrice: {
+        type: Number,
+        match: [/^\d{1,}(\.\d{1,2})?$/, 'Цената трябва да е: пример 5.0, 3, 1.20!'],
+        required: false,
+        validate: {
+            validator: function (v) {
+                return v > this.deliveryPrice;
+            },
+            message: 'Цената на едро с намаление трябва да е по-голяма от доставната цена!'
+        }
+    },
 
     //TODO Implement in the future
     //sale_price

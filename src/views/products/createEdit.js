@@ -71,6 +71,7 @@ function calculateProductPrices(e) {
     const unitPriceEl = document.getElementById('deliveryPricePerUnit');
     const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
     const upsaleAmountEl = document.getElementById('upsaleAmount');
+    const saleWholesalePrice = document.getElementById('saleWholesalePrice');
 
     fixInputPrice({ target: upsaleAmountEl });
     fixInputPrice({ target: deliveryPriceEl, roundPrice: true });
@@ -83,6 +84,7 @@ function calculateProductPrices(e) {
         deliveryPriceEl.value = '';
         wholesalePrice.value = '';
         retailPrice.value = '';
+        saleWholesalePrice.value = '';
         return unitPriceEl.value = '';
     }
 
@@ -99,7 +101,7 @@ function calculateProductPrices(e) {
     wholesalePrice.value = roundPrice(wholesale + upsaleAmount * sizesLength * multiplier);
     wholesaleUnitPrice.value = (wholesale / parseInt(sizesLength * multiplier) + upsaleAmount).toFixed(2);
     retailPrice.value = roundPrice(retail + upsaleAmount);
-
+    calculateSalePrice();
 }
 
 function calculatePriceWholesale() {
@@ -111,6 +113,7 @@ function calculatePriceWholesale() {
 
     const sizesLength = selectedSizes.length || 1;
     wholesalePrice.value = roundPrice(wholesaleUnitPrice.value * parseInt(sizesLength * multiplier));
+    calculateSalePrice();
 }
 
 function calculateUnitPriceWholesale() {
@@ -122,6 +125,7 @@ function calculateUnitPriceWholesale() {
 
     const sizesLength = selectedSizes.length || 1;
     wholesaleUnitPrice.value = (wholesalePrice.value / parseInt(sizesLength * multiplier)).toFixed(2);
+    calculateSalePrice();
 }
 
 function updateTotalQty() {
@@ -242,6 +246,18 @@ function showSizeContainer() {
         container.classList.add('d-none');
         if (el === selected) container.classList.remove('d-none');
     });
+}
+
+function showSaleContainer() {
+    const selected = document.getElementById('saleType').value;
+    const el = document.getElementById('saleContainer')
+
+    if (selected === '') {
+        document.getElementById('saleWholesalePrice').value = '';
+        return el.classList.add('d-none');
+    }
+
+    el.classList.remove('d-none');
 }
 
 function makeButtonActive(id) {
@@ -375,6 +391,44 @@ const pricesTemplate = () => html`
         </div>
     `;
 
+function calculateSalePrice() {
+    const saleType = document.getElementById('saleType').value;
+    const saleAmount = document.getElementById('saleAmount').value;
+    const saleWholesalePrice = document.getElementById('saleWholesalePrice');
+    const wholesalePrice = document.getElementById('wholesalePrice').value;
+
+    if (saleType === 'percent') {
+        saleWholesalePrice.value = roundPrice(wholesalePrice - (wholesalePrice * saleAmount / 100));
+    } else if (saleType === 'sum') {
+        saleWholesalePrice.value = roundPrice(wholesalePrice - saleAmount);
+    } else {
+        saleWholesalePrice.value = '';
+    }
+}
+
+const saleWholesalePriceTemplate = () => html`
+    <div class="row mb-3 row-gap-3 align-items-end">
+        <label class="form-label">Промо цена:</label>
+        <div class="col">
+            <select @change=${showSaleContainer} name="saleType" id="saleType" class="form-select">
+                <option selected value="">Без намаление</option>
+                <option value="percent">Намали с процент (%)</option>
+                <option value="sum">Намали със сума (лв.)</option>
+            </select>
+        </div>
+        <div id="saleContainer" class="row ${product?.saleWholesalePrice ? '' : 'd-none'}">
+            <div class="col pe-0">
+                <label for="saleAmount" class="form-label">Намали с</label>
+                <input class="form-control border-primary" @keyup=${calculateSalePrice} type="text" name="saleAmount" id="saleAmount" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="col pe-0">
+                <label for="saleWholesalePrice" class="form-label">Намалена цена на едро</label>
+                <input class="form-control" type="text" name="saleWholesalePrice" id="saleWholesalePrice" inputmode="decimal" .value=${product?.saleWholesalePrice || ""} autocomplete="off">
+            </div>
+        </div>
+    </div>
+`
+
 function updateWholeQuantity() {
     // This function updates the packages quantity depending on the selected sizes size with least quantity
     const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
@@ -475,6 +529,11 @@ function validateProduct(data) {
     if (!data.retailPrice || data.retailPrice < 0 || !priceRegex.test(data.retailPrice) || Number(data.deliveryPrice / (sizesLength * multiplier)) >= Number(data.retailPrice))
         invalidFlag = markInvalid('retailPrice');
     else markValid('retailPrice');
+
+    if (data.saleWholesalePrice && (data.saleWholesalePrice < 0 || !priceRegex.test(data.saleWholesalePrice) || Number(data.wholesalePrice) <= Number(data.saleWholesalePrice))) {
+        console.log(data?.saleWholesalePrice < 0, !priceRegex.test(data.saleWholesalePrice), Number(data.wholesalePrice) <= Number(data.saleWholesalePrice))
+        invalidFlag = markInvalid('saleWholesalePrice');
+    } else markValid('saleWholesalePrice');
 
     return invalidFlag;
 }
@@ -634,7 +693,6 @@ function loadPreviewImages(e) {
         reader.readAsDataURL(file);
     });
 }
-
 
 function selectCategory(e) {
     // FIXME Delete this after svilen enters all his products in db
@@ -838,6 +896,8 @@ export async function createEditProductPage(ctx, next) {
                             Принтирай етикети
                         </label>
                     </div>`}
+
+                ${saleWholesalePriceTemplate()}
 
                 <div id="alert" class="d-none alert" role="alert"></div>
                 ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'button', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3', func: updateProduct }) : ''}
