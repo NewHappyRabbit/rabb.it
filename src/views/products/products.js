@@ -30,6 +30,8 @@ async function loadProducts() {
 }
 
 async function deleteProduct() {
+    const btn = document.getElementById('deleteProductBtn');
+    toggleSubmitBtn(btn);
     try {
         const req = await axios.delete(`/products/${selectedProduct}`);
 
@@ -38,6 +40,7 @@ async function deleteProduct() {
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
+        toggleSubmitBtn(btn);
     }
 }
 
@@ -54,7 +57,7 @@ const deleteModal = () => html`
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
-                    <button @click=${deleteProduct} type="button" class="btn btn-danger" data-bs-dismiss="modal">Изтрий</button>
+                    ${submitBtn({ type: "button", text: "Изтрий", func: deleteProduct, icon: "bi-trash", classes: "btn-danger", id: "deleteProductBtn" })}
                 </div>
                 </div>
             </div>
@@ -238,7 +241,7 @@ const table = ({ count, products, pageCount }) => html`
                                 <a href="/products/${product._id}" class="btn btn-primary"><i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> ${['manager', 'admin'].includes(loggedInUser.role) ? 'Редактирай' : 'Преглед'}</span></a>
                                 <button @click=${() => selectedProduct = product} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"> Етикети</span></button>
                                 ${loggedInUser.role === 'admin' ? html`
-                                <button @click=${() => markOutOfStock(product)} class="btn btn-danger"><i class="bi bi-box"></i> <i class="bi bi-0-square"></i><span class="d-none d-sm-inline"> Занули брой</span></button>
+                                ${submitBtn({ func: (e) => markOutOfStock({ e, product }), classes: 'btn-danger', icon: 'bi bi-box', text: 'Занули брой' })}
                                 <button @click=${() => selectedProduct = product._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash"></i><span class="d-none d-sm-inline"> Изтрий</span></button>` : ''}
                             </td>
                         </tr>
@@ -319,7 +322,9 @@ async function applyFilters(e) {
         page('/products');
 }
 
-async function markOutOfStock(product) {
+async function markOutOfStock({ e, product }) {
+    const btn = e.target;
+    toggleSubmitBtn(btn);
     try {
         const req = await axios.put(`/products/markOutOfStock/${product._id}`);
 
@@ -329,6 +334,7 @@ async function markOutOfStock(product) {
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
+        toggleSubmitBtn(btn);
     }
 }
 
