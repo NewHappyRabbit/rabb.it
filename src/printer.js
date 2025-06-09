@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import { formatPrice, socket } from '@/api';
+import { formatPrice, formatPriceNoCurrency, socket } from '@/api';
 import { loggedInUser } from '@/views/login';
 
 export var selectedPrinter, availablePrinters = [], printerFound;
@@ -133,11 +133,12 @@ export function printLabel(product, quantity = 1) {
 ^PW440
 ^LL200
 ^LS0
-^BY3,2,72^FT87,120^BEN,,Y,N
+^BY3,2,41^FT66,89^BEN,,N,N
 ^FH\^FD${product.barcode}^FS
-^FT79,35^A0N,28,28^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes[0].size}-${product.sizes[product.sizes.length - 1].size}]` : ''}^FS^CI27
-^FT13,186^A0N,28,28^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по ` : ''}${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)}^FS^CI27
-^FT303,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
+^FT0,35^A0N,28,28^FB440,1,7,C^FH\^CI28^FD${product.name} ${product.sizes?.length > 0 ? `[${product.sizes[0].size}-${product.sizes[product.sizes.length - 1].size}]` : ''}^FS^CI27
+^FT11,140^A0N,34,33^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length * product.multiplier} бр. по:` : ''}^FS^CI27
+^FT11,183^A0N,34,33^FH\^CI28^FD${formatPrice(product?.sizes?.length > 0 ? (product.wholesalePrice / (product.sizes.length * product.multiplier)) : product.wholesalePrice)} / €${formatPriceNoCurrency(product?.sizes?.length > 0 ? ((product.wholesalePrice / (product.sizes.length * product.multiplier)) / 1.95583) : product.wholesalePrice / 1.95583)}^FS^CI27
+^FT293,186^A0N,28,28^FH\^CI28^FDКод: ${product.code}^FS^CI27
 ^PQ${quantity},0
 ^XZ
 `;

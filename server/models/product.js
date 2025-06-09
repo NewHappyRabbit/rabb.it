@@ -186,6 +186,7 @@ const productSchema = new Schema({
         required: false,
         validate: {
             validator: function (v) {
+                if (!v) return true;
                 return v > this.deliveryPrice;
             },
             message: 'Цената на едро с намаление трябва да е по-голяма от доставната цена!'
