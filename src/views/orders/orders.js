@@ -126,7 +126,8 @@ const table = ({ count, orders, pageCount }) => html`
                         <td>
                             <a href="/orders/${order._id}" class="btn btn-primary"><i class="bi bi-pencil"></i> ${['manager', 'admin'].includes(loggedInUser.role) && !selectedFilters?.deleted ? 'Редактирай' : 'Преглед'}</a>
                             ${loggedInUser.role === 'admin' && !selectedFilters?.deleted && order.unpaid ? submitBtn({ func: (e) => markPaid(e, order._id), icon: 'bi bi-cash', text: 'Маркирай като платена', type: 'button', classes: 'btn-success' }) : ''}
-                            ${loggedInUser.role === 'admin' ? selectedFilters?.deleted ? html`<button @click=${() => selectedSale = order._id} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#restoreModal"><i class="bi bi-arrow-counterclockwise"></i> Възстанови</button>` : html`<button @click=${() => selectedSale = order._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
+                            ${loggedInUser.role === 'admin' ? selectedFilters?.deleted ? html`<button @click=${() => selectedSale = order._id} class="btn btn-success" data-bs-toggle="modal" data-bs-target="#restoreModal"><i class="bi bi-arrow-counterclockwise"></i> Възстанови</button>` : html`
+                            <button @click=${() => selectedSale = order._id} class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-trash"></i> Анулирай</button>` : ''}
                         </td>
                     </tr>
                 `)}
@@ -242,30 +243,43 @@ async function loadSales() {
 }
 
 async function deleteSale(returnQuantity = true) {
+    const btn = document.getElementById('deleteOrderBtn');
+    const btn2 = document.getElementById('deleteOrderBtn2');
+    toggleSubmitBtn(btn);
+    toggleSubmitBtn(btn2);
+
     try {
         const req = await axios.delete(`/orders/${selectedSale}`, { data: { returnQuantity } });
 
-        if (req.status === 204) {
-            page('/orders');
-        }
+        if (req.status === 204)
+            location.reload();
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');
+        toggleSubmitBtn(btn);
+        toggleSubmitBtn(btn2);
     }
 }
 
 async function restoreSale(returnQuantity = true) {
+    const btn = document.getElementById('restoreOrderBtn');
+    const btn2 = document.getElementById('restoreOrderBtn2');
+    toggleSubmitBtn(btn);
+    toggleSubmitBtn(btn2);
+
     try {
         const req = await axios.post(`/orders/restore/${selectedSale}`, { returnQuantity });
 
-        if (req.status === 204) {
-            page('/orders');
-        }
+        if (req.status === 204)
+            location.reload();
     } catch (err) {
         console.error(err);
         if (err.status === 400)
             alert('Продажбата не може да бъде възстановена: ' + err.response.data);
         else alert('Възникна грешка');
+
+        toggleSubmitBtn(btn);
+        toggleSubmitBtn(btn2);
     }
 }
 
@@ -292,8 +306,8 @@ export function salesPage(ctx, next) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
-                    <button @click=${() => deleteSale(false)} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай</button>
-                    <button @click=${() => deleteSale(true)} type="button" class="btn btn-danger" data-bs-dismiss="modal">Анулирай и върни количество</button>
+                    ${submitBtn({ type: "button", text: "Анулирай", func: () => deleteSale(false), icon: "bi-trash", classes: "btn-danger", id: "deleteOrderBtn" })}
+                    ${submitBtn({ type: "button", text: "Анулирай и върни количество", func: () => deleteSale(true), icon: "bi-trash", classes: "btn-danger", id: "deleteOrderBtn2" })}
                 </div>
             </div>
         </div>
@@ -312,8 +326,8 @@ export function salesPage(ctx, next) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Откажи</button>
-                    <button @click=${() => restoreSale(false)} type="button" class="btn btn-primary" data-bs-dismiss="modal">Възстанови</button>
-                    <button @click=${() => restoreSale(true)} type="button" class="btn btn-primary" data-bs-dismiss="modal">Възстанови и премахни количества от склада</button>
+                    ${submitBtn({ type: "button", text: "Възстанови", func: () => restoreSale(false), classes: "btn-primary", id: "restoreOrderBtn" })}
+                    ${submitBtn({ type: "button", text: "Възстанови и премахни количества от склада", func: () => restoreSale(true), classes: "btn-primary", id: "restoreOrderBtn2" })}
                 </div>
             </div>
         </div>
