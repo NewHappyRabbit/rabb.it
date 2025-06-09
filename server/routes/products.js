@@ -226,7 +226,7 @@ export function productsRoutes() {
         }
     });
 
-    productsRouter.put('/products/applySale', permit('manager', 'admin'), async (req, res) => {
+    productsRouter.put('/products/applySale', permit('admin'), async (req, res) => {
         try {
             const { saleType, saleAmount, products } = req.body;
 

@@ -897,7 +897,7 @@ export async function createEditProductPage(ctx, next) {
                         </label>
                     </div>`}
 
-                ${saleWholesalePriceTemplate()}
+                ${loggedInUser.role === 'admin' ? saleWholesalePriceTemplate() : ''}
 
                 <div id="alert" class="d-none alert" role="alert"></div>
                 ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'button', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3', func: updateProduct }) : ''}

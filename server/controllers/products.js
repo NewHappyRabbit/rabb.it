@@ -31,7 +31,7 @@ async function validateProduct(data) {
     if (!regex.test(wholesalePrice))
         return { status: 400, message: 'Грешна цена на едро', property: 'wholesalePrice' };
 
-    if (saleWholesalePrice && (!regex.test(saleWholesalePrice) || Number(saleWholesalePrice) > Number(wholesalePrice))) {
+    if (saleWholesalePrice && (!regex.test(saleWholesalePrice) || Number(saleWholesalePrice) > Number(wholesalePrice) || Number(saleWholesalePrice) < Number(deliveryPrice))) {
         return { status: 400, message: 'Грешна намалена цена на едро', property: 'saleWholesalePrice' };
     }
 

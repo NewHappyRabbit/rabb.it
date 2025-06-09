@@ -63,11 +63,13 @@ export function toggleDarkMode({ appStart = false }) {
 }
 
 export function markValidEl(el) {
+    if (!el) return;
     el.classList.add('is-valid');
     el.classList.remove('is-invalid');
 }
 
 export function markInvalidEl(el) {
+    if (!el) return;
     el.classList.add('is-invalid');
     el.classList.remove('is-valid');
     return true;
@@ -75,12 +77,14 @@ export function markInvalidEl(el) {
 
 export function markValid(elName) {
     const el = document.getElementById(elName);
+    if (!el) return;
     el.classList.add('is-valid');
     el.classList.remove('is-invalid');
 }
 
 export function markInvalid(elName) {
     const el = document.getElementById(elName);
+    if (!el) return true;
     el.classList.add('is-invalid');
     el.classList.remove('is-valid');
     return true;
