@@ -77,6 +77,7 @@ const customerRow = (customer) => html`
         <td>${customer.name}</td>
         <td>${customer.vat}</td>
         <td>${customer.phone}</td>
+        <td>${customer.address}</td>
         <td>${customer.discount}</td>
         <td class="text-nowrap">
             <button data-bs-toggle="modal" data-bs-target="#quickViewModal" class="btn btn-primary" @click=${() => loadQuickView(customer._id)}><i class="bi bi-eye"></i><span class="d-none d-sm-inline"> Преглед</span></button>
@@ -96,6 +97,7 @@ const table = (customers, count) => html`
                     <th scope="col">Фирма</th>
                     <th scope="col">ЕИК</th>
                     <th scope="col">Телефон</th>
+                    <th scope="col">Адрес</th>
                     <th scope="col">Отстъпка %</th>
                     <th scope="col">Действия</th>
                 </tr>

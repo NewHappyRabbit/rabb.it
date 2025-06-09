@@ -30,12 +30,12 @@ export const CustomerController = {
 
         // Either run search or normal pagination, tried but cant get both to work together
         if (search) { // search in vat or name
-            query.$or = [{ vat: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }];
+            query.$or = [{ vat: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' }, }, { address: { $regex: search, $options: 'i' }, }];
         }
 
         if (!showDeleted) query.deleted = { $ne: true };
 
-        const customers = await Customer.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('name vat phone discount deleted');
+        const customers = await Customer.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).select('name vat phone address discount deleted');
         const count = await Customer.countDocuments(query);
         const pageCount = Math.ceil(count / pageSize);
 
