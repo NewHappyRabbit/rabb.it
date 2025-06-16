@@ -8,7 +8,7 @@ import { submitBtn, toggleSubmitBtn } from "@/views/components";
 import { loggedInUser } from "@/views/login";
 import Quagga from 'quagga';
 import page from 'page';
-import { numberToBGText, priceRegex, fixInputPrice, pad, calculateTotalVats } from "@/api";
+import { numberToBGText, priceRegex, fixInputPrice, pad, calculateTotalVats, socket } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
 var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
@@ -432,6 +432,19 @@ function updateMultiplier(e) {
     rerenderTable();
 }
 
+function printLabels(e) {
+    e.preventDefault();
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+    addedProducts[arrayIndex].printLabels = !addedProducts[arrayIndex].printLabels;
+    rerenderTable();
+
+    const product = addedProducts[arrayIndex];
+    console.log(product)
+    // socket.emit('send-print', selectedProduct, Number(qty.value));
+}
+
 const wholesaleProductsTable = (products) => html`
     <table id="orders" class="table mt-3 table-striped">
         <thead>
@@ -464,11 +477,11 @@ const wholesaleProductsTable = (products) => html`
         ? html`<input @change=${updateMultiplier} type="text" class="form-control" step="1" min="1" inputmode="numeric" required name="multiplier" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} .value=${product.multiplier}/>`
         : ''}</td>
 
-        ${product.product ?
+                        ${product.product ?
         html`<td>${product.product.sizes.length ? checkboxSizes(product) : ''}</td>`
         : html`<td><input @change=${updateQtyInPackage} name="qtyInPackage" class= "form-control" .value=${product.qtyInPackage || ""} type="number" step="1" min="0" inputmode="numeric" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>`}
 
-        <td>${product?.product?.sizes?.length || !product?.product
+                        <td>${product?.product?.sizes?.length || !product?.product
         ? html`<input @keyup=${updateUnitPrice} name="unitPrice" class="form-control" type="text" .value=${product.selectedSizes?.length ? +(product.price / ((product.selectedSizes.length || 0) * product.multiplier)).toFixed(2) : product?.qtyInPackage ? +(product.price / product.qtyInPackage).toFixed(2) : ''} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>`
         : ''}</td>
 
@@ -493,8 +506,10 @@ const wholesaleProductsTable = (products) => html`
 
                     <td name="subtotal"  class="text-nowrap">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
 
-                    <td style="text-align: end">
-                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
+                    <td class="d-flex gap-1" style="text-align: end">
+                        ${!product?.product ? html`<button @click=${printLabels} class="btn btn-primary" type="button"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"></span></button>` : ''}
+                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}
+                        </td>
                 </tr>
                 `)}
 

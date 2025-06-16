@@ -44,6 +44,21 @@ export function productSockets(socket) {
 
         io.in('printer').emit('print', minifiedProduct, quantity);
     });
+
+    socket.on('send-print-orders', (product) => {
+        if (io.sockets.adapter.rooms.get("printer") === undefined) return; // if no pc with printer connected, do nothing
+
+        if (!product || !product.name || !product.price || !product.quantity) return;
+
+        const finalProduct = {
+            name: product.name,
+            price: Number(product.price),
+            qtyInPackage: Number(product.qtyInPackage),
+            quantity: Number(product.quantity),
+        };
+
+        io.in('printer').emit('printNonDB', finalProduct);
+    });
 }
 
 export function productsRoutes() {
