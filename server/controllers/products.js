@@ -142,7 +142,7 @@ export const ProductController = {
 
         return { product, status: 200 };
     },
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, category }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
 
@@ -177,6 +177,9 @@ export const ProductController = {
 
         if (onlyHidden && onlyHidden === 'true')
             query.$and.push({ hidden: true });
+
+        if (onlyOnSale && onlyOnSale === 'true')
+            query.$and.push({ saleWholesalePrice: { $ne: null } });
 
         if (search)
             query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: search }, { name: { $regex: search, $options: 'i' } }];

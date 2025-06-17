@@ -309,6 +309,10 @@ async function applyFilters(e) {
         selectedFilters.onlyOpenedPackages = true;
     else selectedFilters.onlyOpenedPackages = ''
 
+    if (data.onlyOnSale)
+        selectedFilters.onlyOnSale = true;
+    else selectedFilters.onlyOnSale = ''
+
     if (e) // if coming from filters and not pagination
         delete selectedFilters.pageNumber;
 
@@ -391,6 +395,12 @@ export function productsPage(ctx, next) {
         <div class="form-check form-switch p-0">
             <label class="form-check-label d-block" for="onlyOpenedPackages">Само разбутани пакети:</label>
             <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOpenedPackages" ?checked=${selectedFilters?.onlyOpenedPackages} name="onlyOpenedPackages">
+        </div>
+    </div>
+    <div class="col-6 col-sm">
+        <div class="form-check form-switch p-0">
+            <label class="form-check-label d-block" for="onlyOnSale">Само намалени:</label>
+            <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOnSale" ?checked=${selectedFilters?.onlyOnSale} name="onlyOnSale">
         </div>
     </div>
     <div class="col-6 col-sm">
