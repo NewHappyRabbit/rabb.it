@@ -327,6 +327,35 @@ function updateDiscount(e) {
     rerenderTable();
 }
 
+function updateDiscountSum(e) {
+    const target = e.target;
+    fixInputPrice({ target });
+    let value = target.value;
+
+    const index = e.target.closest('tr').getAttribute('addedProductsIndex');
+    // find actual index in the array of addedProducts
+    const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
+    const originalPrice = Number(addedProducts[arrayIndex].price);
+
+    if (value < 0)
+        target.value = 0;
+    else if (value > originalPrice)
+        target.value = originalPrice;
+    else if (isNaN(originalPrice))
+        target.value = 0;
+
+    value = Number(target.value);
+
+    const discountedPrice = originalPrice - value;
+
+    let discountPercent = 100 * ((originalPrice - discountedPrice) / originalPrice);
+
+    if (isNaN(discountPercent)) discountPercent = 0;
+
+    addedProducts[arrayIndex].discount = discountPercent;
+    rerenderTable();
+}
+
 function updatePrice(e) {
     const target = e.target;
     fixInputPrice({ target, roundPrice: true });
@@ -458,6 +487,7 @@ const wholesaleProductsTable = (products) => html`
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
+                <th>Отстъпка лв.</th>
                 <th>ДДС %</th>
                 <th>Сума</th>
                 <th>Действия</th>
@@ -495,6 +525,8 @@ const wholesaleProductsTable = (products) => html`
                     <td><input @change=${updatePrice} @keyup=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+
+                    <td><input @change=${updateDiscountSum} @keyup=${updateDiscountSum} name="discountSum" class="form-control" type="text" inputmode="decimal" .value=${product.discount ? (product.price * product.discount / 100) : 0} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td>
                         <select ?disabled=${product?.product && product.vat} style="min-width: 60px" @change=${updateVat} name="vat" class="form-control">
@@ -562,6 +594,8 @@ const retailProductsTable = (products) => html`
                     <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td><input @change=${updateDiscount} name="discount" class="form-control" type="number" step="0.1" inputmode="numeric" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+
+                    <td><input @change=${updateDiscountSum} @keyup=${updateDiscountSum} name="discountSum" class="form-control" type="text" inputmode="decimal" .value=${product.discount ? (product.price * product.discount / 100) : 0} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td>
                         <select style="min-width: 60px" @change=${updateVat} name="vat" class="form-control" ?disabled=${product?.product && product.vat}>
