@@ -534,8 +534,9 @@ export const ProductController = {
         }
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
-        const nowOnSale = product.saleWholesalePrice !== data.saleWholesalePrice;
-        data.description = generateDescription(data, nowOnSale);
+
+        data.description = generateDescription(data, true);
+
 
         if (data.sizes.length !== 0)
             data.openedPackages = data.sizes.length > 1 ? data.sizes.some(s => s.quantity !== data.sizes[0].quantity) || !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1)) : !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1));
