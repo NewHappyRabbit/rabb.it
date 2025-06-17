@@ -7,6 +7,18 @@ import { Setting } from "../models/setting.js";
 import { roundPrice, uploadImg } from "./common.js";
 import fs from 'fs';
 
+function generateDescription(data, force = false) {
+    const price = data.saleWholesalePrice || data.wholesalePrice;
+    const onSale = data.saleWholesalePrice ? true : false;
+
+    console.log(data);
+
+    if ((force || !data.description) && data.sizes.length > 0)
+        return `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(price / (data.sizes.length * data.multiplier)).toFixed(2)} лв. ${onSale ? '(ПРОМО ЦЕНА)' : ''} - Код ${data.code}`;
+    else if (force || !data.description)
+        return `${data.name} - ${onSale ? '(ПРОМО ЦЕНА)' : ''} ${Number(price).toFixed(2)} лв. - Код ${data.code}`;
+}
+
 async function validateProduct(data) {
     const { category, name, quantity, sizes, deliveryPrice, wholesalePrice, retailPrice, unitOfMeasure, multiplier, saleWholesalePrice } = data;
 
@@ -262,10 +274,7 @@ export const ProductController = {
         if (barcodeExists) return { status: 400, message: 'Вече съществува продукт с този баркод' };
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
-        if (!data.description && data.sizes.length > 0)
-            data.description = `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
-        else if (!data.description)
-            data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
+        data.description = generateDescription(data);
 
         // Update upsaleAmount in settings
         await Setting.updateOne({ key: 'upsaleAmount' }, { value: data.upsaleAmount });
@@ -385,6 +394,8 @@ export const ProductController = {
             if (dbProduct.saleWholesalePrice < 0) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от 0 лева` };
 
             if (dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
+
+            dbProduct.description = generateDescription(dbProduct, true);
 
             doneProducts.push(dbProduct);
         }
@@ -525,10 +536,8 @@ export const ProductController = {
         }
 
         // FIXME DELETE THIS AFTER SVILEN IS DONE WITH PRODUCTS ADDING
-        if (!data.description && data.sizes.length > 0)
-            data.description = `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(data.wholesalePrice / (data.sizes.length * data.multiplier)).toFixed(2)} лв. - Код ${data.code}`;
-        else if (!data.description)
-            data.description = `${data.name} - ${Number(data.wholesalePrice).toFixed(2)} лв. - Код ${data.code}`;
+        const nowOnSale = product.saleWholesalePrice !== data.saleWholesalePrice;
+        data.description = generateDescription(data, nowOnSale);
 
         if (data.sizes.length !== 0)
             data.openedPackages = data.sizes.length > 1 ? data.sizes.some(s => s.quantity !== data.sizes[0].quantity) || !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1)) : !Number.isInteger(data.sizes[0].quantity / (data.multiplier || 1));
