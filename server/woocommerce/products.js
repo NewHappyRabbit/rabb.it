@@ -289,6 +289,8 @@ async function createWooVariations(wooId, product, shop) {
 export async function WooCreateProduct(product) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
+    console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
+
     for (let shop of WooCommerce_Shops) {
         var data;
         if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
