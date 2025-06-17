@@ -170,13 +170,15 @@ async function applyFilters(e) {
 
     Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
 
+    page(getUrl());
+}
+
+function getUrl() {
     const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
 
     if (uri.length)
-        page('/customers?' + uri);
-    else
-        page('/customers');
-
+        return `/customers?${uri}`;
+    return '/customers';
 }
 
 export async function customersPage(ctx, next) {

@@ -314,12 +314,16 @@ async function applyFilters(e) {
 
     Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
 
+    page(getUrl());
+}
+
+function getUrl() {
     const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
 
     if (uri.length)
-        page('/products?' + uri);
-    else
-        page('/products');
+        return `/products?${uri}`;
+
+    return '/products';
 }
 
 async function markOutOfStock({ e, product }) {
@@ -328,9 +332,7 @@ async function markOutOfStock({ e, product }) {
     try {
         const req = await axios.put(`/products/markOutOfStock/${product._id}`);
 
-        if (req.status === 200) {
-            page('/products');
-        }
+        if (req.status === 200) page(getUrl())
     } catch (err) {
         console.error(err);
         alert('Възникна грешка');

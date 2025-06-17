@@ -63,14 +63,14 @@ async function applyFilters(e) {
 
     Object.keys(selectedFilters).forEach(key => selectedFilters[key] === '' && delete selectedFilters[key]);
 
+    page(getUrl());
+}
 
+function getUrl() {
     const uri = Object.keys(selectedFilters).map(key => `${key}=${selectedFilters[key]}`).join('&');
-    console.log(uri);
 
-    if (uri.length)
-        page('/orders?' + uri);
-    else
-        page('/orders');
+    if (uri.length) return `/orders?${uri}`;
+    return '/orders';
 }
 
 async function markPaid(e, id) {
