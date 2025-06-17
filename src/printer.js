@@ -134,7 +134,7 @@ function printLabelNonDB(product) {
     ^FT0,35^A0N,28,28^FB440,1,7,C^FH\^CI28^FD${product.name}^FS^CI27
     ^FT11,150^A0N,28,28^FH\^CI28^FD${product?.qtyInPackage > 1 ? `${product.qtyInPackage} бр. по` : ''}^FS^CI27
     ^FT11,185^A0N,28,28^FH\^CI28^FD${formatPrice(product?.qtyInPackage > 1 ? (product.price / product.qtyInPackage) : product.price)} / €${formatPriceNoCurrency((product?.qtyInPackage > 1 ? (product.price / product.qtyInPackage) : product.price) / 1.95583)}^FS^CI27
-    ^PQ1,0,1,Y
+    ^PQ${product.quantity},0
     ^XZ
     `;
 
