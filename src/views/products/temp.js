@@ -102,7 +102,6 @@ const attributesTemplate = (product) => html`
     <div>
         <label for="in_category">Категория:</label>
         <select @change=${(e) => onSelectAttrCategory(e, product._id)} id="in_category" name="in_category" class="form-control">
-            ${console.log(product?.attributes?.find(a => a.attribute.slug === 'in_category'))}
             <option ?selected=${!product?.attributes?.find(a => a.attribute.slug === 'in_category')} value="">Избери</option>
             <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Детски'))} value='Детски'>Детски</option>
             <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Мъжки'))} value='Мъжки'>Мъжки</option>

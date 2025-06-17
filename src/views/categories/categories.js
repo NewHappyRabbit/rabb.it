@@ -83,7 +83,6 @@ async function createEditDeleteCategory(e) {
     const alertEl = document.getElementById('alert');
     try {
         var req;
-        console.log({ action, selectedCategoryId })
         if (action === 'delete')
             req = await axios.delete(`/categories/${selectedCategoryId}`);
         else if (action === 'edit')

@@ -466,12 +466,9 @@ function printLabels(e) {
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
-    addedProducts[arrayIndex].printLabels = !addedProducts[arrayIndex].printLabels;
-    rerenderTable();
 
     const product = addedProducts[arrayIndex];
-    console.log(product)
-    // socket.emit('send-print', selectedProduct, Number(qty.value));
+    socket.emit('send-print-orders', product);
 }
 
 const wholesaleProductsTable = (products) => html`

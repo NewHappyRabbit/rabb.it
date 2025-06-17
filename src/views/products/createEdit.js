@@ -537,7 +537,6 @@ function validateProduct(data) {
     else markValid('retailPrice');
 
     if (data.saleWholesalePrice && (data.saleWholesalePrice < 0 || !priceRegex.test(data.saleWholesalePrice) || Number(data.wholesalePrice) <= Number(data.saleWholesalePrice))) {
-        console.log(data?.saleWholesalePrice < 0, !priceRegex.test(data.saleWholesalePrice), Number(data.wholesalePrice) <= Number(data.saleWholesalePrice))
         invalidFlag = markInvalid('saleWholesalePrice');
     } else markValid('saleWholesalePrice');
 

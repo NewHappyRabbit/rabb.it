@@ -11,8 +11,6 @@ function generateDescription(data, force = false) {
     const price = data.saleWholesalePrice || data.wholesalePrice;
     const onSale = data.saleWholesalePrice ? true : false;
 
-    console.log(data);
-
     if ((force || !data.description) && data.sizes.length > 0)
         return `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(price / (data.sizes.length * data.multiplier)).toFixed(2)} лв. ${onSale ? '(ПРОМО ЦЕНА)' : ''} - Код ${data.code}`;
     else if (force || !data.description)

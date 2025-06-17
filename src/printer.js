@@ -35,7 +35,7 @@ export function printerSockets() {
     });
 
     socket.on('printNonDB', product => {
-        printLabel(product);
+        printLabelNonDB(product);
     });
 }
 
@@ -137,6 +137,8 @@ function printLabelNonDB(product) {
     ^PQ1,0,1,Y
     ^XZ
     `;
+
+    sendZPLCommand(zplCommand);
 }
 
 export function printLabel(product, quantity = 1) {
@@ -181,6 +183,10 @@ export function printLabel(product, quantity = 1) {
 ^XZ
 `;
 
+    sendZPLCommand(zplCommand);
+}
+
+function sendZPLCommand(zplCommand) {
     if (!selectedPrinter) {
         // Try finding printer
         BrowserPrint.getDefaultDevice("printer", function (device) {
