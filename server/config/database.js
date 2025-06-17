@@ -22,9 +22,12 @@ async function mongoConfig() {
 
     await mongoose.connect(uri, options)
         .then(console.log('Connecting to MongoDB at ' + uri))
-        .catch(err => {
-            if (env === 'test') throw new Error('Error connecting to MongoDB: ' + err)
-            console.error('Error connecting to MongoDB: ' + err)
+        .catch(err => async () => {
+            {
+                if (env === 'test') throw new Error('Error connecting to MongoDB: ' + err)
+                console.error('Error connecting to MongoDB: ' + err)
+                await mongoose.disconnect();
+            }
         });
 }
 
