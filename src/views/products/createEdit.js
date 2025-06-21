@@ -386,12 +386,6 @@ const pricesTemplate = () => html`
 
             <div class="col">
                 <label for="upsaleAmount" class="form-label">Добавена стойност към всеки брой <span class="text-primary">(лв.)</span></label>
-                <select class="form-select" aria-label="Default select example">
-                    <option selected>Open this select menu</option>
-                    <option value="1">One</option>
-                    <option value="2">Two</option>
-                    <option value="3">Three</option>
-                </select>
                 <input @keyup=${() => calculateProductPrices()} class="form-control border-primary" type="text" name="upsaleAmount" id="upsaleAmount" inputmode="decimal" .value=${lastUpsaleAmount} autocomplete="off">
             </div>
         </div>

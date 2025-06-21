@@ -55,9 +55,36 @@ export async function WooHookCreateOrder({ shop, data }) {
     if (data.customer_note)
         wooData["customer_note"] = data.customer_note;
 
-    // Speedy shipping
-    if (data.meta_data.find(meta => meta.key == 'speedy_total_price')?.value && data.meta_data.find(meta => meta.key == 'speedy_total_price')?.value !== '') {
-        // if (data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value && data.meta_data.find(meta => meta.key === 'speedy_shipping_to')?.value !== '') {
+    if (data.shipping_lines.find(line => line.method_id === 'econt_shipping_method')) {
+        // Econt
+        // Office
+        if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To').value === 'OFFICE') {
+            wooData.woocommerce.econt = {
+                ship_to: 'Офис',
+                city: data.meta_data.find(meta => meta.key === 'Econt_Office_Town').value,
+                office: data.shipping.address_1,
+                postal_code: data.meta_data.find(meta => meta.key === 'Econt_Office_Postcode').value,
+                total: data.meta_data.find(meta => meta.key === 'Econt_Total_Shipping_Cost').value
+            }
+        }
+
+        // Address
+        if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To').value === 'DOOR') {
+            wooData.woocommerce.econt = {
+                ship_to: 'Адрес',
+                city: data.meta_data.find(meta => meta.key === 'Econt_Door_Town').value,
+                postal_code: data.meta_data.find(meta => meta.key === 'Econt_Door_Postcode').value,
+                street: data.meta_data.find(meta => meta.key === 'Econt_Door_Street').value,
+                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_street_num').value && { number: data.meta_data.find(meta => meta.key === 'Econt_Door_street_num').value }),
+                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Entrance_num').value && { entrance: data.meta_data.find(meta => meta.key === 'Econt_Door_Entrance_num').value }),
+                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Floor_num').value && { floor: data.meta_data.find(meta => meta.key === 'Econt_Door_Floor_num').value }),
+                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Apartment_num').value && { apartment: data.meta_data.find(meta => meta.key === 'Econt_Door_Apartment_num').value }),
+                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Other').value && { note: data.meta_data.find(meta => meta.key === 'Econt_Door_Other').value }), // could be a door note or address if it cant be found in the Econt form
+                total: Number(data.meta_data.find(meta => meta.key === 'Econt_Total_Shipping_Cost').value)
+            }
+        }
+    } else if (data.shipping_lines.find(line => line.method_id === 'speedy_shipping_method')) {
+        // Speedy
         // General info for both address and office pickups
         wooData.woocommerce.speedy = {
             country: data.meta_data.find(meta => meta.key === 'speedy_country_name').value,
@@ -89,37 +116,6 @@ export async function WooHookCreateOrder({ shop, data }) {
 
             if (data.meta_data.find(meta => meta.key === 'speedy_address_note')?.value)
                 wooData.woocommerce.speedy.note = data.meta_data.find(meta => meta.key === 'speedy_address_note').value;
-        }
-
-    }
-
-    // Econt shipping
-    if (data.meta_data.find(meta => meta.key == 'Econt_Total_Shipping_Cost')?.value && data.meta_data.find(meta => meta.key == 'Econt_Total_Shipping_Cost')?.value !== '') {
-        // Office
-        if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To').value === 'OFFICE') {
-            wooData.woocommerce.econt = {
-                ship_to: 'Офис',
-                city: data.meta_data.find(meta => meta.key === 'Econt_Office_Town').value,
-                office: data.shipping.address_1,
-                postal_code: data.meta_data.find(meta => meta.key === 'Econt_Office_Postcode').value,
-                total: data.meta_data.find(meta => meta.key === 'Econt_Total_Shipping_Cost').value
-            }
-        }
-
-        // Address
-        if (data.meta_data.find(meta => meta.key === 'Econt_Shipping_To').value === 'DOOR') {
-            wooData.woocommerce.econt = {
-                ship_to: 'Адрес',
-                city: data.meta_data.find(meta => meta.key === 'Econt_Door_Town').value,
-                postal_code: data.meta_data.find(meta => meta.key === 'Econt_Door_Postcode').value,
-                street: data.meta_data.find(meta => meta.key === 'Econt_Door_Street').value,
-                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_street_num').value && { number: data.meta_data.find(meta => meta.key === 'Econt_Door_street_num').value }),
-                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Entrance_num').value && { entrance: data.meta_data.find(meta => meta.key === 'Econt_Door_Entrance_num').value }),
-                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Floor_num').value && { floor: data.meta_data.find(meta => meta.key === 'Econt_Door_Floor_num').value }),
-                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Apartment_num').value && { apartment: data.meta_data.find(meta => meta.key === 'Econt_Door_Apartment_num').value }),
-                ...(data.meta_data.find(meta => meta.key === 'Econt_Door_Other').value && { note: data.meta_data.find(meta => meta.key === 'Econt_Door_Other').value }), // could be a door note or address if it cant be found in the Econt form
-                total: Number(data.meta_data.find(meta => meta.key === 'Econt_Total_Shipping_Cost').value)
-            }
         }
     }
 

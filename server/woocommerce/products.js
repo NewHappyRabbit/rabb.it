@@ -273,6 +273,7 @@ async function createWooVariations(wooId, product, shop) {
         const variations = await generateVariationsData(product, shop);
         await shop.post(`products/${wooId}/variations/batch`, { create: variations }).then(async (response) => {
             for (let variation of response.data.create) {
+                if (variation?.error) throw new Error(variation.error.message);
                 const size = product.sizes.find(s => s.size.toLowerCase() === variation.attributes.find(a => a.id.toString() === sizeId).option.toLowerCase());
                 if (!size) throw new Error(`Failed to find size for product ${product._id}! Looking for size: ${variation.attributes.find(a => a.id.toString() === sizeId).option}. Available sizes: ${product.sizes.map(s => s.size).join(', ')}`);
                 if (!size.woocommerce) size.woocommerce = [];
@@ -295,6 +296,7 @@ export async function WooCreateProduct(product) {
         var data;
         if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
+
         await shop.post("products", data).then(async (response) => {
             await addWooDataToProduct(response.data, product, shop);
             await product.save();
