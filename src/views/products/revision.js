@@ -178,6 +178,10 @@ function findInPage(e) {
         el = document.querySelector(`tr[barcode="${value.slice(1)}"]`);
     }
 
+    if (!el) {
+        el = document.querySelector('tr[code="' + value + '"]');
+    }
+
     if (!el) return;
 
     e.target.value = '';
