@@ -196,7 +196,7 @@ function findInPage(e) {
 export async function revisionPage() {
     const template = () => html`
     ${nav()}
-    <input placeholder="Търси по баркод" id="search" class="form-control text-center" type="text" @keyup=${findInPage} @change=${findInPage} style="z-index: 1000; margin-top: -8px; position: fixed;" />
+    <input placeholder="Търси по баркод" id="search" class="form-control text-center" type="text" @change=${findInPage} style="z-index: 1000; margin-top: -8px; position: fixed;" />
 
     <div class="container-fluid" style="margin-top: 30px">
         ${until(loadProducts(), spinner)}
