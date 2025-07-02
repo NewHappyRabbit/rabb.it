@@ -584,9 +584,9 @@ const retailProductsTable = (products) => html`
                     <td>
                         <div class="input-group">
                             <input @change=${updateQuantity} name="quantity" class="form-control" type="number" .value=${product.quantity} step="1" min="1" inputmode="numeric" .max=${!order && product.size && product?.product?.sizes?.find(s => s.size == product.size)?.quantity}  required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/>
-                            <span class="input-group-text" id="basic-addon2">/${product.size ? product?.product?.sizes.find(s => s.size == product.size).quantity : product?.product?.quantity || ''}</span>
-                        </div>
-                    </td>
+                            <span class="input-group-text" id="basic-addon2">/${product.size ? product?.product?.sizes.find(s => s.size == product.size)?.quantity : product?.product?.quantity || ''}</span>
+                        </div >
+                    </td >
 
                     <td><input @change=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
@@ -599,14 +599,14 @@ const retailProductsTable = (products) => html`
                             <option ?selected=${product && product.vat === 0} value='0'>0%</option>
                             <option ?selected=${product && product.vat === 9} value='9'>9%</option>
                             <option ?selected=${!product || product?.vat === 20} value='20'>20%</option>
-                        </select>
-                    </td>
+                        </select >
+                    </td >
 
                     <td name="subtotal">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
 
                     <td>
                         ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}</td>
-                </tr>`)}
+                </tr > `)}
             ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : addProductRow()}
         </tbody>
     </table>
