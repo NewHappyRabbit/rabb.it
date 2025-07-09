@@ -1261,7 +1261,7 @@ const printContainer = ({ totals, data, param, flags }) => html`
                 <span>Адрес за доставка: ${data.customer.deliveryAddress}</span>
             </div>` : ''}
 
-        ${(param?.stokova === true || data.type === 'stokova') && html`<img style="width: 30%; display: block; margin: auto; margin-top: 5rem" src="images/rate-us-qr.png"/>`}
+        ${(param?.stokova === true || data.type === 'stokova') ? html`<img style="width: 30%; display: block; margin: auto; margin-top: 5rem" src="images/rate-us-qr.png"/>` : ''}
     </div >
     `;
 
