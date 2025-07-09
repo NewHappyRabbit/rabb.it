@@ -1169,7 +1169,11 @@ async function printSale(data) {
     if (printStokova === true) // print stokova of the invoice
         printPages.push(printContainer({ totals, data, param: { stokova: true }, flags }));
 
-    render(printPages, document.getElementById('printContainer'));
+    const container = document.getElementById('printContainer');
+
+    render(printPages, container);
+
+    container.classList.remove('d-none');
     try {
         if (!document.execCommand('print', false, null)) {
             window.print();
@@ -1177,6 +1181,8 @@ async function printSale(data) {
     } catch {
         window.print();
     }
+
+    container.classList.add('d-none');
 }
 
 // invoice should have deducted tax in product price and shown as sum at the end
@@ -1253,8 +1259,9 @@ const printContainer = ({ totals, data, param, flags }) => html`
         ${(param?.stokova === true || data.type === 'stokova') && data.customer.deliveryAddress ? html`
             <div>
                 <span>Адрес за доставка: ${data.customer.deliveryAddress}</span>
-            </div>` : ''
-    }
+            </div>` : ''}
+
+        ${(param?.stokova === true || data.type === 'stokova') && html`<img style="width: 30%; display: block; margin: auto; margin-top: 5rem" src="images/rate-us-qr.png"/>`}
     </div >
     `;
 
