@@ -1173,7 +1173,12 @@ async function printSale(data) {
 
     render(printPages, container);
 
-    container.classList.remove('d-none');
+    if (data.type === 'stokova' || printStokova === true) {
+        document.getElementById('rate-us-qr').classList.add('d-print-block');
+    } else {
+        document.getElementById('rate-us-qr').classList.remove('d-print-block');
+    }
+
     try {
         if (!document.execCommand('print', false, null)) {
             window.print();
@@ -1181,8 +1186,6 @@ async function printSale(data) {
     } catch {
         window.print();
     }
-
-    container.classList.add('d-none');
 }
 
 // invoice should have deducted tax in product price and shown as sum at the end
@@ -1260,8 +1263,6 @@ const printContainer = ({ totals, data, param, flags }) => html`
             <div>
                 <span>Адрес за доставка: ${data.customer.deliveryAddress}</span>
             </div>` : ''}
-
-        ${(param?.stokova === true || data.type === 'stokova') ? html`<img style="width: 30%; display: block; margin: auto; margin-top: 5rem" src="images/rate-us-qr.jpg"/>` : ''}
     </div >
     `;
 
@@ -1407,7 +1408,8 @@ const template = () => html`
         </form>
         <div id="alert" class="alert d-none"></div>
     </div>
-    <div id="printContainer" class="d-none d-print-block"></div>`;
+    <div id="printContainer" class="d-none d-print-block"></div>
+    <img id="rate-us-qr" class="d-none" style="width: 30%; margin: auto; margin-top: 5rem" src="images/rate-us-qr.jpg"/>`;
 
 async function getDocumentTypeNumber() {
     const getNewDocumentNumber = await axios.get('/orders/number', { params: { documentType, company: selectedCompany._id } });
