@@ -54,7 +54,7 @@ function scanBarcode() {
             input.value += barcode;
 
             // simulate Enter key pressed on input field to activate addProduct function
-            const event = new KeyboardEvent('keyup', {
+            const event = new KeyboardEvent('keydown', {
                 key: 'Enter',
                 code: 'Enter',
                 which: 13,
@@ -80,13 +80,12 @@ function stopBarcode() {
 }
 
 async function addProduct(e) {
-    e.preventDefault();
-
     if (e.target.value === '') return;
 
-
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter' && e.key !== 'Enter') return;
+
+    e.preventDefault();
 
     var product, quantity = 1;
 
@@ -163,7 +162,7 @@ const table = (products) => html`
                 <td colspan="3">
                     <div id="barcodeVideo"></div>
                     <div class="input-group">
-                        <input @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="text" name="product" id="product" autocomplete="off">
+                        <input @keydown=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search" tabindex="-1">
                         <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
                         <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
                     </div>
@@ -254,7 +253,7 @@ export async function restockPage() {
                 lastScanTime = now;
                 // Entered text with more than 10 characters at once (either by scanner or by copy-pasting value in field)
                 // simulate Enter key pressed on input field to activate addProduct function
-                const event = new KeyboardEvent('keyup', {
+                const event = new KeyboardEvent('keydown', {
                     key: 'Enter',
                     code: 'Enter',
                     which: 13,
