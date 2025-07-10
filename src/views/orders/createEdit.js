@@ -679,7 +679,6 @@ function stopBarcode() {
 
 async function addProduct(e) {
     e.preventDefault();
-    alert(e.code)
 
     if (e.target.value === '') return;
 
