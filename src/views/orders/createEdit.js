@@ -408,7 +408,7 @@ const addProductRow = () => html`
 <tr id="addNewProduct">
     <td colspan="3">
         <div class="input-group">
-            <input @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="text" name="product" id="product" autocomplete="off" enterKeyHint="search">
+            <input  @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="text" name="product" id="product" autocomplete="off" enterKeyHint="search">
             <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
             <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
         </div>
@@ -683,7 +683,7 @@ async function addProduct(e) {
     if (e.target.value === '') return;
 
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
+    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter' || e.code == 'KEYCODE_SEARCH') return;
 
     var product, quantity = 1;
 
