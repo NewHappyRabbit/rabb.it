@@ -11,7 +11,8 @@ import page from 'page';
 import { numberToBGText, priceRegex, fixInputPrice, pad, calculateTotalVats, socket } from "@/api";
 import { customerForm } from '@/views/customers/createEdit';
 
-var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber;
+var order, defaultValues, params, companies, documentType, orderType, selectedCustomer, selectedCompany, customers, addedProductsIndex = 0, addedProducts = [], documentNumber, isMobileDevice;
+
 
 function changeOrderType(e) {
     orderType = e.target.value;
@@ -1127,6 +1128,7 @@ async function printSale(data) {
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
     let flags = {};
+    isMobileDevice = window.screen.width <= 1024;
 
     // Check if any product has discount, if none - dont show column
     flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
@@ -1191,7 +1193,7 @@ async function printSale(data) {
 // invoice should have deducted tax in product price and shown as sum at the end
 // stokova should have all products with tax included in price and shown as sum at the end
 const printContainer = ({ totals, data, param, flags }) => html`
-    <div style="break-after:page; padding: 1rem">
+    <div style="break-after:page; padding: 1rem; color: black !important;">
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
         <div class="d-flex justify-content-between">
@@ -1203,8 +1205,8 @@ const printContainer = ({ totals, data, param, flags }) => html`
             <div>Дата: <span class="fw-bold">${new Date(data.date).toLocaleDateString('bg')}</span></div>
         </div>
 
-        <div class="row gap-3 p-3">
-            <table id="customerInfoTable" class="col border rounded">
+        <div class="${isMobileDevice ? 'column' : 'row'} gap-3 p-1">
+            <table id="customerInfoTable" class="col border rounded ${isMobileDevice ? 'w-100' : ''}">
                 <tbody>
                     <tr><td>Получател</td> <td>${data.customer.name}</td></tr>
                     <tr>${data.customer?.taxvat ? html`<td>ДДС №</td> <td>${data.customer.taxvat}</td>` : ''}</tr>
@@ -1215,7 +1217,7 @@ const printContainer = ({ totals, data, param, flags }) => html`
                 </tbody>
             </table>
 
-            <table id="companyInfoTable" class="col border rounded">
+            <table id="companyInfoTable" class="col border rounded ${isMobileDevice ? 'w-100' : ''}">
                 <tbody>
                     <tr><td>Доставчик</td> <td>${data.company.name}</td></tr>
                     <tr>${data.company?.taxvat ? html`<td>ДДС №</td> <td>${data.company.taxvat}</td>` : ''}</tr>
@@ -1430,6 +1432,12 @@ export async function createEditOrderPage(ctx, next) {
         params = paramsRes.data;
         companies = companiesRes.data.companies;
         customers = customersRes.data.customers;
+        // find the "Служебен" customer and put it first in the array
+        const privateCustomer = customers.find(customer => customer.name === 'Служебен');
+        if (privateCustomer) {
+            customers.splice(customers.indexOf(privateCustomer), 1);
+            customers.unshift(privateCustomer);
+        }
         defaultValues = defaultValuesRes.data;
 
         addedProductsIndex = 0;

@@ -7,6 +7,7 @@ export function mainPage() {
     const template = () => html`
         ${nav()}
         <div id="mainDiv" class="d-flex gap-3 mb-3 p-3 align-items-center flex-wrap">
+            <a href="/orders/create" class="btn btn-warning fs-2"><i class="bi bi-cart"></i> Нова продажба</a>
             <a href="/products" class="btn btn-warning fs-2"><i class="bi bi-box-seam"></i> Стоки</a>
             <a href="/orders" class="btn btn-warning fs-2"><i class="bi bi-cart"></i> Продажби</a>
             <a href="/customers" class="btn btn-warning fs-2"><i class="bi bi-people"></i> Партньори</a>
