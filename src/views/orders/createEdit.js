@@ -1128,7 +1128,9 @@ async function printSale(data) {
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
     let flags = {};
-    isMobileDevice = window.screen.width <= 1024;
+    isMobileDevice = true;
+    //FIXME
+    // isMobileDevice = window.screen.width <= 1024;
 
     // Check if any product has discount, if none - dont show column
     flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
@@ -1322,13 +1324,13 @@ const printTableRetail = ({ products, type, flags }) => html`
             <tr class="fw-bold text-center">
                 <td>Код</td>
                 <td>Стока</td>
-                <td>Мярка</td>
-                ${flags.tableShowSizes ? html`<td>Размер</td>` : ''}
+                ${isMobileDevice && type === 'stokova' ? '' : html`<td>Мярка</td>`}
+                ${!isMobileDevice && flags.tableShowSizes ? html`<td>Размер</td>` : ''}
                 <td>Брой</td>
-                <td>Цена</td>
-                ${type === 'stokova' || flags.noVat ? '' : html`<td>ДДС</td>`}
-                ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
+                ${isMobileDevice && type === 'stokova' && flags.tableShowDiscounts ? '' : html`<td>Цена</td>`}
+                ${flags.tableShowDiscounts ? isMobileDevice && type === 'stokova' ? '' : html`<td>Отстъпка</td>` : ''}
                 ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
+                ${type === 'stokova' || flags.noVat ? '' : html`<td>ДДС</td>`}
                 <td>Сума</td>
             </tr>
         </thead>
@@ -1340,19 +1342,19 @@ const printTableRetail = ({ products, type, flags }) => html`
                     <td>${product?.product?.name || product.name}</td>
 
                     <!-- if product with sizes, its probably "брой", else its "пакет" -->
-                    <td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
+                    ${isMobileDevice && type === 'stokova' ? '' : html`<td>${product?.product?.unitOfMeasure === 'пакет' ? 'бр.' : product?.product?.unitOfMeasure || product.unitOfMeasure}</td>`}
 
-                    ${flags.tableShowSizes ? html`<td>${product?.size}</td>` : ''}
+                    ${!isMobileDevice && flags.tableShowSizes ? html`<td>${product?.size}</td>` : ''}
 
                     <td class="text-nowrap">${product.quantity}</td>
 
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
+                    ${isMobileDevice && type === 'stokova' && flags.tableShowDiscounts ? '' : html`<td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>`}
 
+                    ${flags.tableShowDiscounts ? isMobileDevice && type === 'stokova' ? '' : html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
+                    
+                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), product.vat))}</td>` : ''}
+                    
                     ${type === 'stokova' || flags.noVat ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
-
-                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
-
-                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat((product.price * (1 - product.discount / 100)), product.vat)) : ''}</td>` : ''}
 
                     <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), product.vat))}</td>
                 </tr>
