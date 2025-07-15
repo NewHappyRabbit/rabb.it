@@ -1175,10 +1175,12 @@ async function printSale(data) {
 
     render(printPages, container);
 
-    if (data.type === 'stokova' || printStokova === true) {
-        document.getElementById('rate-us-qr').classList.add('d-print-block');
-    } else {
-        document.getElementById('rate-us-qr').classList.remove('d-print-block');
+    if (!isMobileDevice) {
+        if (data.type === 'stokova' || printStokova === true) {
+            document.getElementById('rate-us-qr').classList.add('d-print-block');
+        } else {
+            document.getElementById('rate-us-qr').classList.remove('d-print-block');
+        }
     }
 
     try {
