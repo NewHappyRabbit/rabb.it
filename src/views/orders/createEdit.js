@@ -1128,9 +1128,7 @@ async function printSale(data) {
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
     let flags = {};
-    isMobileDevice = true;
-    //FIXME
-    // isMobileDevice = window.screen.width <= 1024;
+    isMobileDevice = window.screen.width <= 1024;
 
     // Check if any product has discount, if none - dont show column
     flags.tableShowDiscounts = data.products.some(product => product.discount > 0);
