@@ -1193,7 +1193,7 @@ async function printSale(data) {
 // invoice should have deducted tax in product price and shown as sum at the end
 // stokova should have all products with tax included in price and shown as sum at the end
 const printContainer = ({ totals, data, param, flags }) => html`
-    <div style="break-after:page; padding: 1rem; color: black !important;">
+    <div style="${data.type === 'stokova' || param?.stokova ? '' : 'break-after:page;'} padding: 1rem; color: black !important;">
         <h1 class="text-center fw-bold">${param?.stokova ? 'Стокова разписка' : params.documentTypes[data.type]}</h1>
         <div class="text-center fs-5">${param?.copy ? 'Копие' : 'Оригинал'}</div>
         <div class="d-flex justify-content-between">
