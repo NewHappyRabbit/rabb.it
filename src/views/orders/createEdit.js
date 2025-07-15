@@ -410,12 +410,12 @@ const addProductRow = () => html`
     <td colspan="3">
         <div class="input-group">
             <input @keydown=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search" tabindex="-1">
-            <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button>
-            <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button>
+            <!-- <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button> -->
+            <!-- <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button> -->
         </div>
     </td>
-    <td colspan="9">
-        <div id="barcodeVideo"></div>
+    <td colspan="10">
+        <!-- <div id="barcodeVideo"></div> -->
     </td>
 </tr>
 `;
@@ -1272,46 +1272,43 @@ const printTableWholesale = ({ products, type, flags }) => html`
     <table id="printProductWholesaleTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
-                <td>№</td>
                 <td>Код</td>
                 <td>Стока</td>
-                <td>Мярка</td>
+                ${isMobileDevice && type === 'stokova' ? '' : html`<td>Мярка</td>`}
                 <td>Пакети</td>
-                <td>Брой в пакет</td>
-                <td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>
-                <td>Цена</td>
+                ${isMobileDevice && type !== 'stokova' ? '' : html`<td>Брой в пакет</td>`}
+                ${isMobileDevice && type !== 'stokova' ? '' : html`<td>${flags.tableShowDiscounts ? 'Цена за брой след ТО%' : 'Цена за брой'}</td>`}
+                ${isMobileDevice && (type === 'stokova' || flags.tableShowDiscounts) ? '' : html`<td>Цена</td>`}
+                ${!isMobileDevice && flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
+                ${flags.tableShowDiscounts ? isMobileDevice && type === 'stokova' ? '' : html`<td>Цена след ТО%</td>` : ''}
                 ${type === 'stokova' || flags.noVat ? '' : html`<td>ДДС</td>`}
-                ${flags.tableShowDiscounts ? html`<td>Отстъпка</td>` : ''}
-                ${flags.tableShowDiscounts ? html`<td>Цена след ТО%</td>` : ''}
                 <td>Сума</td>
             </tr>
         </thead>
         <tbody class="table-group-divider">
-            ${products.map((product, index) => html`
+            ${products.map((product) => html`
                 <tr class="text-center">
-                    <td>${++index}</td>
+                    <td .field="code">${product?.product?.code || ''}</td>
 
-                    <td>${product?.product?.code || ''}</td>
+                    <td .field="name">${product?.product?.name || product.name}</td>
 
-                    <td>${product?.product?.name || product.name}</td>
+                    ${isMobileDevice && type === 'stokova' ? '' : html`<td .field="unitOfMeasure">${product?.product?.unitOfMeasure || product.unitOfMeasure}</td>`}
 
-                    <td>${product?.product?.unitOfMeasure || product.unitOfMeasure}</td>
+                    <td .field="quantity" class="text-nowrap">${product.quantity}</td>
 
-                    <td class="text-nowrap">${product.quantity}</td>
+                    ${isMobileDevice && type !== 'stokova' ? '' : html`<td .field="qtyInPackage">${product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage}</td>`}
 
-                    <td>${product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage}</td>
+                    ${isMobileDevice && type !== 'stokova' ? '' : html`<td .field="piecePrice">${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), product.vat)) : isMobileDevice && type === 'stokova' ? formatPriceNoCurrency(product.price * (1 - product.discount / 100)) : ''}</td>`}
 
-                    <td>${product.qtyInPackage || product?.selectedSizes?.length ? formatPriceNoCurrency(type === 'stokova' ? (product.price / (product?.selectedSizes?.length ? product.selectedSizes.length * product.multiplier : product.qtyInPackage) * (1 - product.discount / 100)) : deductVat((product.price / (product?.selectedSizes?.length || product.qtyInPackage) * (1 - product.discount / 100)), product.vat)) : ''}</td>
+                    ${isMobileDevice && (type === 'stokova' || flags.tableShowDiscounts) ? '' : html`<td .field="price" class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>`}
 
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>
+                    ${!isMobileDevice && flags.tableShowDiscounts ? html`<td .field="discountPercent">${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
 
-                    ${type === 'stokova' || flags.noVat ? '' : html`<td class="text-nowrap">${product.vat}%</td>`}
+                    ${flags.tableShowDiscounts ? isMobileDevice && type === 'stokova' ? '' : html`<td .field="discountPrice" class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), product.vat)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>` : ''}
 
-                    ${flags.tableShowDiscounts ? html`<td>${product?.discount > 0 ? product.discount + '%' : '0%'}</td>` : ''}
+                    ${type === 'stokova' || flags.noVat ? '' : html`<td .field="vat" class="text-nowrap">${product.vat}%</td>`}
 
-                    ${flags.tableShowDiscounts ? html`<td class="text-nowrap">${product?.discount ? formatPriceNoCurrency(type === 'stokova' ? product.price * (1 - product.discount / 100) : deductVat(product.price * (1 - product.discount / 100), product.vat)) : formatPriceNoCurrency(type === 'stokova' ? product.price : deductVat(product.price, product.vat))}</td>` : ''}
-
-                    <td class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), product.vat))}</td>
+                    <td .field="sum" class="text-nowrap">${formatPriceNoCurrency(type === 'stokova' ? ((product.price * product.quantity) * (1 - product.discount / 100)) : deductVat((product.price * product.quantity) * (1 - product.discount / 100), product.vat))}</td>
                 </tr>
             `)}
         </tbody>
@@ -1323,7 +1320,6 @@ const printTableRetail = ({ products, type, flags }) => html`
     <table id="printProductRetailTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
-                <td>№</td>
                 <td>Код</td>
                 <td>Стока</td>
                 <td>Мярка</td>
@@ -1337,10 +1333,8 @@ const printTableRetail = ({ products, type, flags }) => html`
             </tr>
         </thead>
         <tbody class="table-group-divider">
-            ${products.map((product, index) => html`
+            ${products.map((product) => html`
                 <tr class="text-center">
-                    <td>${++index}</td>
-
                     <td>${product?.product?.code || ''}</td>
 
                     <td>${product?.product?.name || product.name}</td>
