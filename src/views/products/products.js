@@ -150,6 +150,7 @@ const saleModal = () => html`
                                 <select name="saleType" id="saleType" class="form-select">
                                     <option value="percent">Намали с процент (%)</option>
                                     <option value="sum">Намали със сума (лв.)</option>
+                                    <option value="deliveryPrice">Намали на доставна цена</option>
                                 </select>
                             </div>
                             <div class="col pe-0 mt-3">
@@ -159,7 +160,6 @@ const saleModal = () => html`
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Затвори</button>
                             ${submitBtn({ text: 'Намали всички избрани артикули' })}
-                            <!-- <button type="submit" class="btn btn-primary" id="applySaleBtn">Намали всички избрани артикули</button> -->
                         </div>
                     </div>
                 </form>
@@ -313,6 +313,10 @@ async function applyFilters(e) {
         selectedFilters.onlyOnSale = true;
     else selectedFilters.onlyOnSale = ''
 
+    if (data.season)
+        selectedFilters.season = data.season;
+    else selectedFilters.season = ''
+
     if (e) // if coming from filters and not pagination
         delete selectedFilters.pageNumber;
 
@@ -410,6 +414,14 @@ export function productsPage(ctx, next) {
             <option value="50">50</option>
             <option value="100">100</option>
             <option value="300">300</option>
+        </select>
+    </div>
+    <div class="col-6 col-sm">
+        <label for="season" class="form-label">Сезон:</label>
+        <select class="form-select" name="season" id="season" .value=${selectedFilters?.season || ""}>
+            <option value="">Всички</option>
+            <option value="Пролет/Лято">Пролет/Лято</option>
+            <option value="Есен/Зима">Есен/Зима</option>
         </select>
     </div>
 `;

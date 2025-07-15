@@ -142,10 +142,9 @@ export const ProductController = {
 
         return { product, status: 200 };
     },
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, season, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
-
         // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
         if (page && page === 'temp') {
             const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }, { attributes: { $size: 3 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(5);
@@ -177,6 +176,9 @@ export const ProductController = {
 
         if (onlyHidden && onlyHidden === 'true')
             query.$and.push({ hidden: true });
+
+        if (season && season !== 'all')
+            query.$and.push({ 'attributes.value': season });
 
         if (onlyOnSale && onlyOnSale === 'true')
             query.$and.push({ saleWholesalePrice: { $ne: null } });
@@ -368,7 +370,7 @@ export const ProductController = {
     },
     applySale: async ({ saleType, saleAmount, products }) => {
         const doneProducts = [];
-        if (saleType !== 'percent' && saleType !== 'sum') return { status: 400, message: 'Невалиден тип на намалението' };
+        if (saleType !== 'percent' && saleType !== 'sum' && saleType !== 'deliveryPrice') return { status: 400, message: 'Невалиден тип на намалението' };
 
         if (saleType === 'percent') {
             if (saleAmount < 0 || saleAmount > 100) return { status: 400, message: 'Невалиден процент' };
@@ -384,7 +386,14 @@ export const ProductController = {
             const dbProduct = await Product.findById(product);
             if (!dbProduct) return { status: 404, message: `Продуктът с id ${product} не беше намерен в базата данни` };
 
-            if (saleAmount === 0) {
+            if (saleType === 'deliveryPrice') {
+                if (dbProduct.upsaleAmount) {
+                    dbProduct.saleWholesalePrice = dbProduct.deliveryPrice + dbProduct.upsaleAmount * (dbProduct.sizes.length || 1) * (dbProduct.multiplier || 1);
+                } else {
+                    dbProduct.saleWholesalePrice = dbProduct.deliveryPrice;
+                }
+            }
+            else if (saleAmount === 0) {
                 dbProduct.saleWholesalePrice = undefined;
             } else if (saleType === 'percent') {
                 dbProduct.saleWholesalePrice = roundPrice(dbProduct.wholesalePrice - (dbProduct.wholesalePrice * saleAmount / 100));
@@ -394,7 +403,7 @@ export const ProductController = {
 
             if (dbProduct.saleWholesalePrice < 0) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от 0 лева` };
 
-            if (dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
+            if (saleType !== 'deliveryPrice' && dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
 
             dbProduct.description = generateDescription(dbProduct, true);
 
