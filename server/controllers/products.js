@@ -41,8 +41,16 @@ async function validateProduct(data) {
     if (!regex.test(wholesalePrice))
         return { status: 400, message: 'Грешна цена на едро', property: 'wholesalePrice' };
 
-    if (saleWholesalePrice && (!regex.test(saleWholesalePrice) || Number(saleWholesalePrice) > Number(wholesalePrice) || Number(saleWholesalePrice) < Number(deliveryPrice))) {
+    if (saleWholesalePrice && (!regex.test(saleWholesalePrice))) {
         return { status: 400, message: 'Грешна намалена цена на едро', property: 'saleWholesalePrice' };
+    }
+
+    if (saleWholesalePrice && (Number(saleWholesalePrice) <= Number(deliveryPrice))) {
+        return { status: 400, message: 'Намалената цена трябва да е по-голяма или равна на доставната цена', property: 'saleWholesalePrice' };
+    }
+
+    if (saleWholesalePrice && (Number(saleWholesalePrice) >= Number(wholesalePrice))) {
+        return { status: 400, message: 'Намалената цена не може да е по-голяма или равна на цената на едро', property: 'saleWholesalePrice' };
     }
 
     if (!regex.test(retailPrice))

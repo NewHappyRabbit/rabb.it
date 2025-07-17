@@ -104,10 +104,25 @@ function calculateProductPrices(e) {
     calculateSalePrice();
 }
 
+function resetUpsaleAmount() {
+    const upsaleAmount = document.getElementById('upsaleAmount');
+    upsaleAmount.value = '';
+    lastUpsaleAmount = 0;
+}
+
 function calculatePriceWholesale() {
     const wholesaleUnitPrice = document.getElementById('wholesaleUnitPrice');
     const wholesalePrice = document.getElementById('wholesalePrice');
     const multiplier = parseInt(document.getElementById('multiplier').value) || 1;
+
+    const upsaleAmount = document.getElementById('upsaleAmount');
+
+    if (upsaleAmount.value !== '') {
+        const retailPrice = document.getElementById('retailPrice');
+        retailPrice.value = roundPrice(Number(retailPrice.value) - Number(upsaleAmount.value));
+        upsaleAmount.value = '';
+        lastUpsaleAmount = 0;
+    }
 
     fixInputPrice({ target: wholesaleUnitPrice, roundPrice: true });
 
@@ -381,7 +396,7 @@ const pricesTemplate = () => html`
 
             <div class="col ${retailPriceField === 'true' ? '' : 'd-none'}">
                 <label for="retailPrice" class= "form-label" > Цена на дребно <span class="text-primary"> (+${retailMarkup}%)</span></label >
-                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} autocomplete="off">
+                <input class="form-control border-primary" type="text" name="retailPrice" id="retailPrice" inputmode="decimal" required .value=${product && product.retailPrice} @keyup=${resetUpsaleAmount} autocomplete="off">
             </div>
 
             <div class="col">
@@ -530,7 +545,7 @@ function validateProduct(data) {
         invalidFlag = markInvalid('retailPrice');
     else markValid('retailPrice');
 
-    if (data.saleWholesalePrice && (data.saleWholesalePrice < 0 || !priceRegex.test(data.saleWholesalePrice) || Number(data.wholesalePrice) <= Number(data.saleWholesalePrice))) {
+    if (data.saleWholesalePrice && (data.saleWholesalePrice < 0 || !priceRegex.test(data.saleWholesalePrice))) {
         invalidFlag = markInvalid('saleWholesalePrice');
     } else markValid('saleWholesalePrice');
 
