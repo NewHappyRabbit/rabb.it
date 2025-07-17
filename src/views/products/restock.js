@@ -82,8 +82,10 @@ function stopBarcode() {
 async function addProduct(e) {
     if (e.target.value === '') return;
 
+    if (e.type === 'keyup' && (!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v')) return;
+
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter' && e.key !== 'Enter') return;
+    if (e.type === 'keydown' && e.code !== 'Enter' && e.code !== 'NumpadEnter' && e.key !== 'Enter') return;
 
     e.preventDefault();
 

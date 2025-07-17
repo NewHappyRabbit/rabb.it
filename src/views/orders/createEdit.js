@@ -362,6 +362,8 @@ function updatePrice(e) {
     fixInputPrice({ target, roundPrice: true });
     const value = target.value;
 
+    console.log({ value })
+
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
     const arrayIndex = addedProducts.indexOf(addedProducts.find(product => product.index == index));
@@ -409,7 +411,7 @@ const addProductRow = () => html`
 <tr id="addNewProduct">
     <td colspan="3">
         <div class="input-group">
-            <input @keydown=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search" tabindex="-1">
+            <input @keydown=${addProduct} @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search" tabindex="-1">
             <!-- <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button> -->
             <!-- <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button> -->
         </div>
@@ -681,8 +683,10 @@ function stopBarcode() {
 async function addProduct(e) {
     if (e.target.value === '') return;
 
+    if (e.type === 'keyup' && (!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v')) return;
+
     // return if not any of the key combinations below (CTRL+V, MAC+V, ENTER, NUM ENTER)
-    if ((!e.ctrlKey && e.key !== 'v') && (!e.metaKey && e.key !== 'v') && e.code !== 'Enter' && e.code !== 'NumpadEnter' && e.key !== 'Enter') return;
+    if (e.type === 'keydown' && e.code !== 'Enter' && e.code !== 'NumpadEnter' && e.key !== 'Enter') return;
 
     e.preventDefault();
 
