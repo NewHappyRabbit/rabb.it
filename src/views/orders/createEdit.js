@@ -176,11 +176,13 @@ const bottomRow = (params, companies) => html`
 
     <div class="col-12 col-sm ${loggedInUser.role === 'admin' ? '' : 'd-none'}">
         <label for="paidAmount" class="form-label">Платена сума:</label>
-        <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${loggedInUser.role !== 'admin'}/>
-
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paidHistoryModal">
-            История на плащанията
-        </button>
+        <div class="input-group">
+            <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${loggedInUser.role !== 'admin'}/>
+    
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#paidHistoryModal">
+                <i class="bi bi-clock-history"></i>
+            </button>
+        </div>
 
         <div class="modal fade" id="paidHistoryModal" tabindex="-1" aria-labelledby="paidHistoryModalLabel" aria-hidden="true">
             <div class="modal-dialog">
