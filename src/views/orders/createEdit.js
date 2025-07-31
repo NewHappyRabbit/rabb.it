@@ -1,7 +1,7 @@
 import '@/css/orders.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
-import { formatPrice, formatPriceNoCurrency, deductVat, markValid, markInvalid, markInvalidEl, markValidEl, successScan } from '@/api.js';
+import { formatDate, formatPrice, formatPriceNoCurrency, deductVat, markValid, markInvalid, markInvalidEl, markValidEl, successScan } from '@/api.js';
 import { nav } from "@/views/nav";
 import axios from "axios";
 import { submitBtn, toggleSubmitBtn } from "@/views/components";
@@ -177,6 +177,41 @@ const bottomRow = (params, companies) => html`
     <div class="col-12 col-sm ${loggedInUser.role === 'admin' ? '' : 'd-none'}">
         <label for="paidAmount" class="form-label">Платена сума:</label>
         <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${loggedInUser.role !== 'admin'}/>
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paidHistoryModal">
+            История на плащанията
+        </button>
+
+        <div class="modal fade" id="paidHistoryModal" tabindex="-1" aria-labelledby="paidHistoryModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="paidHistoryModalLabel">История на плащанията</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Сума</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${order?.paidHistory?.map(payment => html`<tr>
+                                <td>${formatDate(payment.date)}</td>
+                                <td>${formatPrice(payment.amount)}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     ${documentType === 'invoice' ? html`

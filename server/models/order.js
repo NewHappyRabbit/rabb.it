@@ -113,6 +113,12 @@ const orderSchema = new Schema({
         required: true,
         default: Object.keys(paymentTypes)[0]
     },
+    paidHistory: [
+        {
+            date: Date,
+            amount: Number
+        },
+    ],
     paidAmount: {
         type: Number,
         required: true,

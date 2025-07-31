@@ -251,6 +251,10 @@ export function deductVat(price, vat) {
     return price / ((100 + vat) / 100);
 }
 
+export function formatDate(date) {
+    return new Date(date).toLocaleString('bg-BG');
+}
+
 export function roundPrice(price) {
     // Round to 1 decimal
     return Math.round(price * 10) / 10;

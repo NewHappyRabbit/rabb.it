@@ -333,6 +333,8 @@ export const OrderController = {
 
         data.unpaid = parseFloat((data.paidAmount || 0).toFixed(2)) < parseFloat(total);
 
+        data.paidHistory = [{ date: new Date(), amount: data.paidAmount }];
+
         if (!data.number) { // If no number assigned, grab latest from sequence
             let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
             if (seq)
@@ -408,6 +410,14 @@ export const OrderController = {
 
         data.unpaid = parseFloat((data.paidAmount || 0).toFixed(2)) < parseFloat(total);
 
+        if (data.paidAmount !== order.paidAmount || !order.paidHistory || order.paidHistory.length === 0) {
+            // For old orders, before paidHistory was added
+            if (!order.paidHistory) order.paidHistory = [];
+
+            data.paidHistory = order.paidHistory;
+            data.paidHistory.push({ date: new Date(), amount: data.paidAmount });
+        }
+
         // New logic for editing document number
         // Check if document number already exists
         if (data.number) {
@@ -449,6 +459,7 @@ export const OrderController = {
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
         order.paidAmount = order.total;
+        order.paidHistory.push({ date: new Date(), amount: order.paidAmount });
         order.unpaid = false;
         order.user = userId;
 
