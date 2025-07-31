@@ -1,3 +1,4 @@
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
@@ -6,6 +7,106 @@ import { ProductAttribute } from "../models/product_attribute.js";
 import { Setting } from "../models/setting.js";
 import { roundPrice, uploadImg } from "./common.js";
 import fs from 'fs';
+
+async function recalculateProductsPrices() {
+    // const products = await Product.find({ deleted: false, });
+    const products = await Product.find({ deleted: false, outOfStock: true });
+    let wholesaleMarkup = await Setting.findOne({ key: 'wholesaleMarkup' });
+    wholesaleMarkup = Number(wholesaleMarkup.value);
+    let retailMarkup = await Setting.findOne({ key: 'retailMarkup' });
+    retailMarkup = Number(retailMarkup.value);
+
+    let doneProducts = [];
+
+    for (let product of products) {
+        const deliveryPrice = product.deliveryPrice;
+        const upsaleAmount = product.upsaleAmount || 0;
+        const multiplier = product.multiplier || 1;
+        const sizesLength = product.sizes.length || 1;
+        const wholesale = roundPrice(product.deliveryPrice * (1 + wholesaleMarkup / 100));
+
+        const wholesalePrice = roundPrice(wholesale + upsaleAmount * sizesLength * multiplier);
+        const retailPrice = roundPrice((deliveryPrice * (1 + retailMarkup / 100) / parseInt(sizesLength * multiplier)) + upsaleAmount);
+
+        // if (product.wholesalePrice !== wholesalePrice || product.retailPrice !== retailPrice) {
+        product.wholesalePrice = wholesalePrice;
+        product.retailPrice = retailPrice;
+        product.saleWholesalePrice = undefined;
+        product.description = generateDescription(product, true); // Force description generation with new prices
+        doneProducts.push(product);
+        // }
+    }
+
+    if (doneProducts.length === 0) {
+        console.log('No products to update!');
+        return;
+    } else {
+        console.log(`Found ${doneProducts.length} products to update with new wholesale and retail prices!`);
+    }
+
+    await Promise.all(doneProducts.map(async (product) => {
+        await product.save().catch(e => {
+            console.error(`Failed to save product ${product._id}: ${e.message}`);
+            throw new Error();
+        });
+    }));
+
+    async function woo(products) {
+        if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
+
+        const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+
+        async function updateSimpleProducts(products, shop) {
+            console.log('Starting update for ' + products.length + ' products...')
+            for (let i = 0; i < products.length; i += 100) {
+                const batch = products.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: p.quantity, regular_price: shop.custom.type === 'wholesale' ? p.wholesalePrice : p.retailPrice, sale_price: "", description: shop.custom.type === 'wholesale' ? p.description : "" }));
+                console.log('Starting work on simple products batch: ' + i)
+                await shop.post('products/batch', { update: batch }).then(() => {
+                    console.log(`Products successfully updated in WooCommerce [${shop.url}]!`)
+                }).catch((error) => {
+                    console.error(`Error batch updating products in WooCommerce [${shop.url}]!`)
+                    console.error(error);
+                });
+            }
+        }
+
+        for (let shop of WooCommerce_Shops) {
+            if (shop.custom.type === 'wholesale') {
+                // All products are simple
+                await updateSimpleProducts(filtered, shop);
+            } else if (shop.custom.type === 'retail') {
+                // Split to simple and variable products
+                const simple = filtered.filter(p => p.sizes.length === 0);
+                const variable = filtered.filter(p => p.sizes.length > 0);
+
+                // Do it in batches of 100
+
+                // Simple products
+                await updateSimpleProducts(simple, shop);
+
+                // Variable products (have to be done one by one)
+                for (let product of variable) {
+                    let variations = [];
+                    for (let size of product.sizes)
+                        variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity, regular_price: product.retailPrice, sale_price: "" });
+
+                    await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
+                        console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} successfully updated in WooCommerce [${shop.url}]!`)
+                    }).catch((error) => {
+                        console.error(`Failed to update product variations in WooCommerce [${shop.url}] with _id: ${product._id}`);
+                        console.error(product);
+                        console.error(error);
+                    });
+                }
+            }
+        }
+    }
+
+    await woo(doneProducts);
+
+    console.log('All products updated in WooCommerce!');
+}
+// recalculateProductsPrices();
 
 function generateDescription(data, force = false) {
     const price = data.saleWholesalePrice || data.wholesalePrice;
@@ -41,8 +142,16 @@ async function validateProduct(data) {
     if (!regex.test(wholesalePrice))
         return { status: 400, message: 'Грешна цена на едро', property: 'wholesalePrice' };
 
-    if (saleWholesalePrice && (!regex.test(saleWholesalePrice) || Number(saleWholesalePrice) > Number(wholesalePrice) || Number(saleWholesalePrice) < Number(deliveryPrice))) {
+    if (saleWholesalePrice && (!regex.test(saleWholesalePrice))) {
         return { status: 400, message: 'Грешна намалена цена на едро', property: 'saleWholesalePrice' };
+    }
+
+    if (saleWholesalePrice && (Number(saleWholesalePrice) <= Number(deliveryPrice))) {
+        return { status: 400, message: 'Намалената цена трябва да е по-голяма или равна на доставната цена', property: 'saleWholesalePrice' };
+    }
+
+    if (saleWholesalePrice && (Number(saleWholesalePrice) >= Number(wholesalePrice))) {
+        return { status: 400, message: 'Намалената цена не може да е по-голяма или равна на цената на едро', property: 'saleWholesalePrice' };
     }
 
     if (!regex.test(retailPrice))
@@ -142,10 +251,9 @@ export const ProductController = {
 
         return { product, status: 200 };
     },
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
+    get: async ({ pageNumber, pageSize, page, search, onlyHidden, season, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
-
         // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
         if (page && page === 'temp') {
             const products = await Product.find({ hidden: false, deleted: false, $or: [{ attributes: { $exists: false } }, { attributes: { $size: 0 } }, { attributes: { $size: 1 } }, { attributes: { $size: 2 } }, { attributes: { $size: 3 } }] }).sort({ _id: -1 }).populate('attributes.attribute').limit(5);
@@ -177,6 +285,9 @@ export const ProductController = {
 
         if (onlyHidden && onlyHidden === 'true')
             query.$and.push({ hidden: true });
+
+        if (season && season !== 'all')
+            query.$and.push({ 'attributes.value': season });
 
         if (onlyOnSale && onlyOnSale === 'true')
             query.$and.push({ saleWholesalePrice: { $ne: null } });
@@ -368,7 +479,7 @@ export const ProductController = {
     },
     applySale: async ({ saleType, saleAmount, products }) => {
         const doneProducts = [];
-        if (saleType !== 'percent' && saleType !== 'sum') return { status: 400, message: 'Невалиден тип на намалението' };
+        if (saleType !== 'percent' && saleType !== 'sum' && saleType !== 'deliveryPrice') return { status: 400, message: 'Невалиден тип на намалението' };
 
         if (saleType === 'percent') {
             if (saleAmount < 0 || saleAmount > 100) return { status: 400, message: 'Невалиден процент' };
@@ -384,7 +495,14 @@ export const ProductController = {
             const dbProduct = await Product.findById(product);
             if (!dbProduct) return { status: 404, message: `Продуктът с id ${product} не беше намерен в базата данни` };
 
-            if (saleAmount === 0) {
+            if (saleType === 'deliveryPrice') {
+                if (dbProduct.upsaleAmount) {
+                    dbProduct.saleWholesalePrice = dbProduct.deliveryPrice + dbProduct.upsaleAmount * (dbProduct.sizes.length || 1) * (dbProduct.multiplier || 1);
+                } else {
+                    dbProduct.saleWholesalePrice = dbProduct.deliveryPrice;
+                }
+            }
+            else if (saleAmount === 0) {
                 dbProduct.saleWholesalePrice = undefined;
             } else if (saleType === 'percent') {
                 dbProduct.saleWholesalePrice = roundPrice(dbProduct.wholesalePrice - (dbProduct.wholesalePrice * saleAmount / 100));
@@ -394,7 +512,7 @@ export const ProductController = {
 
             if (dbProduct.saleWholesalePrice < 0) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от 0 лева` };
 
-            if (dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
+            if (saleType !== 'deliveryPrice' && dbProduct.saleWholesalePrice < dbProduct.deliveryPrice) return { status: 400, message: `Артикул с код ${dbProduct.code} не може да има намалена цена по-малка от доставката` };
 
             dbProduct.description = generateDescription(dbProduct, true);
 
