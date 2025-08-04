@@ -333,7 +333,7 @@ export const OrderController = {
 
         data.unpaid = parseFloat((data.paidAmount || 0).toFixed(2)) < parseFloat(total);
 
-        data.paidHistory = [{ date: new Date(), amount: data.paidAmount }];
+        data.paidHistory = [{ date: new Date(), amount: data.paidAmount || 0 }];
 
         if (!data.number) { // If no number assigned, grab latest from sequence
             let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });

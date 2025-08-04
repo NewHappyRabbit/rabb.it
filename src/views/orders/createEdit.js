@@ -178,10 +178,10 @@ const bottomRow = (params, companies) => html`
         <label for="paidAmount" class="form-label">Платена сума:</label>
         <div class="input-group">
             <input class="form-control" name="paidAmount" id="paidAmount" type="text" .value=${order ? order.paidAmount : 0} autocomplete="off" inputmode="decimal" required ?disabled=${loggedInUser.role !== 'admin'}/>
-    
-            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#paidHistoryModal">
+
+            ${order ? html`<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#paidHistoryModal">
                 <i class="bi bi-clock-history"></i>
-            </button>
+            </button>` : ''}
         </div>
 
         <div class="modal fade" id="paidHistoryModal" tabindex="-1" aria-labelledby="paidHistoryModalLabel" aria-hidden="true">
@@ -1591,7 +1591,7 @@ export async function createEditOrderPage(ctx, next) {
                 }
             });
     } catch (err) {
-        console.trace(err);
+        console.error(err);
         alert('Възникна грешка');
     }
 }

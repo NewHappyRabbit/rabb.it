@@ -115,8 +115,17 @@ const orderSchema = new Schema({
     },
     paidHistory: [
         {
-            date: Date,
-            amount: Number
+            date: {
+                type: Date,
+                default: Date.now,
+                required: true,
+            },
+            amount: {
+                type: Number,
+                default: 0,
+                min: 0,
+                required: true,
+            }
         },
     ],
     paidAmount: {
