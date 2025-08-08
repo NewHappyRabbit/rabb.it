@@ -38,7 +38,8 @@ export function initSocket() {
     printerSockets();
 }
 
-const currency = "лв.";
+const defaultCurrency = "лв.";
+export const euroSign = '€';
 export const asterisk = html`<i class="bi bi-asterisk text-danger asterisk"></i>`;
 
 export function toggleDarkMode({ appStart = false }) {
@@ -90,11 +91,14 @@ export function markInvalid(elName) {
     return true;
 }
 
-export function formatPrice(price) {
+export function formatPrice(price, euro = false) {
     // Convert to xx xxx.xx лв.
     price = price.toFixed(2);
     price = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-    price += ` ${currency}`;
+
+    if (euro === true) price = `${euroSign}${price}`;
+    else price += ` ${defaultCurrency}`;
+
     return price;
 }
 
@@ -103,6 +107,12 @@ export function formatPriceNoCurrency(price) {
     price = price.toFixed(2);
     price = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     return price;
+}
+
+export function BGNtoEuro(price) {
+    // Convert BGN to Euro using the current exchange rate
+    const exchangeRate = 1.95583; // 1 Euro = 1.95583 BGN
+    return Number((price / exchangeRate).toFixed(2));
 }
 
 export function numberToBGText(number) {
