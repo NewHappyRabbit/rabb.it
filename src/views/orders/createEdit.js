@@ -1060,6 +1060,7 @@ async function createEditOrder(e) {
         });
     } else if (orderType === 'retail') {
         addedProducts.forEach(product => {
+            product.discount = product.discount || 0;
             if (product.product)
                 filteredProducts.push({
                     index: product.index,
