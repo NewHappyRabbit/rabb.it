@@ -260,7 +260,6 @@ function combineProductRows(products) {
         return acc;
     }, []);
 
-    console.log(products, combinedProducts)
     return combinedProducts;
 }
 
