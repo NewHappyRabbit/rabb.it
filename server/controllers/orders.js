@@ -97,7 +97,9 @@ async function removeProductsQuantities({ data, returnedProducts }) {
 
         // Check if in doneProducts first, otherwise search db
         const alreadyInDoneProducts = updatedProducts.find(p => p._id.toString() === product.product.toString());
-        const productInDb = await Product.findById(product.product);
+
+        let productInDb = null;
+        if (!alreadyInDoneProducts) productInDb = await Product.findById(product.product);
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
@@ -187,7 +189,9 @@ async function returnProductsQuantities({ data, returnedProducts }) {
 
         // Check if in doneProducts first, otherwise search db
         const alreadyInDoneProducts = updatedProducts.find(p => p._id.toString() === product.product.toString());
-        const productInDb = await Product.findById(product.product);
+
+        let productInDb = null;
+        if (!alreadyInDoneProducts) productInDb = await Product.findById(product.product);
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
@@ -246,6 +250,17 @@ async function returnProductsQuantities({ data, returnedProducts }) {
     total = total.toFixed(2);
 
     return { total, updatedProducts };
+}
+
+function combineProductRows(products) {
+    const combinedProducts = products.reduce((acc, product) => {
+        const existingProduct = acc.find(p => p.product?.toString() === product?.product?.toString() && p.price === product.price && p.discount === product.discount);
+        if (existingProduct) existingProduct.quantity += product.quantity;
+        else acc.push(product);
+        return acc;
+    }, []);
+
+    return combinedProducts;
 }
 
 export const OrderController = {
@@ -326,6 +341,9 @@ export const OrderController = {
 
         data.user = userId;
 
+        // Combine rows of products with the same product.id, price and discount
+        data.products = combineProductRows(data.products);
+
         let { total, updatedProducts, message, status } = data.type !== 'credit' ? await removeProductsQuantities({ data }) : await returnProductsQuantities({ data }); // If credit, return quantity instead of removing it
         if (status) return { status, message };
 
@@ -398,6 +416,9 @@ export const OrderController = {
         }
 
         data.user = userId;
+
+        // Combine rows of products with the same product.id, price and discount
+        data.products = combineProductRows(data.products);
 
         // First return all initial order products quantity to stock without saving them to DB
         let { updatedProducts: returnedProducts } = data.type !== 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });

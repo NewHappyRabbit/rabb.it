@@ -1017,6 +1017,7 @@ async function createEditOrder(e) {
     // transform addedProducts to the type used in backend
     if (orderType === 'wholesale') {
         addedProducts.forEach(product => {
+            product.discount = product.discount || 0;
             if (product.product) {
                 // Variable Product
                 if (product.selectedSizes?.length > 0) {
@@ -1124,7 +1125,17 @@ async function createEditOrder(e) {
 
     const alertEl = document.getElementById('alert');
     try {
-        const req = order ? await axios.put(`/orders/${order._id}`, data) : await axios.post('/orders', data);
+        const req = order ? await axios({
+            method: 'put',
+            url: `/orders/${order._id}`,
+            timeout: 1200000,
+            data: data,
+        }) : await axios({
+            method: 'post',
+            url: '/orders',
+            timeout: 1200000,
+            data: data
+        }, data);
 
         if (req.status === 201) {
             toggleSubmitBtn(e.target);
