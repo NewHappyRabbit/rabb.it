@@ -238,6 +238,7 @@ const bottomRow = (params, companies) => html`
         <div class="d-flex gap-3">
             ${order?.deleted ? '' : submitBtn({ func: createEditOrder, text: "Запази", type: "button" })}
             ${order?.deleted ? '' : submitBtn({ func: createEditOrder, id: "submitWithPrint", text: "Запази и принтирай", type: "button" })}
+            ${order?.deleted ? '' : submitBtn({ func: () => printSale(order), classes: "btn-danger", id: "print", text: "Само Принт", type: "button" })}
         </div>
     </div>
 `;
