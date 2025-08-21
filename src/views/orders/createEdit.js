@@ -1328,6 +1328,7 @@ const printTableWholesale = ({ products, type, flags }) => html`
     <table id="printProductWholesaleTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
+                ${isMobileDevice ? '' : html`<td>Ред</td>`}
                 <td>Код</td>
                 <td>Стока</td>
                 ${isMobileDevice && type === 'stokova' ? '' : html`<td>Мярка</td>`}
@@ -1342,8 +1343,9 @@ const printTableWholesale = ({ products, type, flags }) => html`
             </tr>
         </thead>
         <tbody class="table-group-divider">
-            ${products.map((product) => html`
+            ${products.map((product, index) => html`
                 <tr class="text-center">
+                    ${isMobileDevice ? '' : html`<td>${index + 1}</td>`}
                     <td .field="code">${product?.product?.code || ''}</td>
 
                     <td .field="name">${product?.product?.name || product.name}</td>
@@ -1376,6 +1378,7 @@ const printTableRetail = ({ products, type, flags }) => html`
     <table id="printProductRetailTable" class="table table-bordered table-striped">
         <thead>
             <tr class="fw-bold text-center">
+                ${isMobileDevice ? '' : html`<td>Ред</td>`}
                 <td>Код</td>
                 <td>Стока</td>
                 ${isMobileDevice && type === 'stokova' ? '' : html`<td>Мярка</td>`}
@@ -1389,8 +1392,10 @@ const printTableRetail = ({ products, type, flags }) => html`
             </tr>
         </thead>
         <tbody class="table-group-divider">
-            ${products.map((product) => html`
+            ${products.map((product, index) => html`
                 <tr class="text-center">
+                    ${isMobileDevice ? '' : html`<td>${index + 1}</td>`}
+
                     <td>${product?.product?.code || ''}</td>
 
                     <td>${product?.product?.name || product.name}</td>
