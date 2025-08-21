@@ -8,7 +8,7 @@ async function findAndDeleteHidden() {
 
     console.log(`Found ${hiddenProducts.length} hidden products, looking for them in WooCommerce...`);
 
-    for (let shop of retailShops) {
+    for (let shop of WooCommerce_Shops) {
         const idsArray = [];
         for (let product of hiddenProducts) {
             try {
