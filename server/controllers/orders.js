@@ -254,6 +254,11 @@ async function returnProductsQuantities({ data, returnedProducts }) {
 
 function combineProductRows(products) {
     const combinedProducts = products.reduce((acc, product) => {
+        if (!product.product) {
+            acc.push(product);
+            return acc;
+        }
+
         const existingProduct = acc.find(p => p.product?.toString() === product?.product?.toString() && Number(p.price) === Number(product.price) && Number(p.discount) === Number(product.discount) && (p.size ? (p.size === product.size) : p.selectedSizes === product.selectedSizes || product.selectedSizes.every(s => p.selectedSizes.includes(s))));
         if (existingProduct) existingProduct.quantity += Number(product.quantity);
         else acc.push(product);
