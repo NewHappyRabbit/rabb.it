@@ -3,6 +3,45 @@ import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
 
+async function findAndDeleteHidden() {
+    const hiddenProducts = await Product.find({ hidden: true });
+
+    console.log(`Found ${hiddenProducts.length} hidden products, looking for them in WooCommerce...`);
+
+    for (let shop of retailShops) {
+        const idsArray = [];
+        for (let product of hiddenProducts) {
+            try {
+                const req = await shop.get('products', {
+                    sku: product.code,
+                })
+                if (req.data?.length === 0) continue;
+                const found = req.data[0];
+                const id = found.id
+                if (!idsArray.includes(id)) idsArray.push(id);
+            } catch (error) {
+                console.error(`Error finding hidden product ${product.code} in WooCommerce [${shop.url}]`);
+                console.error(error);
+            }
+        }
+
+        if (idsArray.length === 0) {
+            console.log(`No hidden products found in WooCommerce [${shop.url}]`);
+            continue;
+        };
+
+        console.log(`Found ${idsArray.length} hidden products in WooCommerce [${shop.url}], deleting them...`);
+        for (let id of idsArray) {
+            try {
+                await shop.delete(`products/${id}`, { force: true });
+                console.log(`Deleted hidden product with id ${id} in WooCommerce [${shop.url}]`);
+            } catch (error) {
+                console.error(`Error deleting hidden product with id ${id} in WooCommerce [${shop.url}]`);
+                console.error(error);
+            }
+        }
+    }
+}
 
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});

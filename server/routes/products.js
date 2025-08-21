@@ -163,7 +163,7 @@ export function productsRoutes() {
             if (status !== 201)
                 return res.status(status).send(message);
 
-            if (data.hidden === false)// if product should be hidden from website
+            if (product.hidden === false)// if product should be hidden from website
                 WooCreateProduct(product);
 
             // if no pc with printer connected, do nothing
