@@ -498,11 +498,14 @@ export const OrderController = {
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
-        const { updatedProducts } = order.type !== 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
+        let updatedProducts = [];
+        if (returnQuantity === true) {
+            const { updatedProducts: removedProducts } = order.type !== 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
 
-        // Update all products in paralel with promies
-        if (returnQuantity === true)
+            updatedProducts = removedProducts;
+
             await Promise.all(updatedProducts.map(async (product) => await product.save()));
+        }
 
         order.deleted = true;
         await order.save();
@@ -514,13 +517,15 @@ export const OrderController = {
 
         if (!order) return { status: 404, message: 'Документът не е намерен' };
 
-        const { updatedProducts, status, message } = order.type === 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
+        let updatedProducts = [];
+        if (returnQuantity === true) {
+            const { updatedProducts: returnedProducts, status, message } = order.type === 'credit' ? await returnProductsQuantities({ data: order }) : await removeProductsQuantities({ data: order });
 
-        if (status) return { status, message };
+            if (status) return { status, message };
 
-        // Update all products in paralel with promies
-        if (returnQuantity === true)
+            updatedProducts = returnedProducts;
             await Promise.all(updatedProducts.map(async (product) => await product.save()));
+        }
 
         order.deleted = false;
         await order.save();

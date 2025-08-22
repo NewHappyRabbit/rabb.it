@@ -521,7 +521,7 @@ export async function WooCheckProductAttributesINIT() {
 }
 
 export async function WooUpdateQuantityProducts(products) {
-    if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
+    if (WooCommerce_Shops?.length === 0 || products.length === 0) return; // If woocommerce wasnt initalized or is not used or no products are provided
 
     const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
 
