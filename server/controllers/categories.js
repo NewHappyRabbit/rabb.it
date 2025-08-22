@@ -4,6 +4,7 @@ import { slugify } from "../models/functions/global.js";
 import { Product } from "../models/product.js";
 import { uploadImg } from "./common.js";
 import fs from 'fs';
+import { escapeRegex } from "../functions/regex.js";
 
 export const CategoryController = {
     get: async (filters) => {
@@ -82,7 +83,7 @@ export const CategoryController = {
         // update subcategories path
         const oldSubPath = currentCategory.path ? `${currentCategory.path}${currentCategory.slug},` : `,${currentCategory.slug},`
         const newSubPath = newPath ? `${newPath}${currentCategory.slug},` : `,${currentCategory.slug},`
-        const categories = await Category.find({ path: { $regex: oldSubPath } });
+        const categories = await Category.find({ path: { $regex: escapeRegex(oldSubPath) } });
         await Promise.all(categories.map(async category => {
             category.path = category.path.replace(oldSubPath, newSubPath);
             await category.save();
@@ -112,7 +113,7 @@ export const CategoryController = {
             }
 
             // update subcategories path
-            const categories = await Category.find({ path: { $regex: `,${oldSlug},` } });
+            const categories = await Category.find({ path: { $regex: escapeRegex(`,${oldSlug},`) } });
             await Promise.all(categories.map(async category => {
                 category.path = category.path.replace(`,${oldSlug},`, `,${newSlug},`);
                 await category.save();
@@ -150,7 +151,7 @@ export const CategoryController = {
 
         // Check if subcategories
         const path = category.path ? `${category.path}${category.slug},` : `,${category.slug},`
-        const categories = await Category.find({ path: { $regex: path } }).limit(1);
+        const categories = await Category.find({ path: { $regex: escapeRegex(path) } }).limit(1);
 
         if (categories.length > 0)
             return { status: 400, message: 'Категорията има подкатегории. Моля, първо изтрийте или изместете подкатегориите.', property: 'subcategories' };

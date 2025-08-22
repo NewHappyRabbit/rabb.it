@@ -1,4 +1,5 @@
 import { WooCommerce_Shops } from "../config/woocommerce.js";
+import { escapeRegex } from "../functions/regex.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 import { Category } from "../models/category.js";
 import { Order } from "../models/order.js";
@@ -292,8 +293,10 @@ export const ProductController = {
         if (onlyOnSale && onlyOnSale === 'true')
             query.$and.push({ saleWholesalePrice: { $ne: null } });
 
-        if (search)
-            query.$or = [{ code: { $regex: search, $options: 'i' } }, { barcode: search }, { name: { $regex: search, $options: 'i' } }];
+        if (search) {
+            const escapedSearch = escapeRegex(search);
+            query.$or = [{ code: { $regex: escapedSearch, $options: 'i' } }, { barcode: { $regex: escapedSearch, $options: 'i' } }, { name: { $regex: escapedSearch, $options: 'i' } }];
+        }
 
         if (onlyOpenedPackages && onlyOpenedPackages === 'true')
             query.$and.push({ openedPackages: true });

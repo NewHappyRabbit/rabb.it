@@ -1,3 +1,4 @@
+import { escapeRegex } from "../functions/regex.js";
 import { Customer } from "../models/customer.js";
 import { Order } from "../models/order.js";
 
@@ -30,7 +31,8 @@ export const CustomerController = {
 
         // Either run search or normal pagination, tried but cant get both to work together
         if (search) { // search in vat or name
-            query.$or = [{ vat: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' }, }, { address: { $regex: search, $options: 'i' }, }];
+            const escapedSearch = escapeRegex(search);
+            query.$or = [{ vat: { $regex: escapedSearch, $options: 'i' } }, { name: { $regex: escapedSearch, $options: 'i' } }, { phone: { $regex: escapedSearch, $options: 'i' }, }, { address: { $regex: escapedSearch, $options: 'i' }, }];
         }
 
         if (!showDeleted) query.deleted = { $ne: true };
