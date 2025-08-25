@@ -156,6 +156,7 @@ const receiverTemplate = (receivers) => html`
 `;
 
 const bottomRow = (params, companies) => html`
+<div class="row g-3 align-items-end">
     <div class="col-6 col-sm">
         <label for="company" class="form-label">Обект:</label>
         <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
@@ -241,6 +242,13 @@ const bottomRow = (params, companies) => html`
             ${order?.deleted ? '' : submitBtn({ func: () => printSale(order), classes: "btn-danger", id: "print", text: "Само Принт", type: "button" })}
         </div>
     </div>
+</div>
+<div class="row mt-3">
+    <div class="col-12 col-sm">
+        <label for="notes" class="form-label">Основание:</label>
+        <textarea  name="notes" id="notes" class="form-control" rows="3" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}>${order ? order.notes : ''}</textarea>
+    </div>
+</div>
 `;
 
 const speedyTemplate = () => html`
@@ -399,8 +407,6 @@ function updatePrice(e) {
     const target = e.target;
     fixInputPrice({ target, roundPrice: true });
     const value = target.value;
-
-    console.log({ value })
 
     const index = e.target.closest('tr').getAttribute('addedProductsIndex');
     // find actual index in the array of addedProducts
@@ -567,7 +573,7 @@ const wholesaleProductsTable = (products) => html`
                     <td><input @change=${updateDiscountSum} @keyup=${updateDiscountSum} name="discountSum" class="form-control" type="text" inputmode="decimal" .value=${product.discount ? (product.price * product.discount / 100) : 0} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
                     <td>
-                        <select ?disabled=${product?.product && product.vat} style="min-width: 60px" @change=${updateVat} name="vat" class="form-control">
+                        <select style="min-width: 60px" @change=${updateVat} name="vat" class="form-control">
                             <option ?selected=${product && product.vat === 0} value='0'>0%</option>
                             <option ?selected=${product && product.vat === 9} value='9'>9%</option>
                             <option ?selected=${!product || product?.vat === 20} value='20'>20%</option>
@@ -1100,6 +1106,7 @@ async function createEditOrder(e) {
         company: document.getElementById('company').value,
         receiver: document.getElementById('receiver').value,
         sender: document.getElementById('sender').value,
+        notes: document.getElementById('notes').value,
     };
 
     if (data.type === 'credit') {
@@ -1179,6 +1186,7 @@ async function createEditOrder(e) {
 }
 
 async function printSale(data) {
+    if (!data) return;
     const printCopy = document.getElementById('printCopy')?.checked || false;
     const printStokova = document.getElementById('printStokova')?.checked || false;
     let flags = {};
@@ -1304,7 +1312,8 @@ const printContainer = ({ totals, data, param, flags }) => html`
             <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)} / ${formatPrice(BGNtoEuro(data.total), true)}</div>
         </div>
 
-        <div>
+        <div class="mt-3">
+            ${data.notes ? html`<div>Основание: ${data.notes}</div>` : ''}
             <div>Плащане: ${params.paymentTypes[data.paymentType]}</div>
             ${data.paymentType === 'bank' ? html`
                 <div>IBAN: ${data.company.bank.iban}</div>
@@ -1460,7 +1469,7 @@ const template = () => html`
             <div class="row align-items-end g-3" id="topRowContainer"></div>
             <div class="row align-items-end g-3" id="secondTopRowContainer"></div>
             <div id="table" class="table-responsive"></div>
-            <div id="bottomRow" class="row g-3 align-items-end"></div>
+            <div id="bottomRow" class="g-3"></div>
             <div id="woocommerce" class="row g-3 align-items-end mt-1 ${order && order.woocommerce ? '' : 'd-none'}"></div>
         </form>
         <div id="alert" class="alert d-none"></div>

@@ -234,7 +234,8 @@ const orderSchema = new Schema({
         required: function () {
             return this.type === 'credit';
         }
-    }
+    },
+    notes: String, // additional notes that are printed on the document
 }, {
     timestamps: true
 });
