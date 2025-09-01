@@ -191,7 +191,7 @@ async function returnProductsQuantities({ data, returnedProducts }) {
         const alreadyInDoneProducts = updatedProducts.find(p => p._id.toString() === product.product.toString());
 
         let productInDb = null;
-        if (!alreadyInDoneProducts) productInDb = await Product.findById(product.product);
+        productInDb = await Product.findById(product.product);
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
