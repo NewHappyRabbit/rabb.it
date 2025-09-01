@@ -98,8 +98,7 @@ async function removeProductsQuantities({ data, returnedProducts }) {
         // Check if in doneProducts first, otherwise search db
         const alreadyInDoneProducts = updatedProducts.find(p => p._id.toString() === product.product.toString());
 
-        let productInDb = null;
-        if (!alreadyInDoneProducts) productInDb = await Product.findById(product.product);
+        let productInDb = await Product.findById(product.product);
         const existingProduct = alreadyInDoneProducts || productInDb;
 
         // Wholesale + Variable product
@@ -108,8 +107,9 @@ async function removeProductsQuantities({ data, returnedProducts }) {
             for (let size of product.selectedSizes) {
                 const quantityToRemove = product.quantity * product.multiplier;
                 // Check if there is enough quantity of selected size
-                if (existingProduct.sizes.find(s => s.size === size).quantity < quantityToRemove)
+                if (existingProduct.sizes.find(s => s.size === size).quantity < quantityToRemove) {
                     return { status: 400, message: `Няма достатъчно количество от продукта: ${existingProduct.name} (${size}) [${existingProduct.code}]! Количество на склад: ${productInDb.sizes.find(s => s.size === size).quantity}` };
+                }
 
                 existingProduct.sizes.find(s => s.size === size).quantity -= quantityToRemove;
             }
