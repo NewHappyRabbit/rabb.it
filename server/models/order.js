@@ -20,7 +20,7 @@ export const woocommerce = {
     payment_method: {
         // Woo : App
         cod: 'cash',
-        card: 'card',
+        dskbank: 'card',
         bacs: 'bank',
     }
 }
