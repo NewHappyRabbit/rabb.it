@@ -219,7 +219,7 @@ export async function WooHookCreateOrder({ shop, data }) {
     wooData.company = defaultCompany._id;
     wooData.sender = defaultCompany.senders.pop();
 
-    wooData.paymentType = wooData.woocommerce.payment_method === 'cod' ? 'cash' : 'card'; // TODO Test order with card payment
+    wooData.paymentType = woocommerce.payment_method[wooData.woocommerce.payment_method] || 'cash';
 
     const user = await User.findOne({ username: "woocommerce" });
 
