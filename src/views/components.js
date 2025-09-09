@@ -30,6 +30,6 @@ export function toggleSubmitBtn(target) {
     }
 }
 
-export const submitBtn = ({ func, classes, icon, text = 'Запази', type = 'submit', id = 'submitBtn', disabled = false }) => html`
-    <button ?disabled=${disabled} id="${id}" @click=${func} type=${type} class="btn btn-primary position-relative ${classes}">${btnSpinner}<span class="pe-none">${icon ? html`<i class="bi ${icon}"></i> ` : ''}${text}</span></button>
+export const submitBtn = ({ func, classes, icon, text = 'Запази', type = 'submit', id = 'submitBtn', disabled = false, style = "" }) => html`
+    <button style="${style}" ?disabled=${disabled} id="${id}" @click=${func} type=${type} class="btn btn-primary position-relative ${classes}">${btnSpinner}<span class="pe-none">${icon ? html`<i class="bi ${icon}"></i> ` : ''}${text}</span></button>
 `;

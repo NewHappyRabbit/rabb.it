@@ -7,6 +7,7 @@ import { submitBtn, toggleSubmitBtn } from '@/views/components';
 import page from 'page';
 import { spinner } from '@/views/components';
 import { until } from 'lit/directives/until.js';
+import { formatPriceNoCurrency } from '@/api.js';
 
 let dbProducts;
 
@@ -22,7 +23,7 @@ function checkInput(e) {
 const sizesTemplate = (product, empty = false) => html`
 <div class="d-flex gap-2 mt-1 pt-2 flex-wrap">
     ${product.sizes.map(size => html`
-        <div class="input-group sizeElement">
+        <div class="input-group w-100 sizeElement">
             <label for="${size.size}***quantity" class="input-group-text border-primary">${size.size}</label>
             <input @keyup=${checkInput} @change=${checkInput} class="form-control border-primary" type="number" .name="${!empty ? '' : product._id + '***' + size.size}" inputmode="numeric" .value=${empty ? '' : size.quantity} autocomplete="off" ?disabled=${!empty}>
         </div>`)
@@ -30,7 +31,7 @@ const sizesTemplate = (product, empty = false) => html`
 </div>
 `;
 
-function copyQty(e) {
+function copyQty(e, setZero = false) {
     const input = e.target;
     const tr = input.closest('tr');
 
@@ -38,11 +39,11 @@ function copyQty(e) {
     if (product.sizes.length) {
         product.sizes.forEach(size => {
             const input = tr.querySelector(`[name="${product._id}***${size.size}"]`);
-            input.value = size.quantity;
+            input.value = setZero ? 0 : size.quantity;
         })
     } else {
         const input = tr.querySelector(`[name="${product._id}"]`);
-        input.value = product.quantity;
+        input.value = setZero ? 0 : product.quantity;
     }
 }
 
@@ -54,6 +55,7 @@ const table = (products) => html`
                 <thead>
                     <tr>
                         <th>Продукт</th>
+                        <th>Цена</th>
                         <th>Бройки в програма</th>
                         <td></td>
                         <th>Налични бройки</th>
@@ -64,19 +66,26 @@ const table = (products) => html`
                             <tr id=${product._id} code=${product.code} barcode=${product.barcode}>
                                 <td>${product.name} [${product.code}] (${product.barcode})</td>
                                 <td>
-                                    ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control" type="text" value=${product.quantity} />`}
+                                    <div>Доставна: ${formatPriceNoCurrency(product.deliveryPrice)}</div>
+                                    <div>Добавена:${formatPriceNoCurrency(product.upsaleAmount || 0)}</div>
                                 </td>
-                                <td><button class="form-control" type="button" @click=${copyQty}><i class="bi bi-arrow-right"></i></button></td>
+                                <td style="min-width: 200px">
+                                    ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control w-100" type="text" value=${product.quantity} />`}
+                                </td>
                                 <td>
+                                    <button class="form-control" type="button" @click=${copyQty}><i class="bi bi-arrow-right"></i></button>
+                                    <button class="form-control text-danger " type="button" @click=${(e) => copyQty(e, true)}>0</button>
+                                </td>
+                                <td style="min-width: 200px">
                                     ${product.sizes.length > 0 ? sizesTemplate(product, true) : html`<input name="${product._id}" class="form-control" type="number" inputmode="numeric" min="0" step="1" @keyup=${checkInput} @change=${checkInput} />`}
                                 </td>
                             </tr>`)}
-                </tbody>
-            </table>
-        </div>
-        ${submitBtn({ icon: "bi-boxes", text: "Запази", type: "submit", classes: "d-block mx-auto" })}
-    </form>
-`;
+                </tbody >
+            </table >
+        </div >
+    ${submitBtn({ icon: "bi-boxes", text: "Запази", type: "submit", classes: "d-block mx-auto", style: "bottom: 20px; position: sticky !important;" })}
+    </form >
+    `;
 
 async function sendData(e) {
     e.preventDefault();
@@ -163,19 +172,19 @@ function findInPage(e) {
     let el;
 
     if (!el) {
-        el = document.querySelector(`tr[barcode="${value}"]`);
+        el = document.querySelector(`tr[barcode = "${value}"]`);
     }
 
     if (!el) {
-        el = document.querySelector(`tr[barcode="0${value}"]`);
+        el = document.querySelector(`tr[barcode = "0${value}"]`);
     }
 
     if (!el) {
-        el = document.querySelector(`tr[barcode="${value.slice(0, -1)}"]`);
+        el = document.querySelector(`tr[barcode = "${value.slice(0, -1)}"]`);
     }
 
     if (!el) {
-        el = document.querySelector(`tr[barcode="${value.slice(1)}"]`);
+        el = document.querySelector(`tr[barcode = "${value.slice(1)}"]`);
     }
 
     if (!el) {
@@ -196,13 +205,13 @@ function findInPage(e) {
 export async function revisionPage() {
     const template = () => html`
     ${nav()}
-    <input placeholder="Търси по баркод" id="search" class="form-control text-center" type="text" @change=${findInPage} style="z-index: 1000; margin-top: -8px; position: fixed;" />
+<input placeholder="Търси по баркод" id="search" class="form-control text-center" type="text" @change=${findInPage} style = "z-index: 1000; margin-top: -8px; position: fixed;" />
 
     <div class="container-fluid" style="margin-top: 30px">
         ${until(loadProducts(), spinner)}
         <button class="btn btn-danger d-block mx-auto mt-5" @click=${startRevision}>Започни ревизия</button>
-    </div>
-`;
+    </div >
+    `;
 
     render(template(), container);
 }

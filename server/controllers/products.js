@@ -274,7 +274,7 @@ export const ProductController = {
 
             return { products, status: 200 };
         } else if (page && page == 'revision') {
-            let products = await Product.find({ inRevision: true, deleted: false, outOfStock: false }).sort({ category: 1, updatedAt: -1, }).select('name code barcode quantity sizes.size sizes.quantity');
+            let products = await Product.find({ inRevision: true, deleted: false, outOfStock: false }).sort({ category: 1, updatedAt: -1, }).select('name code barcode quantity sizes.size sizes.quantity deliveryPrice upsaleAmount');
             return { products, status: 200 };
         }
 
