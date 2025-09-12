@@ -317,7 +317,7 @@ export function printLabel(product, quantity = 1) {
     ^FT0,101^A0N,34,33^FB351,1,9,C^FH\^CI28^FDРазмери: ${product.sizes?.length > 0 ? `${product.sizes.join(', ')}` : ''}^FS^CI27
     ^FT7,157^A0N,34,33^FH\^CI28^FDЕд. цена: ${formatPrice(product.retailPrice)} / ${formatPrice(BGNtoEuro(product.retailPrice), true)}^FS^CI27
     ^FT7,216^A0N,34,33^FH\^CI28^FDЦена на пакет: ${formatPrice(product.wholesalePrice)} / ${formatPrice(BGNtoEuro(product.wholesalePrice), true)}^FS^CI27
-    ^PQ${quantity},Y
+    ^PQ${quantity},0
     ^XZ
     `;
 
