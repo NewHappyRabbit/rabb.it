@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import { formatPrice, formatPriceNoCurrency, socket } from '@/api';
+import { formatPrice, socket, BGNtoEuro } from '@/api';
 import { loggedInUser } from '@/views/login';
 
 export var selectedPrinter, availablePrinters = [], printerFound;
@@ -108,7 +108,7 @@ export function setSelectedPrinter() {
 function printLabelNonDB(product) {
     if (!product || !product.name || !product.price || !product.quantity) return console.error('Missing product data for printing label');
 
-    const zplCommand = `
+    const zplCommand25x55 = `
     ^XA
     ~TA024
     ~JSN
@@ -138,6 +138,39 @@ function printLabelNonDB(product) {
     ^XZ
     `;
 
+    const zplCommand = `
+    ^XA
+    ~TA024
+    ~JSN
+    ^LT0
+    ^MNW
+    ^MTT
+    ^PON
+    ^PMN
+    ^LH0,0
+    ^JMA
+    ^PR4,4
+    ~SD17
+    ^JUS
+    ^LRN
+    ^CI27
+    ^PA0,1,1,0
+    ^XZ
+    ^XA
+    ^MMT
+    ^PW464
+    ^LL599
+    ^LS0
+    ^BY3,2,47^FT426,433^BEB,,Y,N
+    ^FH\^FD${product.barcode}^FS
+    ^FT47,599^A0B,34,33^FB205,1,9,C^FH\^CI28^FDИме: ${product.name}\5C&^FS^CI27
+    ^FT101,599^A0B,34,33^FB351,1,9,C^FH\^CI28^FDБрой в пакет:  ${product?.qtyInPackage > 1 ? `${product.qtyInPackage} бр.` : ''}\5C&^FS^CI27
+    ^FT157,592^A0B,34,33^FH\^CI28^FDЦена на пакет: ${formatPrice(product.price)} / ${formatPrice(BGNtoEuro(product.price), true)}^FS^CI27
+    ^FT216,592^A0B,34,33^FH\^CI28^FD${product?.qtyInPackage > 1 ? `${formatPrice((product.price / product.qtyInPackage))} / ${formatPrice(BGNtoEuro((product.price / product.qtyInPackage)), true)}` : ''}^FS^CI27
+    ^PQ${product.quantity},Y
+    ^XZ
+    `;
+
     sendZPLCommand(zplCommand);
 }
 
@@ -151,7 +184,7 @@ export function printLabel(product, quantity = 1) {
 
     if (!product.barcode || !product.name || !product.wholesalePrice || !product.code) return console.error('Missing product data for printing label');
 
-    const zplCommand = `^XA
+    const zplCommand25x55 = `^XA
 ~TA024
 ~JSN
 ^LT0
@@ -182,6 +215,41 @@ export function printLabel(product, quantity = 1) {
 ^PQ${quantity},0
 ^XZ
 `;
+
+    const zplCommand = `
+    ^XA
+    ~TA024
+    ~JSN
+    ^LT0
+    ^MNW
+    ^MTT
+    ^PON
+    ^PMN
+    ^LH0,0
+    ^JMA
+    ^PR4,4
+    ~SD17
+    ^JUS
+    ^LRN
+    ^CI27
+    ^PA0,1,1,0
+    ^XZ
+    ^XA
+    ^MMT
+    ^PW464
+    ^LL599
+    ^LS0
+    ^BY3,2,47^FT426,433^BEB,,Y,N
+    ^FH\^FD${product.barcode}^FS
+    ^FT47,599^A0B,34,33^FB205,1,9,C^FH\^CI28^FDИме: ${product.name}\5C&^FS^CI27
+    ^FT101,599^A0B,34,33^FB351,1,9,C^FH\^CI28^FDРазмери:  ${product.sizes?.length > 0 ? `${product.sizes.join(', ')}` : ''}\5C&^FS^CI27
+    ^FT157,592^A0B,34,33^FH\^CI28^FDЕд. цена: ${formatPrice(product.retailPrice)} / ${formatPrice(BGNtoEuro(product.retailPrice), true)}^FS^CI27
+    ^FT216,592^A0B,34,33^FH\^CI28^FDЦена на пакет: ${formatPrice(product.wholesalePrice)} / ${formatPrice(BGNtoEuro(product.wholesalePrice), true)}^FS^CI27
+    ^FT271,590^A0B,34,33^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length} бр. по ${formatPrice((product.wholesalePrice / (product.sizes.length * product.multiplier)))} / ${formatPrice(BGNtoEuro((product.wholesalePrice / (product.sizes.length * product.multiplier))))}` : ''}^FS^CI27
+    ^FT344,592^A0B,34,33^FH\^CI28^FDКод: ${product.code}^FS^CI27
+    ^PQ${quantity},Y
+    ^XZ
+    `;
 
     sendZPLCommand(zplCommand);
 }
