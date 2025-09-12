@@ -216,7 +216,7 @@ export function printLabel(product, quantity = 1) {
 ^XZ
 `;
 
-    const zplCommand = `
+    const zplCommandOLD = `
     ^XA
     ~TA024
     ~JSN
@@ -251,7 +251,77 @@ export function printLabel(product, quantity = 1) {
     ^XZ
     `;
 
-    sendZPLCommand(zplCommand25x55);
+    const zplCommandNEWESTUNTRIMMED = `
+    ^XA
+    ~TA000
+    ~JSN
+    ^LT0
+    ^MNW
+    ^MTT
+    ^PON
+    ^PMN
+    ^LH0,0
+    ^JMA
+    ^PR4,4
+    ~SD15
+    ^JUS
+    ^LRN
+    ^CI27
+    ^PA0,1,1,0
+    ^XZ
+    ^XA
+    ^MMT
+    ^PW599
+    ^LL464
+    ^LS0
+    ^BY3,2,47^FT166,426^BEN,,Y,N
+    ^FH\^FD${product.barcode}^FS
+    ^FT0,47^A0N,34,33^FB205,1,9,C^FH\^CI28^FDИме: ${product.name}\5C&^FS^CI27
+    ^FT9,271^A0N,34,33^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length} бр. по ${formatPrice((product.wholesalePrice / (product.sizes.length * product.multiplier)))} / ${formatPrice(BGNtoEuro((product.wholesalePrice / (product.sizes.length * product.multiplier))))}` : ''}^FS^CI27
+    ^FT7,344^A0N,34,33^FH\^CI28^FDКод: ${product.code}^FS^CI27
+    ^FT0,101^A0N,34,33^FB351,1,9,C^FH\^CI28^FDРазмери: ${product.sizes?.length > 0 ? `${product.sizes.join(', ')}` : ''}\5C&^FS^CI27
+    ^FT7,157^A0N,34,33^FH\^CI28^FDЕд. цена: ${formatPrice(product.retailPrice)} / ${formatPrice(BGNtoEuro(product.retailPrice), true)}^FS^CI27
+    ^FT7,216^A0N,34,33^FH\^CI28^FDЦена на пакет: ${formatPrice(product.wholesalePrice)} / ${formatPrice(BGNtoEuro(product.wholesalePrice), true)}^FS^CI27
+    ^PQ${quantity},Y
+    ^XZ
+    `;
+
+    const zplCommand = `
+    ^XA
+    ~TA000
+    ~JSN
+    ^LT0
+    ^MNW
+    ^MTT
+    ^PON
+    ^PMN
+    ^LH0,0
+    ^JMA
+    ^PR4,4
+    ~SD15
+    ^JUS
+    ^LRN
+    ^CI27
+    ^PA0,1,1,0
+    ^XZ
+    ^XA
+    ^MMT
+    ^PW599
+    ^LL464
+    ^LS0
+    ^BY3,2,47^FT166,426^BEN,,Y,N
+    ^FH\^FD${product.barcode}^FS
+    ^FT0,47^A0N,34,33^FB205,1,9,C^FH\^CI28^FDИме: ${product.name}^FS^CI27
+    ^FT9,271^A0N,34,33^FH\^CI28^FD${product?.sizes?.length > 0 ? `${product.sizes.length} бр. по ${formatPrice((product.wholesalePrice / (product.sizes.length * product.multiplier)))} / ${formatPrice(BGNtoEuro((product.wholesalePrice / (product.sizes.length * product.multiplier))))}` : ''}^FS^CI27
+    ^FT7,344^A0N,34,33^FH\^CI28^FDКод: ${product.code}^FS^CI27
+    ^FT0,101^A0N,34,33^FB351,1,9,C^FH\^CI28^FDРазмери: ${product.sizes?.length > 0 ? `${product.sizes.join(', ')}` : ''}^FS^CI27
+    ^FT7,157^A0N,34,33^FH\^CI28^FDЕд. цена: ${formatPrice(product.retailPrice)} / ${formatPrice(BGNtoEuro(product.retailPrice), true)}^FS^CI27
+    ^FT7,216^A0N,34,33^FH\^CI28^FDЦена на пакет: ${formatPrice(product.wholesalePrice)} / ${formatPrice(BGNtoEuro(product.wholesalePrice), true)}^FS^CI27
+    ^PQ${quantity},Y
+    ^XZ
+    `;
+
+    sendZPLCommand(zplCommand);
 }
 
 function sendZPLCommand(zplCommand) {
