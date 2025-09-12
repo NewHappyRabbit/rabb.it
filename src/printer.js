@@ -171,7 +171,7 @@ function printLabelNonDB(product) {
     ^XZ
     `;
 
-    sendZPLCommand(zplCommand);
+    sendZPLCommand(zplCommand25x55);
 }
 
 export function printLabel(product, quantity = 1) {
@@ -251,7 +251,7 @@ export function printLabel(product, quantity = 1) {
     ^XZ
     `;
 
-    sendZPLCommand(zplCommand);
+    sendZPLCommand(zplCommand25x55);
 }
 
 function sendZPLCommand(zplCommand) {
