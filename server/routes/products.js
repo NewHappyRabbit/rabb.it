@@ -115,7 +115,7 @@ export function productsRoutes() {
             //FIXME
             const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false }).sort({ updatedAt: -1 }).select('woocommerce.permalink -_id').lean();
 
-            const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale')).permalink);
+            const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink);
 
             //TODO Add test for this in wooCommerce tests instead to productController
             if (!urls)
