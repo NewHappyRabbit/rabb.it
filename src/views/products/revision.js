@@ -55,8 +55,8 @@ const table = (products) => html`
                 <thead>
                     <tr>
                         <th>Продукт</th>
-                        <th>Доставна</th>
-                        <th>Едро</th>
+                        <th>Доставна за брой</th>
+                        <th>Едро за брой</th>
                         <th>Добавена стойност</th>
                         <th>Бройки в програма</th>
                         <td></td>
@@ -67,8 +67,8 @@ const table = (products) => html`
                     ${products.map(product => html`
                             <tr id=${product._id} code=${product.code} barcode=${product.barcode}>
                                 <td>${product.name} [${product.code}] (${product.barcode})</td>
-                                <td>${formatPriceNoCurrency(product.deliveryPrice)}</td>
-                                <td>${formatPriceNoCurrency(product.wholesalePrice)}</td>
+                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length)) : product.deliveryPrice)}</td>
+                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length)) : product.wholesalePrice)}</td>
                                 <td>${formatPriceNoCurrency(product.upsaleAmount || 0)}</td>
                                 <td style="min-width: 200px">
                                     ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control w-100" type="text" value=${product.quantity} />`}
