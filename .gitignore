@@ -9,3 +9,4 @@ server/logs/live.log
 public/urls.txt
 public/images/*/*.jpeg
 public/images/*.jpeg
+server/woocommerce/dev/results/*

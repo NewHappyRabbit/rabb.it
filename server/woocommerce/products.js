@@ -2,46 +2,7 @@ import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
-
-async function findAndDeleteHidden() {
-    const hiddenProducts = await Product.find({ hidden: true });
-
-    console.log(`Found ${hiddenProducts.length} hidden products, looking for them in WooCommerce...`);
-
-    for (let shop of WooCommerce_Shops) {
-        const idsArray = [];
-        for (let product of hiddenProducts) {
-            try {
-                const req = await shop.get('products', {
-                    sku: product.code,
-                })
-                if (req.data?.length === 0) continue;
-                const found = req.data[0];
-                const id = found.id
-                if (!idsArray.includes(id)) idsArray.push(id);
-            } catch (error) {
-                console.error(`Error finding hidden product ${product.code} in WooCommerce [${shop.url}]`);
-                console.error(error);
-            }
-        }
-
-        if (idsArray.length === 0) {
-            console.log(`No hidden products found in WooCommerce [${shop.url}]`);
-            continue;
-        };
-
-        console.log(`Found ${idsArray.length} hidden products in WooCommerce [${shop.url}], deleting them...`);
-        for (let id of idsArray) {
-            try {
-                await shop.delete(`products/${id}`, { force: true });
-                console.log(`Deleted hidden product with id ${id} in WooCommerce [${shop.url}]`);
-            } catch (error) {
-                console.error(`Error deleting hidden product with id ${id} in WooCommerce [${shop.url}]`);
-                console.error(error);
-            }
-        }
-    }
-}
+import "./dev/dev.js";
 
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});
@@ -326,12 +287,14 @@ async function createWooVariations(wooId, product, shop) {
     }
 }
 
-export async function WooCreateProduct(product) {
+export async function WooCreateProduct(product, onlyInThisShop = undefined) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
     console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
 
-    for (let shop of WooCommerce_Shops) {
+    const shops = onlyInThisShop ? [onlyInThisShop] : WooCommerce_Shops;
+
+    for (let shop of shops) {
         var data;
         if (shop.custom.type === 'wholesale') data = await generateWholesaleProductsData(JSON.parse(JSON.stringify(product)), shop);
         else if (shop.custom.type === 'retail') data = await generateRetailProductsData(JSON.parse(JSON.stringify(product)), shop);
@@ -520,7 +483,7 @@ export async function WooCheckProductAttributesINIT() {
     console.log("Products attributes check done!")
 }
 
-export async function WooUpdateQuantityProducts(products) {
+export async function WooUpdateQuantityProducts(products, onlyInThisShop = undefined) {
     if (WooCommerce_Shops?.length === 0 || products.length === 0) return; // If woocommerce wasnt initalized or is not used or no products are provided
 
     const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
@@ -539,7 +502,9 @@ export async function WooUpdateQuantityProducts(products) {
         }
     }
 
-    for (let shop of WooCommerce_Shops) {
+    const shops = onlyInThisShop ? [onlyInThisShop] : WooCommerce_Shops;
+
+    for (let shop of shops) {
         if (shop.custom.type === 'wholesale') {
             // All products are simple
             await updateSimpleProducts(filtered, shop);
