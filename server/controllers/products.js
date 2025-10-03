@@ -305,7 +305,7 @@ export const ProductController = {
             query.$and.push({ category: category });
         }
 
-        var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ updatedAt: -1 }).populate('category', 'name path');
+        var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ category: 1, code: 1 }).populate('category', 'name path');
         var count = await Product.countDocuments(query);
         var pageCount = Math.ceil(count / pageSize);
 
