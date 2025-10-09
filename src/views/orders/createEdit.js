@@ -582,10 +582,12 @@ const wholesaleProductsTable = (products) => html`
 
                     <td name="subtotal"  class="text-nowrap">${formatPrice((product.price * product.quantity) * (1 - product.discount / 100))}</td>
 
-                    <td class="d-flex gap-1" style="text-align: end">
-                        ${!product?.product ? html`<button @click=${printLabels} class="btn btn-primary" type="button"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"></span></button>` : ''}
-                        ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}
-                        </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            ${!product?.product ? html`<button @click=${printLabels} class="btn btn-primary" type="button"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"></span></button>` : ''}
+                            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}
+                        </div>
+                    </td>
                 </tr>
                 `)}
 
