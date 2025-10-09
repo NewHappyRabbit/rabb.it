@@ -192,7 +192,7 @@ export async function WooHookCreateOrder({ shop, data }) {
 
     if (customer && (customer.woocommerce?.length === 0 || !customer.woocommerce?.find(el => el.woo_url === shop.url))) {
         // Customer found in DB but not connected to this shop. Add shop customer id to customer db
-        customer.woocommerce.push({ id: wooData.customer.id, woo_url: shop.url });
+        customer.woocommerce.push({ id: wooData.customer.woocommerce.id, woo_url: shop.url });
         await customer.save();
     } else if (!customer) {
         // Create new customer
