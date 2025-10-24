@@ -27,6 +27,38 @@ function validateCustomer(data) {
     return invalidFlag;
 }
 
+async function checkVAT() {
+    const vat = document.getElementById('taxvat').value.trim();
+
+    if (!vat) return;
+
+    const pattern = /^(?<Prefix>[a-zA-Z]+)(?<Number>\d+)$/;
+
+    const match = vat.match(pattern);
+
+    if (!match || !match.groups) return alert('Грешен ДДС булстат.');
+
+    const countryCode = match.groups['Prefix'].toUpperCase();
+    const vatNumber = match.groups['Number'];
+
+    const response = await axios.post('/customers/vatCheck', { countryCode, vatNumber });
+
+    const addressField = document.getElementById('address');
+    const nameField = document.getElementById('name');
+    const vatField = document.getElementById('vat');
+
+    if (response.data.valid) {
+        addressField.value = response.data.address;
+        nameField.value = response.data.name;
+        vatField.value = vatNumber;
+    } else {
+        alert('Невалиден ДДС булстат.');
+        vatField.value = '';
+        addressField.value = '';
+        nameField.value = '';
+    }
+}
+
 async function createEditCustomer({ e, modal = false, alertElId = 'alert', functionToRunOnSuccess }) {
     e.preventDefault();
     toggleSubmitBtn();
@@ -116,6 +148,7 @@ export const customerForm = ({ customer, modal = false, alertElId, functionToRun
         <label for="taxvat" class="form-label">ДДС ЕИК</label>
         <div class="input-group">
             <input class="form-control" type="text" id="taxvat" name="taxvat" placeholder="пример: BG117...." .value=${customer?.taxvat || ''} autocomplete="off">
+            <button class="btn btn-primary" type="button" @click=${checkVAT}>Провери</button>
         </div>
     </div>
 

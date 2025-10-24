@@ -6,6 +6,19 @@ import { CustomerController } from "../controllers/customers.js";
 export function customersRoutes() {
     const customersRouter = express.Router();
 
+    customersRouter.post('/customers/vatCheck', permit('user', 'manager', 'admin'), async (req, res) => {
+        try {
+            const { countryCode, vatNumber } = req.body;
+            const { valid, name, address } = await CustomerController.checkVAT({ countryCode, vatNumber });
+
+            res.json({ valid, name, address });
+        } catch (error) {
+            console.error(error);
+            req.log.debug({ body: req.body }) // Log the body of the request
+            res.status(500).send(error);
+        }
+    });
+
     customersRouter.get('/customers', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const { pageSize = 15, pageNumber = 1, search, showDeleted, page } = req.query;

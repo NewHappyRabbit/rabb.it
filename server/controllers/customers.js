@@ -1,3 +1,4 @@
+import axios from "axios";
 import { escapeRegex } from "../functions/regex.js";
 import { Customer } from "../models/customer.js";
 import { Order } from "../models/order.js";
@@ -14,6 +15,21 @@ function validateCustomer(data) {
 }
 
 export const CustomerController = {
+
+    checkVAT: async ({ countryCode, vatNumber }) => {
+        // Call external VAT checking service
+        try {
+            const response = await axios.post('https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number', {
+                countryCode,
+                vatNumber
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error(error);
+            return { status: 500, message: 'Възникна грешка при проверката на ЕИК' };
+        }
+    },
     get: async ({ search, pageSize, pageNumber, showDeleted, page }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all customers
