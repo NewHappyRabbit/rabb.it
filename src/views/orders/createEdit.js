@@ -455,7 +455,7 @@ const addProductRow = () => html`
 <tr id="addNewProduct">
     <td colspan="3">
         <div class="input-group">
-            <input @keydown=${addProduct} @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search" tabindex="-1">
+            <input @keydown=${addProduct} @keyup=${addProduct} placeholder="Баркод/код" class="form-control" type="search" name="product" id="product" autocomplete="off" enterKeyHint="search">
             <!-- <button @click=${scanBarcode} class="btn btn-primary" type="button" id="scanBarcode"><i class="bi bi-camera"></i> Сканирай</button> -->
             <!-- <button @click=${stopBarcode} class="btn btn-primary d-none" type="button" id="stopBarcode"><i class="bi bi-camera"></i> Затвори</button> -->
         </div>
@@ -568,7 +568,7 @@ const wholesaleProductsTable = (products) => html`
 
                     <td><input @change=${updatePrice} @keyup=${updatePrice} name="price" class="form-control" type="text" .value=${product.price} inputmode="decimal" required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
-                    <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
+                    <td><input @change=${updateDiscount} @keyup=${updateDiscount} name="discount" class="form-control" type="text" inputmode="decimal" .value=${product.discount} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} /></td>
 
                     <td><input @change=${updateDiscountSum} @keyup=${updateDiscountSum} name="discountSum" class="form-control" type="text" inputmode="decimal" .value=${product.discount ? (product.price * product.discount / 100) : 0} required ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)}/></td>
 
@@ -584,8 +584,8 @@ const wholesaleProductsTable = (products) => html`
 
                     <td>
                         <div class="d-flex gap-1">
-                            ${!product?.product ? html`<button @click=${printLabels} class="btn btn-primary" type="button"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"></span></button>` : ''}
-                            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger">X</button>`}
+                            ${!product?.product ? html`<button @click=${printLabels} class="btn btn-primary" type="button" tabindex="-1"><i class="bi bi-upc"></i><span class="d-none d-sm-inline"></span></button>` : ''}
+                            ${order && !['manager', 'admin'].includes(loggedInUser.role) ? '' : html`<button @click=${removeProduct} type="button" class="btn btn-danger" tabindex="-1">X</button>`}
                         </div>
                     </td>
                 </tr>
@@ -880,7 +880,16 @@ async function addProduct(e) {
     rerenderTable();
 
     e.target.value = '';
-    e.target.focus();
+
+    // Focus on the quantity field of the newly added product
+    const newlyAddedProductRow = document.querySelector(`tr[addedProductsIndex="${addedProductsIndex - 1}"]`);
+    if (newlyAddedProductRow) {
+        const quantityInput = newlyAddedProductRow.querySelector('input[name="qtyInPackage"]');
+        if (quantityInput) quantityInput.focus();
+    }
+
+    // Focus back the barcode input field
+    // e.target.focus();
     // scroll to button
     e.target.scrollIntoView({ behavior: 'smooth' });
 }

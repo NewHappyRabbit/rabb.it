@@ -113,7 +113,7 @@ export function productsRoutes() {
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
             //FIXME
-            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false }).sort({ updatedAt: -1 }).select('woocommerce.permalink -_id').lean();
+            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false }).sort({ category: 1, code: 1 }).select('woocommerce.permalink -_id').lean();
 
             const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink);
 
