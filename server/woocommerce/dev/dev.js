@@ -177,12 +177,12 @@ async function compareAllProducts() {
             } else if (wooProduct.type === 'variable') {
                 // Check each variation quantity
                 // TODO TEST BELOW CODE
-                /* const req = await shop.get(`products/${wooId}/variations`, { per_page: 100 });
+                const req = await shop.get(`products/${wooId}/variations`, { per_page: 100 });
                 const variations = req.data;
 
                 if (variations.some(v => v.stock_quantity !== dbProduct.sizes.find(s => s.woocommerce.find(w => w.woo_url === shop.url)?.id.toString() === v.id.toString())?.quantity)) {
                     productsQtyToUpdate.push(dbProduct);
-                } */
+                }
             }
         }
 
