@@ -523,13 +523,15 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
                     variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity });
 
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
-                    console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} quantity successfully updated in WooCommerce [${shop.url}]!`)
+                    // console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
                     console.error(`Failed to update product variations quantity in WooCommerce [${shop.url}] with _id: ${product._id}`);
                     console.error(product);
                     console.error(error);
                 });
             }
+
+            console.log(`Variable products quantity successfully updated in WooCommerce [${shop.url}]!`)
         }
     }
 }
