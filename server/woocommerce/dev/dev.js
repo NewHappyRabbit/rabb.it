@@ -164,7 +164,7 @@ async function compareAllProducts() {
         for (let wooProduct of wooProducts) {
             // Check if any product exists in WooCommerce but not in DB. If it does, delete it from WooCommerce.
             const wooId = wooProduct.id.toString();
-            const dbProduct = dbProducts.find(p => p.woocommerce.find(w => w.woo_url === shop.url).id.toString() === wooId);
+            const dbProduct = dbProducts.find(p => p.woocommerce.find(w => w.woo_url === shop.url)?.id.toString() === wooId);
 
             if (!dbProduct) {
                 productsToDelete.push(wooProduct);
@@ -176,13 +176,19 @@ async function compareAllProducts() {
                 productsQtyToUpdate.push(dbProduct);
             } else if (wooProduct.type === 'variable') {
                 // Check each variation quantity
-                // TODO
+                // TODO TEST BELOW CODE
+                /* const req = await shop.get(`products/${wooId}/variations`, { per_page: 100 });
+                const variations = req.data;
+
+                if (variations.some(v => v.stock_quantity !== dbProduct.sizes.find(s => s.woocommerce.find(w => w.woo_url === shop.url)?.id.toString() === v.id.toString())?.quantity)) {
+                    productsQtyToUpdate.push(dbProduct);
+                } */
             }
         }
 
         for (let dbProduct of dbProducts) {
             // Check if any product exists in DB but not in WooCommerce. If it does, create it in WooCommerce.
-            const wooId = dbProduct.woocommerce.find(w => w.woo_url === shop.url).id.toString();
+            const wooId = dbProduct.woocommerce.find(w => w.woo_url === shop.url)?.id.toString();
             const wooProduct = wooProducts.find(p => p.id.toString() === wooId);
 
             if (!wooProduct) {
@@ -276,7 +282,6 @@ async function createSnapshots() {
 
     console.log('Snapshots created. You can now run compareAllProducts() to compare the data.');
 }
-
 async function fullySyncProducts() {
     // This function creates a snapshot of all products in the DB and WooCommerce, compares them and performs the necessary actions to fully sync them.
     await createSnapshots();

@@ -290,8 +290,6 @@ async function createWooVariations(wooId, product, shop) {
 export async function WooCreateProduct(product, onlyInThisShop = undefined) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
-    console.log('Product changed from hidden to non-hidden -> Creating it in WooCommerce!');
-
     const shops = onlyInThisShop ? [onlyInThisShop] : WooCommerce_Shops;
 
     for (let shop of shops) {
