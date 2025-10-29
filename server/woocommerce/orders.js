@@ -128,7 +128,10 @@ export async function WooHookCreateOrder({ shop, data }) {
 
     // Check if customer already in db
     var customer;
-    customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
+
+    // TODO: Find out why some users ID's are coming as 0. Fixing that would allow us to always find by woo customer ID first.
+    // Try to find by woo customer ID
+    // customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
 
     // Try to find by email
     if (!customer && wooData.customer?.email)
