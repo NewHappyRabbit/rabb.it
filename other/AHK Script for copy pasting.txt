@@ -1,0 +1,72 @@
+#NoEnv
+SendMode Input
+SetWorkingDir %A_ScriptDir%
+
+FileEncoding, UTF-8  ; Support Cyrillic
+
+fileDir := "C:\Users\Свилен Свиленов\Downloads\urls.txt"
+
+; Disable Space hotkey initially
+Hotkey, Space, Off
+
+if !FileExist(fileDir)
+{
+    MsgBox, 16, Грешка, Файлът с линковете към продуктите не съществува! Първо изтегли линковете от админ менюто в сайта!
+    ExitApp
+}
+
+MsgBox, ИНСТРУКЦИИ!!!`n`nПрочетете стъпките, натиснете "ОК" тук, после изпълнете стъпка 3 и 4 в Viber.`n`n1) Отворете Viber`n2) Влезте в групата`n3) Кликнете полето за писане`n4) Натиснете SPACE
+IfMsgBox, OK
+{
+    Hotkey, Space, On
+}
+
+; Kill-switch
+ESC::ExitApp
+
+; Main hotkey
+Space::
+{
+    ; Save current clipboard
+    oldClip := ClipboardAll
+
+    ; Read file
+    FileRead, content, %fileDir%
+    if (ErrorLevel)
+    {
+        MsgBox, 16, Грешка, Не можа да се прочете файла!
+        Clipboard := oldClip
+        ExitApp
+    }
+
+    ; Loop through lines
+    Loop, parse, content, `n, `r
+    {
+        line := A_LoopField
+        if (line = "")
+            continue
+
+        Clipboard := line
+        ClipWait, 1
+
+        Send ^v
+        Sleep 100
+        Send {Enter}
+        Sleep 600
+    }
+
+    ; Delete file when done
+    FileDelete, %fileDir%
+
+    ; Restore clipboard
+    Clipboard := oldClip
+
+    ; Turn off hotkey
+    Hotkey, Space, Off
+
+    ; Confirmation
+    MsgBox, 64, Готово, Всички продукти са изпратени в чата! Скриптът ще се затвори.
+
+    ; ✅ Exit app completely
+    ExitApp
+}
