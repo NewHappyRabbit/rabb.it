@@ -112,12 +112,33 @@ export function productsRoutes() {
 
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            //FIXME
-            const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false }).sort({ category: 1, code: 1 }).select('woocommerce.permalink -_id').lean();
 
-            const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink);
 
-            //TODO Add test for this in wooCommerce tests instead to productController
+
+            // const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false, deleted: false }).sort({ category: 1, code: 1 }).select('woocommerce.permalink -_id').lean();
+
+            // const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink);
+
+            //FIXME START - This is a temp fix to send product image from app instead of woo url until the shops are fixed.
+
+            const productsURLS = await Product.find({ outOfStock: { $ne: true }, deleted: false }).sort({ category: 1, code: 1 }).select('image.url description -_id').lean();
+
+            const urls = [];
+
+            for (let p of productsURLS) {
+                const description = p.description;
+
+                const imgUrl = p.image?.url;
+
+                if (!description || !imgUrl) continue;
+
+                urls.push(imgUrl);
+                urls.push(description);
+            }
+
+            // FIXME END
+
+
             if (!urls)
                 return res.status(204).send();
 
