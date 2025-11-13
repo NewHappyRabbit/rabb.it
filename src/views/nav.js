@@ -9,9 +9,9 @@ const printerModalDiv = document.getElementById('selectPrinterModalDiv');
 if (printerModalDiv)
     render(printerModal(availablePrinters), printerModalDiv);
 
-async function downloadProductsURLS(e) {
+async function downloadProductsURLS(e, hidden = false) {
     e.target.disabled = true;
-    const response = await axios.get('/products/woourls');
+    const response = await axios.get(`/products/woourls?hidden=${hidden}`);
 
     if (response.status === 200) {
         // download file
@@ -82,7 +82,8 @@ export const nav = () => html`
                             <li><button class="dropdown-item" @click=${toggleDarkMode}><i class="bi bi-moon"></i> Тъмен режим</button></li>
                             <li><a class="dropdown-item" href="/categories"><i class="bi bi-tags"></i> Категории</a></li>
                             ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`
-                                <li><button class="dropdown-item" @click=${downloadProductsURLS}><i class="bi bi-download"></i> Линкове за продуктите</button></li>
+                                <li><button class="dropdown-item" @click=${downloadProductsURLS}><i class="bi bi-download"></i> Линкове за продукти</button></li>
+                                <li><button class="dropdown-item" @click=${(e) => downloadProductsURLS(e, true)}><i class="bi bi-download"></i> Линкове за скрити продукти</button></li>
                             ` : ''}
                         </ul>
                     </li>
