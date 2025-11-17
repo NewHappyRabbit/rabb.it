@@ -1451,8 +1451,11 @@ async function loadNewCustomer(customer) {
 
     selectedCustomer = customer;
 
+    console.log({ customer })
+
     // rerender table
     render(topRow(params, customers), document.getElementById('topRowContainer'));
+    render(receiverTemplate(selectedCustomer.receivers), document.getElementById('receiverDiv'));
 }
 
 const createCustomerModal = () => html`
