@@ -1,3 +1,4 @@
+import PQueue from "p-queue";
 import { WooCommerce_Shops } from "../config/woocommerce.js";
 import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
@@ -516,13 +517,11 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
             // Simple products
             await updateSimpleProducts(simple, shop);
 
-            // Variable products (have to be done one by one)
-            for (let product of variable) {
-                let variations = [];
-                for (let size of product.sizes)
-                    variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity });
+            const queue = new PQueue({ concurrency: 3 });
 
+            async function updateVariations(product, variations) {
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
+                    console.log(`variations for ${product._id} updated`)
                     // console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
                     console.error(`Failed to update product variations quantity in WooCommerce [${shop.url}] with _id: ${product._id}`);
@@ -531,6 +530,16 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
                 });
             }
 
+            // Variable products (have to be done one by one)
+            for (let product of variable) {
+                let variations = [];
+                for (let size of product.sizes)
+                    variations.push({ id: size.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: size.quantity });
+
+                queue.add(() => updateVariations(product, variations));
+            }
+
+            await queue.onIdle();
             console.log(`Variable products quantity successfully updated in WooCommerce [${shop.url}]!`)
         }
     }
