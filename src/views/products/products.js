@@ -293,6 +293,10 @@ async function applyFilters(e) {
         selectedFilters.pageSize = data.pageSize;
     else selectedFilters.pageSize = '';
 
+    if (data.sort)
+        selectedFilters.sort = data.sort;
+    else selectedFilters.sort = '';
+
     if (data.category)
         selectedFilters.category = data.category;
     else selectedFilters.category = '';
@@ -373,6 +377,17 @@ export function productsPage(ctx, next) {
     selectedProduct = null;
 
     const filters = () => html`
+    <div class="col-6 col-sm">
+        <label for="sort" class="form-label">Сортиране:</label>
+        <select class="form-select" name="sort" id="sort" required>
+            <option value="createdAt">Редактирани скоро</option>
+            <option value="-createdAt">Редактирани отдавна</option>
+            <option value="-updatedAt">Създадени скоро</option>
+            <option value="updatedAt">Създадени отдавна</option>
+            <option value="-code">Код низходящ</option>
+            <option value="code">Код възходящ</option>
+        </select>
+    </div>
     <div class="col-12 col-sm" >
         <label for="search" class="form-label">Продукт:</label>
         <input @keyup=${delay(applyFilters, 300)} value=${selectedFilters?.search ? selectedFilters.search : ''} placeholder = "Въведи име или код" id="search" name="search" class="form-control" autocomplete="off">
