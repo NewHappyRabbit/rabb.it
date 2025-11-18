@@ -252,7 +252,7 @@ export const ProductController = {
 
         return { product, status: 200 };
     },
-    get: async ({ pageNumber, pageSize, page, search, onlyHidden, season, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
+    get: async ({ pageNumber, pageSize, page, sort, search, onlyHidden, season, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category }) => {
         // Page is used to prevent multiple urls from being created and instead using one single get request
         // If no page is given then it will return all products
         // FIXME START - THIS IS TEMP, UNTIL ALL PRODUCTS HAVE THEIR ATTRIBUTES ADDED
@@ -305,7 +305,7 @@ export const ProductController = {
             query.$and.push({ category: category });
         }
 
-        var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort({ updatedAt: -1 }).populate('category', 'name path');
+        var products = await Product.find(query).limit(pageSize).skip(pageSize * (pageNumber - 1)).sort(sort).populate('category', 'name path');
         var count = await Product.countDocuments(query);
         var pageCount = Math.ceil(count / pageSize);
 

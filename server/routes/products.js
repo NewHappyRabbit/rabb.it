@@ -96,9 +96,19 @@ export function productsRoutes() {
 
     productsRouter.get('/products', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
-            const { pageSize = 15, pageNumber = 1, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category, page, season } = req.query;
+            const { pageSize = 15, pageNumber = 1, sort, search, onlyHidden, onlyOutOfStock, onlyOpenedPackages, onlyOnSale, category, page, season } = req.query;
 
-            const { count, products, pageCount, status, message } = await ProductController.get({ page, pageSize, pageNumber, search, onlyHidden, onlyOpenedPackages, onlyOnSale, onlyOutOfStock, category, season });
+            let sortParam = sort;
+
+            if (sort) {
+                if (sort.startsWith('-')) {
+                    sortParam = { [sort.substring(1)]: -1 };
+                } else {
+                    sortParam = { [sort]: 1 };
+                }
+            }
+
+            const { count, products, pageCount, status, message } = await ProductController.get({ page, pageSize, pageNumber, search, sort: sortParam, onlyHidden, onlyOpenedPackages, onlyOnSale, onlyOutOfStock, category, season });
             if (status !== 200)
                 return res.status(status).send(message);
 
