@@ -31,8 +31,8 @@ jobs:
                   git checkout .
                   git clean -df
                   git fetch --all
-                  git reset --hard origin/live
-                  git pull origin live
+                  git reset --hard origin/main
+                  git pull origin main
                   npm install
                   npm run web-prod
 
