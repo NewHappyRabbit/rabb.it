@@ -353,6 +353,6 @@ async function fullySyncProducts() {
     // This function creates a snapshot of all products in the DB and WooCommerce, compares them and performs the necessary actions to fully sync them.
     // await createSnapshots();
     // await compareAllProducts();
-    await syncWoo();
+    // await syncWoo();
 }
-fullySyncProducts();
+// fullySyncProducts();
