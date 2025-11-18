@@ -280,7 +280,7 @@ async function createWooVariations(wooId, product, shop) {
                 if (!size.woocommerce) size.woocommerce = [];
                 size.woocommerce.push({ id: variation.id, woo_url: shop.url });
             }
-            console.log(`Created product variations in WooCommerce [${shop.url}] with _id: ${product._id}`);
+            // console.log(`Created product variations in WooCommerce [${shop.url}] with _id: ${product._id}`);
         }).catch((error) => {
             console.error(`Failed to create product variation in WooCommerce [${shop.url}] with _id: ${product._id}`);
             console.error(error);
@@ -301,7 +301,7 @@ export async function WooCreateProduct(product, onlyInThisShop = undefined) {
         await shop.post("products", data).then(async (response) => {
             await addWooDataToProduct(response.data, product, shop);
             await product.save();
-            console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
+            // console.log(`Product with id ${product._id} successfully created in WooCommerce [${shop.url}]!`);
         }).catch((error) => {
             console.error(`Failed to create product in WooCommerce [${shop.url}] with _id: ${product._id}`);
             console.error(error);
@@ -333,7 +333,7 @@ export async function WooEditProduct(product) {
                 // Check if any size was delete in app (doesnt exist in woo) and delete it
                 for (let size of variationsInWoo) {
                     if (product.sizes.find(s => s.woocommerce.find(el => el.woo_url == shop.url && el.id == size))) continue;
-                    console.log(`Deleting product variation in WooCommerce [${shop.url}] for product with id: ${product._id}, variation id: ${size}`);
+                    // console.log(`Deleting product variation in WooCommerce [${shop.url}] for product with id: ${product._id}, variation id: ${size}`);
                     await shop.delete(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/${size}`, { force: true });
                 }
 
@@ -341,7 +341,7 @@ export async function WooEditProduct(product) {
                 for (let size of product.sizes) {
                     if (!size.woocommerce?.find(el => el.woo_url == shop.url)) {
                         // create it
-                        console.log(`Creating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
+                        // console.log(`Creating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
                         await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations`, await generateSingleVariationData(product, size, shop)).then(async (response) => {
                             if (!size.woocommerce) size.woocommerce = [];
                             size.woocommerce.push({ id: response.data.id, woo_url: shop.url });
@@ -349,14 +349,14 @@ export async function WooEditProduct(product) {
                         });
                     } else {
                         // update it
-                        console.log(`Updating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
+                        // console.log(`Updating product variation in WooCommerce [${shop.url}] with _id: ${product._id} for size ${size.size}`);
                         await shop.put(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/${size.woocommerce.find(el => el.woo_url == shop.url).id}`, await generateSingleVariationData(product, size, shop));
                     }
                 }
             }
 
             // Success
-            console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
+            // console.log(`Product successfully edited in WooCommerce ${shop.url}!`)
         }).catch((error) => {
             // Invalid request, for 4xx and 5xx statuses
             console.error(`Failed to edit product in WooCommerce [${shop.url}] with _id: ${product._id}`);
@@ -376,7 +376,7 @@ export async function WooDeleteProduct(wooData, isProductReference) {
             force: true
         }).then(async () => {
             // Success
-            console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
+            // console.log(`Product successfully deleted in WooCommerce [${shop.url}]!`)
         }).catch((error) => {
             // Invalid request, for 4xx and 5xx statuses
             console.error(`Failed to delete product in WooCommerce [${shop.url}]`);
@@ -482,10 +482,11 @@ export async function WooCheckProductAttributesINIT() {
     console.log("Products attributes check done!")
 }
 
-export async function WooUpdateQuantityProducts(products, onlyInThisShop = undefined) {
+export async function WooUpdateQuantityProducts(products, onlyInThisShop = undefined, bar = null) {
     if (WooCommerce_Shops?.length === 0 || products.length === 0) return; // If woocommerce wasnt initalized or is not used or no products are provided
 
     const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+    bar?.setTotal(filtered.length);
 
     async function updateSimpleProducts(products, shop) {
         console.log('Starting update for ' + products.length + ' products...')
@@ -493,6 +494,7 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
             const batch = products.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, stock_quantity: p.quantity }));
             console.log('Starting work on simple products batch: ' + i)
             await shop.post('products/batch', { update: batch }).then(() => {
+                bar?.update(Math.min(i + 100, products.length));
                 console.log(`Products quantity successfully updated in WooCommerce [${shop.url}]!`)
             }).catch((error) => {
                 console.error(`Error batch updating products quantity in WooCommerce [${shop.url}]!`)
@@ -517,11 +519,11 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
             // Simple products
             await updateSimpleProducts(simple, shop);
 
-            const queue = new PQueue({ concurrency: 3 });
+            const queue = new PQueue({ interval: 3000, concurrency: 3 });
 
             async function updateVariations(product, variations) {
                 await shop.post(`products/${product.woocommerce.find(el => el.woo_url == shop.url).id}/variations/batch`, { update: variations }).then(async () => {
-                    console.log(`variations for ${product._id} updated`)
+                    bar?.increment();
                     // console.log(`Products variations for product id ${product.woocommerce.find(el => el.woo_url == shop.url).id} quantity successfully updated in WooCommerce [${shop.url}]!`)
                 }).catch((error) => {
                     console.error(`Failed to update product variations quantity in WooCommerce [${shop.url}] with _id: ${product._id}`);
@@ -540,7 +542,7 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
             }
 
             await queue.onIdle();
-            console.log(`Variable products quantity successfully updated in WooCommerce [${shop.url}]!`)
+            // console.log(`Variable products quantity successfully updated in WooCommerce [${shop.url}]!`)
         }
     }
 }
