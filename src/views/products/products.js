@@ -216,7 +216,7 @@ const table = ({ count, products, pageCount }) => html`
                             <td>${product?.image?.url ? html`<img class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
                             <td>${product.category.path ? `${uslugifyPath(product.category.path)} > ${product.category.name}` : product.category.name}</td>
                             <td>${product.code}</td>
-                            <td>${product.name}</td>
+                            <td>${product.hidden ? html`<i class="bi bi-eye-slash"></i>` : ''}${product.name}</td>
                             <td>${product.description || ''}</td>
                             <td class="text-nowrap">${product.quantity} бр.${product.openedPackages ? ' + Р' : ''}</td>
                             <td>${product.sizes.length > 0 ? sizesTemplate(product.sizes) : ''}</td>
