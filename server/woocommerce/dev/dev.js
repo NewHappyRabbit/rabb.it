@@ -18,39 +18,72 @@ async function findAndDeleteHidden() {
 
     console.log(`Found ${hiddenProducts.length} hidden products, looking for them in WooCommerce...`);
 
-    for (let shop of WooCommerce_Shops) {
+    const queue = new PQueue({ concurrency: 4 });
+
+    const multibar = new MultiBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: ' {bar} | {percentage}% | {value}/{total} Products checked | Shop: {shop}'
+    }, Presets.shades_classic);
+
+    async function check(shop) {
+        const bar = multibar.create(hiddenProducts.length, 0, { shop: shop.url });
+
         const idsArray = [];
         for (let product of hiddenProducts) {
-            try {
-                const req = await shop.get('products', {
-                    sku: product.code,
-                })
-                if (req.data?.length === 0) continue;
-                const found = req.data[0];
-                const id = found.id
-                if (!idsArray.includes(id)) idsArray.push(id);
-            } catch (error) {
-                console.error(`Error finding hidden product ${product.code} in WooCommerce [${shop.url}]`);
-                console.error(error);
-            }
+            queue.add(async () => {
+                try {
+                    const req = await shop.get('products', {
+                        sku: product.code,
+                    })
+                    if (req.data?.length === 0) return true;
+                    const found = req.data[0];
+                    const id = found.id
+                    if (!idsArray.includes(id)) idsArray.push(id);
+                } catch (error) {
+                    console.error(`Error finding hidden product ${product.code} in WooCommerce [${shop.url}]`);
+                    console.error(error);
+                } finally {
+                    bar.increment();
+                }
+            });
         }
+
+        await queue.onIdle();
 
         if (idsArray.length === 0) {
             console.log(`No hidden products found in WooCommerce [${shop.url}]`);
-            continue;
+            return true;
         };
 
         console.log(`Found ${idsArray.length} hidden products in WooCommerce [${shop.url}], deleting them...`);
-        for (let id of idsArray) {
-            try {
-                await shop.delete(`products/${id}`, { force: true });
-                console.log(`Deleted hidden product with id ${id} in WooCommerce [${shop.url}]`);
-            } catch (error) {
-                console.error(`Error deleting hidden product with id ${id} in WooCommerce [${shop.url}]`);
+
+        //FIXME
+        return;
+
+        // bulk delete
+        for (let i = 0; i < idsArray.length; i += 100) {
+            const batch = idsArray.slice(i, i + 100);
+            console.log('Starting delete products batch: ' + i)
+            await shop.post('products/batch', { delete: batch }).then(() => {
+                console.log(`Products successfully deleted in WooCommerce [${shop.url}]!`)
+            }).catch((error) => {
+                console.error(`Error batch deleting products in WooCommerce [${shop.url}]!`)
                 console.error(error);
-            }
+            });
         }
     }
+
+    const tasks = [];
+
+    for (let shop of WooCommerce_Shops) {
+        tasks.push(check(shop));
+    }
+
+    await Promise.all(tasks);
+
+    multibar.stop();
+    console.log('Hidden products check and deletion completed.');
 }
 
 async function syncWoo() {
