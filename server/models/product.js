@@ -27,11 +27,6 @@ const productSchema = new Schema({
         ref: 'Category',
         required: true
     },
-    noInvoice: { // if product was bought without an invoice (cant be sold in invoices, only in POS system)
-        type: Boolean,
-        default: false,
-        required: true,
-    },
     code: {
         type: String,
         required: true,

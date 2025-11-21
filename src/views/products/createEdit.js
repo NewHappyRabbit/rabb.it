@@ -425,7 +425,7 @@ const saleWholesalePriceTemplate = () => html`
     <div class="row mb-3 row-gap-3 align-items-end">
         <label class="form-label">Промо цена:</label>
         <div class="col">
-            <select @change=${showSaleContainer} name="saleType" id="saleType" class="form-select">
+            <select @change=${showSaleContainer} name="saleType" id="saleType" class="form-select" ?disabled=${loggedInUser.role !== 'admin'}>
                 <option selected value="">Без намаление</option>
                 <option value="percent">Намали с процент (%)</option>
                 <option value="sum">Намали със сума (лв.)</option>
@@ -434,11 +434,11 @@ const saleWholesalePriceTemplate = () => html`
         <div id="saleContainer" class="row ${product?.saleWholesalePrice ? '' : 'd-none'}">
             <div class="col pe-0">
                 <label for="saleAmount" class="form-label">Намали с</label>
-                <input class="form-control border-primary" @keyup=${calculateSalePrice} type="text" name="saleAmount" id="saleAmount" inputmode="decimal" autocomplete="off">
+                <input class="form-control border-primary" @keyup=${calculateSalePrice} type="text" name="saleAmount" id="saleAmount" inputmode="decimal" autocomplete="off" ?disabled=${loggedInUser.role !== 'admin'}>
             </div>
             <div class="col pe-0">
                 <label for="saleWholesalePrice" class="form-label">Намалена цена на едро</label>
-                <input class="form-control" type="text" name="saleWholesalePrice" id="saleWholesalePrice" inputmode="decimal" .value=${product?.saleWholesalePrice || ""} autocomplete="off">
+                <input class="form-control" type="text" name="saleWholesalePrice" id="saleWholesalePrice" inputmode="decimal" .value=${product?.saleWholesalePrice || ""} autocomplete="off" ?disabled=${loggedInUser.role !== 'admin'}>
             </div>
         </div>
     </div>
@@ -890,13 +890,6 @@ export async function createEditProductPage(ctx, next) {
                     </label>
                 </div>
 
-                <div class="mb-3">
-                    <input class="form-check-input" type="checkbox" value="" name="noInvoice" id="noInvoice" ?checked=${product?.noInvoice}>
-                    <label class="form-check-label" for="noInvoice">
-                        Продукт без фактура (може да се продава само в ПОС системата)
-                    </label>
-                </div>
-
                 ${editPage ?
             html`
                 <div class="input-group mb-3 mt-3 w-25">
@@ -911,10 +904,10 @@ export async function createEditProductPage(ctx, next) {
                         </label>
                     </div>`}
 
-                ${loggedInUser.role === 'admin' ? saleWholesalePriceTemplate() : ''}
+                ${saleWholesalePriceTemplate()}
 
                 <div id="alert" class="d-none alert" role="alert"></div>
-                ${['manager', 'admin'].includes(loggedInUser.role) ? submitBtn({ type: 'button', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3', func: updateProduct }) : ''}
+                ${['manager', 'admin'].includes(loggedInUser.role) || loggedInUser.role === 'user' && !editPage ? submitBtn({ type: 'button', icon: 'bi-check-lg', classes: 'd-block m-auto col-sm-3', func: updateProduct }) : ''}
             </form >
         </div > `;
 

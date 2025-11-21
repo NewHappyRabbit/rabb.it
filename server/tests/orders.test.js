@@ -54,7 +54,6 @@ const category = await Category.create({
 
 const simpleProductData = {
     "category": category._id,
-    "noInvoice": false,
     "code": "1643",
     "barcode": "0000000016438",
     "name": "Simple",
@@ -74,7 +73,6 @@ const simpleProductData = {
 
 const variableProductData = {
     "category": category._id,
-    "noInvoice": false,
     "code": "1644",
     "barcode": "0000000016445",
     "name": "Variable",

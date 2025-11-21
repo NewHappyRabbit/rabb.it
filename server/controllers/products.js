@@ -231,7 +231,6 @@ export const ProductController = {
     find: async ({ search, filter }) => {
         // Find product using searh as code or barcode
         const query = {
-            noInvoice: { $ne: true },
             $or: [],
         }
 
@@ -264,7 +263,7 @@ export const ProductController = {
         //FIXME END
 
         if (page && page === 'orders') {
-            const products = await Product.find({ noInvoice: { $ne: true }, outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
+            const products = await Product.find({ outOfStock: { $ne: true } }).select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
             return { products, status: 200 };
         } else if (page && page === 'references') {
             const products = await Product.find().select('name code barcode unitOfMeasure type sizes retailPrice wholesalePrice quantity minQty multiplier');
@@ -327,10 +326,6 @@ export const ProductController = {
         if (data.hidden == "")
             data.hidden = true;
         else data.hidden = false;
-
-        if (data.noInvoice == "")
-            data.noInvoice = true;
-        else data.noInvoice = false;
 
         if (data.sizes && typeof data.sizes !== 'object')
             data.sizes = JSON.parse(data.sizes);
@@ -571,10 +566,6 @@ export const ProductController = {
         return { doneProducts, status: 200 };
     },
     put: async ({ id, files, data }) => {
-        if (data.noInvoice == "")
-            data.noInvoice = true;
-        else data.noInvoice = false;
-
         if (data.hidden == "")
             data.hidden = true;
         else data.hidden = false;
