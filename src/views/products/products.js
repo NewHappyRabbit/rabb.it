@@ -406,7 +406,7 @@ export function productsPage(ctx, next) {
     </div>
     <div class="col-6 col-sm">
         <div class="form-check form-switch p-0">
-            <label class="form-check-label d-block" for="onlyOutOfStock">Само изчерпани:</label>
+            <label class="form-check-label d-block" for="onlyOutOfStock">Покажи изчерпани:</label>
             <input class="form-check-input ms-0 fs-4" type="checkbox" role="switch" id="onlyOutOfStock" ?checked=${selectedFilters?.onlyOutOfStock} name="onlyOutOfStock">
         </div>
     </div>
