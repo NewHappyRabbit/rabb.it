@@ -341,7 +341,8 @@ const sizesSelectionTemplate = () => html`
 const quantityTemplate = () => html`
         <div class="row mb-3" id="qtyTemplate">
             <div class="col-12 col-sm-4 mb-3">
-                <label for="quantity" class="form-label">Брой | Мярка</label>
+                <label for="quantity" class="form-label">Пакети
+                </label>
                 <div class="input-group">
                     <input @change=${updateQuantity} @keyup=${updateQuantity} class="form-control w-50 border-primary" type="number" inputmode="numeric" name="quantity" id="quantity" min="0" step="1" required .value=${product && product.quantity} autocomplete="off" ?readonly="${selectedSizes.length > 0 || editPage && loggedInUser.role !== 'admin'}">
                     <input class="form-control border-primary" type="text" placeholder="пакет" value=${product?.unitOfMeasure ? product.unitOfMeasure : ''} autocomplete="off" name="unitOfMeasure" id="unitOfMeasure" list="unitOfMeasureOptions">
@@ -355,7 +356,7 @@ const quantityTemplate = () => html`
             </div>
 
             <div class="col-12 col-sm-4 mb-3">
-                <label for="multiplier" class="form-label">Повтарящи бр. от размер</label>
+                <label for="multiplier" class="form-label">Бройки в пакет</label>
                 <input @change=${updateMultiplier} @keyup=${updateMultiplier} class="form-control" type="number" inputmode="numeric" name="multiplier" id="multiplier" min="1" step="1" required .value=${product && product.multiplier} placeholder="1" autocomplete="off" ?disabled="${selectedSizes.length === 0}">
             </div>
 
