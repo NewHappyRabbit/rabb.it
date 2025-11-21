@@ -3,10 +3,9 @@ import { app, basePath, io } from '../app.js';
 import express from 'express';
 import { Product } from "../models/product.js";
 import fs from 'fs';
-import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts, WooUpdateSaleWholesalePriceProducts } from "../woocommerce/products.js";
+import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts, WooBatchUpdateProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
-import { WooCommerce_Shops } from "../config/woocommerce.js";
 
 export function productSockets(socket) {
     socket.on('disconnect', () => {
@@ -279,7 +278,7 @@ export function productsRoutes() {
             if (status !== 200)
                 return res.status(status).send(message);
 
-            WooUpdateSaleWholesalePriceProducts(doneProducts);
+            WooBatchUpdateProducts(doneProducts);
 
             res.status(status).send();
         } catch (error) {

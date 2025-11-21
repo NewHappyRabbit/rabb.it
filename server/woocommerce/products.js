@@ -549,7 +549,7 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
     }
 }
 
-export async function WooUpdateSaleWholesalePriceProducts(products) {
+export async function WooBatchUpdateProducts(products) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
     const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
@@ -559,12 +559,18 @@ export async function WooUpdateSaleWholesalePriceProducts(products) {
 
         console.log('Starting update for ' + filtered.length + ' products...')
         for (let i = 0; i < filtered.length; i += 100) {
-            const batch = filtered.slice(i, i + 100).map(p => ({ id: p.woocommerce.find(el => el.woo_url == shop.url).id, sale_price: p?.saleWholesalePrice || "" }));
+            const batch = filtered.slice(i, i + 100);
+
+            for (let i = 0; i < batch.length; i++) {
+                const data = await generateWholesaleProductsData(batch[i], shop);
+                batch[i] = data;
+            }
+
             console.log('Starting work on simple products batch: ' + i)
             await shop.post('products/batch', { update: batch }).then(() => {
-                console.log(`Products sale price successfully updated in WooCommerce [${shop.url}]!`)
+                console.log(`Products successfully updated in WooCommerce [${shop.url}]!`)
             }).catch((error) => {
-                console.error(`Error batch updating products sale price in WooCommerce [${shop.url}]!`)
+                console.error(`Error batch updating products in WooCommerce [${shop.url}]!`)
                 console.error(error);
             });
         }
