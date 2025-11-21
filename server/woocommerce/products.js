@@ -30,7 +30,9 @@ async function generateWholesaleProductsData(products, shop) {
             attributes: [],
         }
 
-        if (product.saleWholesalePrice) data.sale_price = product.saleWholesalePrice.toString();
+        if (product.saleWholesalePrice)
+            data.sale_price = product.saleWholesalePrice.toString();
+        else data.sale_price = "";
 
         if (product?.woocommerce.length > 0 && product.woocommerce.find(el => el.woo_url == shop.url))
             data.id = product.woocommerce.find(el => el.woo_url == shop.url).id;
