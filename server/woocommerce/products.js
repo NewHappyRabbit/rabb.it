@@ -4,6 +4,7 @@ import { Category } from "../models/category.js";
 import { Product } from "../models/product.js";
 import { ProductAttribute } from "../models/product_attribute.js";
 import "./dev/dev.js";
+import { SingleBar, Presets } from 'cli-progress';
 
 async function generateWholesaleProductsData(products, shop) {
     const mongoAttributes = await ProductAttribute.find({});
@@ -552,28 +553,41 @@ export async function WooUpdateQuantityProducts(products, onlyInThisShop = undef
 export async function WooBatchUpdateProducts(products) {
     if (WooCommerce_Shops?.length === 0) return; // If woocommerce wasnt initalized or is not used
 
-    const filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+    let filtered = products.filter(p => p?.woocommerce?.length > 0 && p.deleted === false && p.hidden === false); // only find products that are in WooCommerce (some can be hidden)
+
 
     for (let shop of WooCommerce_Shops) {
         if (shop.custom.type !== 'wholesale') continue;
 
-        console.log('Starting update for ' + filtered.length + ' products...')
+        console.log('Processing shop: ' + shop.url);
+
+        console.log('Generating products data...');
+        const data = await generateWholesaleProductsData(filtered, shop);
+        filtered = data;
+
+        console.log('Starting batch update for ' + filtered.length + ' products...')
+        const bar = new SingleBar({
+            clearOnComplete: false,
+            hideCursor: true,
+            format: ' {bar} | {percentage}% | {value}/{total} Products'
+        }, Presets.shades_classic);
+        bar.start(filtered.length, 0);
+
         for (let i = 0; i < filtered.length; i += 100) {
+            bar.update(i);
             const batch = filtered.slice(i, i + 100);
 
-            for (let i = 0; i < batch.length; i++) {
-                const data = await generateWholesaleProductsData(batch[i], shop);
-                batch[i] = data;
-            }
-
-            console.log('Starting work on simple products batch: ' + i)
             await shop.post('products/batch', { update: batch }).then(() => {
-                console.log(`Products successfully updated in WooCommerce [${shop.url}]!`)
+                // console.log(`Products successfully updated in WooCommerce [${shop.url}]!`)
             }).catch((error) => {
                 console.error(`Error batch updating products in WooCommerce [${shop.url}]!`)
                 console.error(error);
             });
         }
+
+        bar.update(filtered.length);
+        bar.stop();
+        console.log(`Products successfully batch updated in WooCommerce [${shop.url}]!`)
     }
 }
 
