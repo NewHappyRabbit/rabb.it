@@ -295,7 +295,7 @@ async function applyFilters(e) {
 
     if (data.sort)
         selectedFilters.sort = data.sort;
-    else selectedFilters.sort = '-createdAt';
+    else selectedFilters.sort = '-updatedAt';
 
     if (data.category)
         selectedFilters.category = data.category;
