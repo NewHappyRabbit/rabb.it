@@ -295,7 +295,7 @@ async function applyFilters(e) {
 
     if (data.sort)
         selectedFilters.sort = data.sort;
-    else selectedFilters.sort = '';
+    else selectedFilters.sort = '-createdAt';
 
     if (data.category)
         selectedFilters.category = data.category;
@@ -368,6 +368,9 @@ async function loadCategories() {
 export function productsPage(ctx, next) {
     path = ctx.path;
 
+    if (path === '/products')
+        path = '/products?sort=-createdAt';
+
     // check if filters are applied
     if (ctx.querystring)
         selectedFilters = Object.fromEntries(new URLSearchParams(ctx.querystring));
@@ -380,12 +383,12 @@ export function productsPage(ctx, next) {
     <div class="col-6 col-sm">
         <label for="sort" class="form-label">Сортиране:</label>
         <select class="form-select" name="sort" id="sort" required>
-            <option value="createdAt">Редактирани скоро</option>
-            <option value="-createdAt">Редактирани отдавна</option>
-            <option value="-updatedAt">Създадени скоро</option>
-            <option value="updatedAt">Създадени отдавна</option>
-            <option value="-code">Код низходящ</option>
-            <option value="code">Код възходящ</option>
+            <option ?selected=${selectedFilters.sort === '-createdAt'} value="-createdAt">Създадени скоро</option>
+            <option ?selected=${selectedFilters.sort === 'createdAt'} value="createdAt">Създадени отдавна</option>
+            <option ?selected=${selectedFilters.sort === '-updatedAt'} value="-updatedAt">Редактирани скоро</option>
+            <option ?selected=${selectedFilters.sort === 'updatedAt'} value="updatedAt">Редактирани отдавна</option>
+            <option ?selected=${selectedFilters.sort === '-code'} value="-code">Код низходящ</option>
+            <option ?selected=${selectedFilters.sort === 'code'} value="code">Код възходящ</option>
         </select>
     </div>
     <div class="col-12 col-sm" >
