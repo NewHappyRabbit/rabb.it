@@ -9,9 +9,13 @@ const printerModalDiv = document.getElementById('selectPrinterModalDiv');
 if (printerModalDiv)
     render(printerModal(availablePrinters), printerModalDiv);
 
-async function downloadProductsURLS(e, hidden = false) {
-    e.target.disabled = true;
-    const response = await axios.get(`/products/woourls?hidden=${hidden}`);
+async function downloadProductsURLS({ e, hidden = false, woo = false }) {
+    const downloadBtns = document.querySelectorAll('.download-urls');
+    downloadBtns.forEach(btn => btn.disabled = true);
+
+    const selectedProductsNodes = document.querySelectorAll('.selectedProductCheckbox:checked');
+    const selectedProducts = Array.from(selectedProductsNodes).map(node => node.closest('tr').getAttribute('id'));
+    const response = await axios.get(`/products/woourls?woo=${woo}&hidden=${hidden}&ids=${JSON.stringify(selectedProducts)}`);
 
     if (response.status === 200) {
         // download file
@@ -22,7 +26,7 @@ async function downloadProductsURLS(e, hidden = false) {
     } else if (response.status === 204)
         alert('Сървърът не е свързан с WooCommerce!')
 
-    e.target.disabled = false;
+    downloadBtns.forEach(btn => btn.disabled = false);
 }
 
 export const nav = () => html`
@@ -82,8 +86,9 @@ export const nav = () => html`
                             <li><button class="dropdown-item" @click=${toggleDarkMode}><i class="bi bi-moon"></i> Тъмен режим</button></li>
                             <li><a class="dropdown-item" href="/categories"><i class="bi bi-tags"></i> Категории</a></li>
                             ${loggedInUser && ['manager', 'admin'].includes(loggedInUser.role) ? html`
-                                <li><button class="dropdown-item" @click=${downloadProductsURLS}><i class="bi bi-download"></i> Линкове за продукти</button></li>
-                                <li><button class="dropdown-item" @click=${(e) => downloadProductsURLS(e, true)}><i class="bi bi-download"></i> Линкове за скрити продукти</button></li>
+                                <li><button class="dropdown-item download-urls" @click=${(e) => downloadProductsURLS({ e, woo: true })}><i class="bi bi-download"></i> Линкове за продукти (линк към онлайн магазин)</button></li>
+                                <li><button class="dropdown-item download-urls" @click=${(e) => downloadProductsURLS({ e })}><i class="bi bi-download"></i> Линкове за продукти (снимка и описание)</button></li>
+                                <li><button class="dropdown-item download-urls" @click=${(e) => downloadProductsURLS({ e, hidden: true })}><i class="bi bi-download"></i> Линкове за скрити продукти</button></li>
                             ` : ''}
                         </ul>
                     </li>

@@ -6,6 +6,7 @@ import fs from 'fs';
 import { tempWooUpdateAttributes, WooCreateProduct, WooDeleteProduct, WooEditProduct, WooUpdateQuantityProducts, WooBatchUpdateProducts } from "../woocommerce/products.js";
 import { imageUploader } from "../controllers/common.js";
 import { ProductController } from "../controllers/products.js";
+import { WooCommerce_Shops } from "../config/woocommerce.js";
 
 export function productSockets(socket) {
     socket.on('disconnect', () => {
@@ -121,31 +122,34 @@ export function productsRoutes() {
 
     productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            // const productsURLS = await Product.find({ outOfStock: { $ne: true }, "woocommerce.permalink": { $exists: true }, hidden: false, deleted: false }).sort({ category: 1, code: 1 }).select('woocommerce.permalink -_id').lean();
-
-            // const urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink);
-
-            //FIXME START - This is a temp fix to send product image from app instead of woo url until the shops are fixed.
-
+            const woo = req.query.woo === 'true' ? true : false;
             const hidden = req.query.hidden === 'true' ? true : false;
+            const ids = JSON.parse(req.query.ids || '[]');
 
-            const productsURLS = await Product.find({ outOfStock: { $ne: true }, deleted: false, hidden }).sort({ category: 1, code: 1 }).select('image.url description -_id').lean();
+            const filters = { outOfStock: { $ne: true }, deleted: false, hidden };
+            const select = woo ? 'woocommerce.permalink -_id' : 'image.url description -_id';
 
-            const urls = [];
-
-            for (let p of productsURLS) {
-                const description = p.description;
-
-                const imgUrl = p.image?.url;
-
-                if (!description || !imgUrl) continue;
-
-                urls.push(imgUrl);
-                urls.push(description);
+            if (ids.length > 0) {
+                filters._id = { $in: ids };
             }
 
-            // FIXME END
+            const productsURLS = await Product.find(filters).sort({ category: 1, code: 1 }).select(select).lean();
+            let urls = [];
 
+            if (!woo) {
+                for (let p of productsURLS) {
+                    const description = p.description;
+
+                    const imgUrl = p.image?.url;
+
+                    if (!description || !imgUrl) continue;
+
+                    urls.push(imgUrl);
+                    urls.push(description);
+                }
+            } else {
+                urls = productsURLS.map(p => p.woocommerce?.find(el => el.woo_url === WooCommerce_Shops.find(shop => shop.custom.type === 'wholesale').WOO_URL).permalink)
+            }
 
             if (!urls)
                 return res.status(204).send();
