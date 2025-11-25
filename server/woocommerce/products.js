@@ -275,6 +275,7 @@ async function createWooVariations(wooId, product, shop) {
         const sizeId = sizeAttr.woocommerce.find(el => el.woo_url == shop.url).id;
         // Create variations
         const variations = await generateVariationsData(product, shop);
+
         await shop.post(`products/${wooId}/variations/batch`, { create: variations }).then(async (response) => {
             for (let variation of response.data.create) {
                 if (variation?.error) throw new Error(variation.error.message);

@@ -6,6 +6,37 @@ import { WooCreateProduct, WooUpdateQuantityProducts } from "../products.js";
 import PQueue from "p-queue";
 import { MultiBar, Presets } from 'cli-progress';
 
+async function findWrongWooIdsInDB() {
+    for (let shop of WooCommerce_Shops) {
+
+        const products = await Product.find({ deleted: false, hidden: false });
+        const wooProducts = fs.existsSync(`server/woocommerce/dev/results/shop_${WooCommerce_Shops.indexOf(shop)}_wooProducts.json`) ? JSON.parse(fs.readFileSync(`server/woocommerce/dev/results/shop_${WooCommerce_Shops.indexOf(shop)}_wooProducts.json`)) : [];
+
+        const wrongId = [];
+        const notExist = [];
+
+        for (let product of products) {
+            const wooProduct = wooProducts.find(wp => wp.sku === product.code);
+            const wooEntry = product.woocommerce.find(w => w.woo_url === shop.url);
+            const wooId = wooEntry?.id;
+
+            if (!wooProduct || !wooEntry || !wooId) {
+                notExist.push({ product_code: product.code, woo_url: shop.url });
+                continue;
+            }
+
+            if (wooId !== wooProduct.id.toString()) {
+                wrongId.push({ product_code: product.code, woo_id: wooEntry.id, woo_url: shop.url });
+            }
+        }
+
+        console.log(`Wrong ids for shop ${shop.url}: ${wrongId.length}`);
+        console.log(wrongId.map(p => p.product_code).join(', '));
+        console.log(`Non-existing ids for shop ${shop.url}: ${notExist.length}`);
+        console.log(notExist.map(p => p.product_code).join(', '));
+    }
+}
+
 async function findAndDeleteHidden() {
     // This function looks for products that are marked as hidden in our database and checks if they exist in WooCommerce.
     // If they do, it deletes them from WooCommerce.
@@ -207,32 +238,33 @@ async function compareAllProducts() {
     const multibar = new MultiBar({
         clearOnComplete: false,
         hideCursor: true,
-        format: ' {bar} | {percentage}% | {value}/{total} {productType} Products | Shop: {shop}'
+        format: ' {bar} | {percentage}% | {value}/{total} Products | Shop: {shop}'
     }, Presets.shades_classic);
+
+    const dbProducts = JSON.parse(fs.readFileSync(`server/woocommerce/dev/results/dbProducts.json`));
 
     let i = 0;
     for (let shop of WooCommerce_Shops) {
-        const wooProducts = JSON.parse(fs.readFileSync(`server/woocommerce/dev/results/shop_${i}_wooProducts.json`));
-        const dbProducts = JSON.parse(fs.readFileSync(`server/woocommerce/dev/results/dbProducts.json`));
-        const barWoo = multibar.create(wooProducts.length, 0, { shop: shop.url, productType: 'Woo' });
-        const barDb = multibar.create(dbProducts.length, 0, { shop: shop.url, productType: 'DB' });
-        tasks.push(compareProducts(wooProducts, dbProducts, shop, barWoo, barDb, i));
+        tasks.push(compareProducts(shop, i));
         i++;
     }
 
+    async function compareProducts(shop, i) {
+        const wooProducts = JSON.parse(fs.readFileSync(`server/woocommerce/dev/results/shop_${i}_wooProducts.json`));
 
-
-    async function compareProducts(wooProducts, dbProducts, shop, barWoo, barDb, i) {
         if (!wooProducts || !dbProducts) {
             console.log(`No products found for shop: ${shop.url}. Make sure to run createSnapshots() first.`);
             return true;
         }
 
+        const bar = multibar.create(wooProducts.length, 0, { shop: shop.url });
+
         const productsToDelete = [];
-        const productsToCreate = [];
         const productsQtyToUpdate = [];
 
         const queue = new PQueue({ concurrency: 3 });
+
+        const productsToCreate = [...dbProducts];
 
         for (let wooProduct of wooProducts) {
             // Check if any product exists in WooCommerce but not in DB. If it does, delete it from WooCommerce.
@@ -241,41 +273,35 @@ async function compareAllProducts() {
 
             if (!dbProduct) {
                 productsToDelete.push(wooProduct);
+                bar.increment();
                 continue;
             }
 
+            productsToCreate.splice(productsToCreate.indexOf(dbProduct), 1);
+
             // Check if quantity doesnt match
-            if (wooProduct.type === 'simple' && dbProduct.quantity !== wooProduct.stock_quantity) {
-                productsQtyToUpdate.push(dbProduct);
-                barWoo.increment();
+            if (wooProduct.type === 'simple') {
+                if (dbProduct.quantity !== wooProduct.stock_quantity)
+                    productsQtyToUpdate.push(dbProduct);
+
+                bar.increment();
             } else if (wooProduct.type === 'variable') {
                 // Check each variation quantity
                 queue.add(async () => {
+                    bar.increment();
                     const req = await shop.get(`products/${wooId}/variations`, { per_page: 100 });
                     const variations = req.data;
-                    variations.forEach(async (variation) => {
+                    for (let variation of variations) {
                         if (variation.stock_quantity !== dbProduct.sizes.find(s => s.woocommerce.find(w => w.woo_url === shop.url)?.id.toString() === variation.id.toString())?.quantity) {
                             productsQtyToUpdate.push(dbProduct);
+                            break;
                         }
-                    });
-                    barWoo.increment();
+                    }
                 });
             }
         }
 
         await queue.onIdle();
-
-        for (let dbProduct of dbProducts) {
-            barDb.increment();
-            // Check if any product exists in DB but not in WooCommerce. If it does, create it in WooCommerce.
-            const wooId = dbProduct.woocommerce.find(w => w.woo_url === shop.url)?.id.toString();
-            const wooProduct = wooProducts.find(p => p.id.toString() === wooId);
-
-            if (!wooProduct) {
-                productsToCreate.push(dbProduct);
-                continue;
-            }
-        }
 
         const productsToDeletePath = `server/woocommerce/dev/results/productsToDelete_shop_${i}.json`;
         const productsQtyToUpdatePath = `server/woocommerce/dev/results/productsQtyToUpdate_shop_${i}.json`;
@@ -343,7 +369,9 @@ async function createSnapshots() {
 
     const tasks = [];
 
-    async function getProductsFromShop(shop, i, bar) {
+    async function getProductsFromShop(shop, i) {
+        const bar = multibar.create(dbProducts.length, 0, { shop: shop.url });
+
         let done = false;
         let offset = 0;
         const wooProducts = [];
@@ -372,8 +400,7 @@ async function createSnapshots() {
 
     let i = 0;
     for (let shop of WooCommerce_Shops) {
-        const bar = multibar.create(dbProducts.length, 0, { shop: shop.url });
-        tasks.push(getProductsFromShop(shop, i, bar));
+        tasks.push(getProductsFromShop(shop, i));
         i++;
     }
 
