@@ -11,6 +11,8 @@ const socketPath = '/server/socket.io';
 axios.defaults.baseURL = serverURL;
 axios.defaults.withCredentials = true; // used for SSL
 
+const exchangeRate = 1.95583; // 1 Euro = 1.95583 BGN
+
 export var socket;
 export function initSocket() {
     if (!loggedInUser || socket && socket.connected) return;
@@ -93,6 +95,7 @@ export function markInvalid(elName) {
 
 export function formatPrice(price, euro = false) {
     // Convert to xx xxx.xx лв.
+
     price = price.toFixed(2);
     price = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
@@ -111,8 +114,12 @@ export function formatPriceNoCurrency(price) {
 
 export function BGNtoEuro(price) {
     // Convert BGN to Euro using the current exchange rate
-    const exchangeRate = 1.95583; // 1 Euro = 1.95583 BGN
     return Number((price / exchangeRate).toFixed(2));
+}
+
+export function EuroToBGN(price) {
+    // Convert Euro to BGN using the current exchange rate
+    return Number((price * exchangeRate).toFixed(2));
 }
 
 export function numberToBGText(number) {

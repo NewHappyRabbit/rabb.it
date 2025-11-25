@@ -109,14 +109,21 @@ async function recalculateProductsPrices() {
 }
 // recalculateProductsPrices();
 
-function generateDescription(data, force = false) {
+export function generateDescription(data, force = false) {
     const price = data.saleWholesalePrice || data.wholesalePrice;
     const onSale = data.saleWholesalePrice ? true : false;
 
+    // BGN
     if ((force || !data.description) && data.sizes.length > 0)
         return `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по ${Number(price / (data.sizes.length * data.multiplier)).toFixed(2)} лв. ${onSale ? '(ПРОМО ЦЕНА)' : ''} - Код ${data.code}`;
     else if (force || !data.description)
         return `${data.name} - ${onSale ? '(ПРОМО ЦЕНА)' : ''} ${Number(price).toFixed(2)} лв. - Код ${data.code}`;
+
+    // EUR
+    /* if ((force || !data.description) && data.sizes.length > 0)
+        return `${data.name} - ${data.sizes.length === 1 ? data.sizes[0].size : data.sizes[0].size + '-' + data.sizes[data.sizes.length - 1].size} - ${data.sizes.length * data.multiplier}бр. в серия по €${Number(price / (data.sizes.length * data.multiplier)).toFixed(2)} ${onSale ? '(ПРОМО ЦЕНА)' : ''} - Код ${data.code}`;
+    else if (force || !data.description)
+        return `${data.name} - ${onSale ? '(ПРОМО ЦЕНА)' : ''} €${Number(price).toFixed(2)} - Код ${data.code}`; */
 }
 
 async function validateProduct(data) {

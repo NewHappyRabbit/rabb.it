@@ -40,6 +40,10 @@ export const orderTypes = {
 }
 
 const orderSchema = new Schema({
+    euroConversionDone: {
+        type: Boolean,
+        default: false,
+    },
     number: {
         type: String,
         required: true,

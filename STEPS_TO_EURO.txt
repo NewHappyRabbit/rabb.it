@@ -1,0 +1,41 @@
+Server:
+
+1. Add euroConversionDone = false to all products and orders in the database to track which ones have been converted (through MongoDB Compass).
+
+1. In the generateDescription function in server/controllers/products.js, delete the BGN and uncomment the EUR part of the code so the new descriptions have the EURO sign in them.
+
+2. Run the convertBGNtoEUR function from server/functions/dev.js 
+
+3. Once all products prices are converted, the function can be deleted from the codebase.
+
+4. Delete the 'euroConversionDone' field from the product model in server/models/product.js and from db.
+
+5. Delete the 'euroConversionDone' field from the order model in server/models/order.js and from db.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Frontend (WHILE BOTH BGN AND EURO MUST BE DISPLAYED):
+
+1. In src/api.js, in the formatPrice function, change the 'euro = false' to 'euro = true' so that prices are displayed in EURO by default.
+
+2. Find all functions that have 'euro = true' and change them to 'euro = false' so that BGN is also displayed (orders, printer, etc.). Use this regex to find them:
+formatPrice\(.+true\)
+
+3. Find and replace functions BGNtoEuro with EuroToBGN to convert prices back to BGN for display.
+
+WooCommerce
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. After updating everything on Server, run the script to batch update all products in woocommerce. That will update the price and the description.
+
+2. Change the default currency in WooCommerce settings from BGN to EURO in https://emo-sklad.bg/wp-admin/admin.php?page=wc-settings under "General"/"Currency".
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Frontend (AFTER BGN IS NO LONGER NEEDED):
+
+1. In src/api.js, in the formatPrice function, remove the euro parameter and always return euro.
+
+2. Find all functions that use the euro parameter and remove it/them. Use this regex to find them:
+formatPrice\(.+false\)
+
+3. Find any function that may return both BGN/EURO
+
+4. Delete the BGNtoEuro function from src/api.js.

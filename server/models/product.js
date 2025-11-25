@@ -22,6 +22,10 @@ export const imageSchema = new Schema({
 const defaultUnitOfMeasure = 'пакет';
 
 const productSchema = new Schema({
+    euroConversionDone: {
+        type: Boolean,
+        default: false,
+    },
     category: {
         type: Schema.Types.ObjectId,
         ref: 'Category',
