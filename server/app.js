@@ -22,6 +22,8 @@ for (let shop of shops) {
         if (!shop[env]) missingWooVariables.push(env);
     })
     if (missingWooVariables.length > 0 && missingWooVariables.length < 5) throw new Error(`Missing WOO environment variables: ${missingWooVariables.join(',')}`);
+
+    console.log(`Succesfully loaded Woo store: ${shop.WOO_URL}`);
 }
 
 
