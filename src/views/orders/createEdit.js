@@ -869,7 +869,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
-            originalVat: productInDB?.vat,
+            originalVat: productVat,
             vat: productVat,
             qtyInPackage: 0,
             unitOfMeasure: 'пакет',
@@ -883,7 +883,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
-            originalVat: productInDB?.vat,
+            originalVat: productVat,
             vat: productVat,
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
