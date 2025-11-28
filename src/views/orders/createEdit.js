@@ -64,7 +64,15 @@ async function selectCompany(e) {
     const company = e.target.value;
     selectedCompany = companies.find(c => c._id === company);
     render(senderTemplate(selectedCompany.senders), document.getElementById('senderDiv'));
-    await getDocumentTypeNumber()
+    await getDocumentTypeNumber();
+
+    for (let product of addedProducts) {
+        if (selectedCompany.tax === 0)
+            product.vat = 0;
+        else
+            product.vat = product.originalVat;
+    }
+    rerenderTable();
 }
 
 function setDiscount() {
@@ -770,6 +778,7 @@ async function addProduct(e) {
                 selectedSizes: productInDB.sizes.filter(s => s.quantity > 0).map(s => s.size), // selected (checked) sizes
                 sizes: productInDB.sizes.map(s => s.size), // all available sizes to select
                 quantity: quantity > productInDB.quantity ? productInDB.quantity || 1 : quantity, // if qty in db is 0, set to 1. if qty is more than in db, set it as max
+                originalVat: productInDB?.vat,
                 vat: productVat,
                 price: productInDB.saleWholesalePrice || productInDB.wholesalePrice,
                 unitPrice: (productInDB.saleWholesalePrice || productInDB.wholesalePrice) / (productInDB.sizes.length * productInDB.multiplier), // only used to display the price per unit in column
@@ -803,6 +812,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity: quantity > productInDB.quantity ? productInDB.quantity : quantity,
+                originalVat: productInDB?.vat,
                 vat: productVat,
                 price: productInDB.saleWholesalePrice || productInDB.wholesalePrice,
                 discount: selectedCustomer?.discount || 0
@@ -822,6 +832,7 @@ async function addProduct(e) {
                 product: productInDB,
                 unitOfMeasure: productInDB.unitOfMeasure,
                 quantity,
+                originalVat: productInDB?.vat,
                 vat: productVat,
                 price: productInDB.retailPrice,
                 discount: selectedCustomer?.discount || 0
@@ -858,6 +869,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
+            originalVat: productInDB?.vat,
             vat: productVat,
             qtyInPackage: 0,
             unitOfMeasure: 'пакет',
@@ -871,6 +883,7 @@ async function addProduct(e) {
             name: product,
             quantity,
             price: 0,
+            originalVat: productInDB?.vat,
             vat: productVat,
             unitOfMeasure: 'бр.',
             discount: selectedCustomer?.discount || 0
