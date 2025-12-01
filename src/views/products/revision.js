@@ -55,21 +55,18 @@ const table = (products) => html`
                 <thead>
                     <tr>
                         <th>Продукт</th>
-                        <th>Доставна за брой</th>
-                        <th>Едро за брой</th>
-                        <th>Добавена стойност</th>
                         <th>Бройки в програма</th>
                         <td></td>
                         <th>Налични бройки</th>
+                        <th>Доставна за брой</th>
+                        <th>Едро за брой</th>
+                        <th>Добавена стойност</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${products.map(product => html`
                             <tr id=${product._id} code=${product.code} barcode=${product.barcode}>
                                 <td>${product.name} [${product.code}] (${product.barcode})</td>
-                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length)) : product.deliveryPrice)}</td>
-                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length)) : product.wholesalePrice)}</td>
-                                <td>${formatPriceNoCurrency(product.upsaleAmount || 0)}</td>
                                 <td style="min-width: 200px">
                                     ${product.sizes.length > 0 ? sizesTemplate(product) : html`<input disabled class="form-control w-100" type="text" value=${product.quantity} />`}
                                 </td>
@@ -80,6 +77,9 @@ const table = (products) => html`
                                 <td style="min-width: 200px">
                                     ${product.sizes.length > 0 ? sizesTemplate(product, true) : html`<input name="${product._id}" class="form-control" type="number" inputmode="numeric" min="0" step="1" @keyup=${checkInput} @change=${checkInput} />`}
                                 </td>
+                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.deliveryPrice / ((product.multiplier || 1) * product.sizes.length)) : product.deliveryPrice)}</td>
+                                <td>${formatPriceNoCurrency(product.sizes.length > 0 ? (product.wholesalePrice / ((product.multiplier || 1) * product.sizes.length)) : product.wholesalePrice)}</td>
+                                <td>${formatPriceNoCurrency(product.upsaleAmount || 0)}</td>
                             </tr>`)}
                 </tbody >
             </table >
