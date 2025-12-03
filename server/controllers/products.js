@@ -528,6 +528,8 @@ export const ProductController = {
         return { doneProducts, status: 200 };
     },
     startRevision: async () => {
+        await Product.updateMany({ inRevision: true }, { $set: { inRevision: false } }); // reset any previous revisions
+
         await Product.updateMany({ deleted: false, outOfStock: false }, { $set: { inRevision: true } });
         return;
     },
