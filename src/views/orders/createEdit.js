@@ -94,11 +94,11 @@ const topRow = (params, customers) => html`
         <div class="col-6 col-sm">
             <label for="customer" class="form-label">Партньор:</label>
             <div class="input-group">
-                <input @keyup=${e => e.target.value = e.target.value.toLowerCase()} @change=${selectCustomer} .value=${selectedCustomer ? `${selectedCustomer.name.toLowerCase()}${selectedCustomer.vat ? ` [${selectedCustomer.vat}]` : ''}${selectedCustomer.phone ? ` (${selectedCustomer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+                <input @keyup=${e => e.target.value = e.target.value.toLowerCase()} @change=${selectCustomer} .value=${selectedCustomer ? `${selectedCustomer.taxvat ? '✅ ' : ''}${selectedCustomer.name.toLowerCase()}${selectedCustomer.vat ? ` [${selectedCustomer.vat}]` : ''}${selectedCustomer.phone ? ` (${selectedCustomer.phone})` : ''}` : ''} list="customersList" placeholder="Въведи име или булстат" name="customer" id="customer" class="form-control" autocomplete="off" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
                 <button data-bs-toggle="modal" data-bs-target="#createCustomerModal" class="btn btn-outline-primary" type="button"><i class="bi bi-plus-lg"></i></button>
             </div>
             <datalist id="customersList">
-                ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.name.toLowerCase()}${customer.vat ? ` [${customer.vat}]` : ''}${customer.phone ? ` (${customer.phone})` : ''}`}></option>`)};
+                ${customers && customers.map(customer => html`<option _id="${customer._id}" value=${`${customer.taxvat ? '✅ ' : ''}${customer.name.toLowerCase()}${customer.vat ? ` [${customer.vat}]` : ''}${customer.phone ? ` (${customer.phone})` : ''}`}></option>`)};
             </datalist>
         </div>
         <div class="col-6 col-sm">
@@ -1463,8 +1463,6 @@ async function loadNewCustomer(customer) {
     customers = [...customers, customer];
 
     selectedCustomer = customer;
-
-    console.log({ customer })
 
     // rerender table
     render(topRow(params, customers), document.getElementById('topRowContainer'));

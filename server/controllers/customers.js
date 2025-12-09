@@ -39,7 +39,7 @@ export const CustomerController = {
         }
 
         if (page && page === 'createOrder') {
-            const customers = await Customer.find({ deleted: { $ne: true } }).select('name vat discount receivers phone');
+            const customers = await Customer.find({ deleted: { $ne: true } }).select('name vat taxvat discount receivers phone');
             return { customers, status: 200 };
         }
 
