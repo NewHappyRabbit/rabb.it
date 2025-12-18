@@ -194,14 +194,6 @@ function addSize(e, type) {
 
         if (!value || value === '') return;
         size = value;
-    } else if (type === 'suffixSizesContainer') {
-        const el = document.getElementById('suffixSize');
-        const suffixSize = el.value.trim();
-        const suffix = document.getElementById('suffix').value.trim();
-        clearSizesInputs(el);
-
-        if (!suffixSize || suffixSize === '' || !suffix || suffix === '') return;
-        size = suffixSize + suffix;
     } else if (type === 'rangeSizesContainer') {
         const fromEl = document.getElementById('rangeFrom');
         const toEl = document.getElementById('rangeTo');
@@ -251,13 +243,27 @@ function removeSize(e) {
 }
 
 function showSizeContainer() {
+    selectedFrom = undefined;
+    selectedTo = undefined;
     const selected = document.getElementById('sizeType').value;
 
-    const list = ['simpleSizesContainer', 'suffixSizesContainer', 'rangeSizesContainer'];
+    const list = ['simpleSizesContainer', 'rangeSizesContainer', 'babysSizesContainer', 'kidsSizesContainer', 'youthsSizesContainer', 'adultsSizesContainer'];
+
+    const selectsToReset = document.querySelectorAll('.fromToTemplate select');
+
+    selectsToReset.forEach(select => {
+        select.value = '';
+    });
+
+    const btnsToDisable = document.querySelectorAll('.fromToApplyBtn');
+    btnsToDisable.forEach(btn => {
+        btn.disabled = true;
+    });
 
     // Hide all containers and display only the selected
     list.forEach(el => {
         const container = document.getElementById(el);
+        if (!container) return;
         container.classList.add('d-none');
         if (el === selected) container.classList.remove('d-none');
     });
@@ -277,55 +283,100 @@ function showSaleContainer() {
 
 function makeButtonActive(id) {
     const selected = document.getElementById(id);
-    const sizesButtons = [document.getElementById('simpleSizeButton'), document.getElementById('suffixSizeButton'), document.getElementById('rangeSizeButton')];
+    const sizesButtons = [document.getElementById('simpleSizeButton'), document.getElementById('rangeSizeButton')];
 
     sizesButtons.forEach(btn => btn.setAttribute('type', 'button'));
     selected.setAttribute('type', 'submit');
 }
 
+let sizesToApply = [];
+let selectedFrom, selectedTo;
+const babySizes = ['0 м.', '3 м.', '6 м.', '9 м.', '12 м.', '18 м.', '24 м.'];
+const kidsSizes = ['2 г.', '3 г.', '4 г.', '5 г.', '6 г.', '7 г.', '8 г.', '9 г.', '10 г.'];
+const youthsSizes = ['10 г.', '11 г.', '12 г.', '13 г.', '14 г.', '15 г.', '16 г.', '17 г.', '18 г.'];
+const adultsSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
+
+function applySizes() {
+    document.getElementById('quantity').setAttribute('readonly', true);
+    selectedSizes = sizesToApply.map(size => ({ size, quantity: 0 }));
+    const addedSizes = document.getElementById('addedSizes');
+    render(sizesTemplate(selectedSizes), addedSizes);
+}
+
+function selectSizeFunction(e, from = true, fromId, toId, sizeApplyButtonId, sizesArray) {
+    const selected = e.target.value == '' ? undefined : e.target.value;
+    const selectToEl = from ? document.getElementById(toId) : document.getElementById(fromId);
+    const allOptions = selectToEl.querySelectorAll('option');
+    const sizeApplyButton = document.getElementById(sizeApplyButtonId);
+    if (from)
+        selectedFrom = selected;
+    else selectedTo = selected;
+
+    if (selected === '') return;
+
+    const index = sizesArray.indexOf(selected);
+    const optionsToDisable = from ? sizesArray.slice(0, index + 1) : sizesArray.slice(index, sizesArray.length);
+    const optionsToApply = from ? sizesArray.slice(index, sizesArray.length) : sizesArray.slice(0, index + 1);
+
+    if (selectedFrom && selectedTo) {
+        sizesToApply = optionsToApply;
+        sizeApplyButton.removeAttribute('disabled');
+    } else {
+        sizeApplyButton.setAttribute('disabled', true)
+        sizesToApply = [];
+    };
+
+    for (let option of allOptions) {
+        if (optionsToDisable.includes(option.value) || option.value === '') {
+            option.setAttribute('disabled', true);
+        } else {
+            option.removeAttribute('disabled');
+        }
+    }
+}
+
+const fromToTemplate = ({ id, sizesArray, selectFn, fromId, toId, sizeApplyButtonId }) => html`
+<div class="col-12 col-sm-6 d-none fromToTemplate" id=${id}>
+    <div class="input-group">
+        <select @change=${(e) => selectFn(e, true, fromId, toId, sizeApplyButtonId, sizesArray)} id=${fromId} class="form-select">
+            <option disabled selected value="">Избери размер ОТ</option>
+            ${sizesArray.map(size => html`<option value="${size}">${size}</option>`)}
+        </select>
+        <span class="input-group-text">-</span>
+        <select @change=${(e) => selectFn(e, false, fromId, toId, sizeApplyButtonId, sizesArray)} id=${toId} class="form-select">
+            <option disabled selected value="">Избери размер ДО</option>
+            ${sizesArray.map(size => html`<option value="${size}">${size}</option>`)}
+        </select>
+        <button class="btn btn-primary fromToApplyBtn" disabled id=${sizeApplyButtonId} @click=${applySizes} type="button">Приложи</button>
+    </div>
+</div>
+`;
+
 const sizesSelectionTemplate = () => html`
-<div class="row mb-3">
-    <label class="form-label">Размери</label>
+    <h4>Размери:</h4>
 
     <div class="col-12 col-sm-6 mb-3">
         <select @change=${showSizeContainer} name="sizeType" id="sizeType" class="form-select">
             <option selected value="">Без размер</option>
-            <option value="simpleSizesContainer">Обикновен (S,M,L,..)</option>
-            <option value="suffixSizesContainer">Детски (5 г., 10 м.,..)</option>
-            <option value="rangeSizesContainer">От-До (39-43, 1-3,..)</option>
+            <option selected value="simpleSizesContainer">Свободен текст</option>
+            <option value="rangeSizesContainer">Свободен От-До (39-43, 1-3,..)</option>
+            <option value="babysSizesContainer">Бебешки (0-24 м.)</option>
+            <option value="kidsSizesContainer">Детски (2-10г.)</option>
+            <option value="youthsSizesContainer">Юношески (10-18г.)</option>
+            <option value="adultsSizesContainer">Възрастни (S,M,L)</option>
         </select>
     </div>
 
-    <h4>Калкулатор:</h4>
-    <div class="input-group mb-3">
-        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
-        <span class="input-group-text">X</span>
-        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
-        <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
-    </div>
-
     <!-- Simple -->
-    <div class="col-12 col-sm-6 d-none" id="simpleSizesContainer">
+    <div class="col-12 col-sm-6" id="simpleSizesContainer">
         <div class="input-group">
             <input @keyup=${() => makeButtonActive('simpleSizeButton')} class="form-control" name="size" id="simpleSize" autocomplete="off" placeholder="S, 4XL, 43,..">
             <button id="simpleSizeButton" type="button" @click=${(e) => addSize(e, 'simpleSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
         </div>
     </div>
 
-    <!-- Suffix -->
-    <div class="d-none col-12 col-sm-6" id="suffixSizesContainer">
-        <div class="input-group">
-            <input @keyup=${() => makeButtonActive('suffixSizeButton')} class="form-control" name="size" id="suffixSize" autocomplete="off" placeholder="1,2,3,..">
-            <select class="form-select" name="suffix" id="suffix">
-                <option value=" г.">Години (г.)</option>
-                <option value=" м.">Месеца (м.)</option>
-            </select>
-            <button id="suffixSizeButton" type="button" @click=${(e) => addSize(e, 'suffixSizesContainer')} class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
-        </div>
-    </div>
-
     <!-- Range -->
-    <div class="d-none col-12 col-sm-6" id="rangeSizesContainer">
+    <div class="col-12 col-sm-6 d-none" id="rangeSizesContainer">
         <div class="input-group">
             <input @keyup=${() => makeButtonActive('rangeSizeButton')} type="text" class="form-control" name="rangeFrom" id="rangeFrom" placeholder="39">
             <span class="input-group-text">-</span>
@@ -334,8 +385,27 @@ const sizesSelectionTemplate = () => html`
         </div>
     </div>
 
+    <!-- Baby -->
+    ${fromToTemplate({ id: "babysSizesContainer", sizesArray: babySizes, selectFn: selectSizeFunction, fromId: "selectBabyFrom", toId: "selectBabyTo", sizeApplyButtonId: "babySizeApplyButton" })}
+    
+    <!-- Kids -->
+    ${fromToTemplate({ id: "kidsSizesContainer", sizesArray: kidsSizes, selectFn: selectSizeFunction, fromId: "selectKidsFrom", toId: "selectKidsTo", sizeApplyButtonId: "kidsSizeApplyButton" })}
+
+    <!-- Youth -->
+    ${fromToTemplate({ id: "youthsSizesContainer", sizesArray: youthsSizes, selectFn: selectSizeFunction, fromId: "selectYouthsFrom", toId: "selectYouthsTo", sizeApplyButtonId: "youthsSizeApplyButton" })}
+
+    <!-- Adults -->
+    ${fromToTemplate({ id: "adultsSizesContainer", sizesArray: adultsSizes, selectFn: selectSizeFunction, fromId: "selectAdultsFrom", toId: "selectAdultsTo", sizeApplyButtonId: "adultsSizeApplyButton" })}
+
     <div id="addedSizes" class="d-flex gap-3 mt-1 pt-2 flex-wrap"></div>
-</div>
+
+    <h4 class="mt-2">Калкулатор:</h4>
+    <div class="input-group mb-3">
+        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num1">
+        <span class="input-group-text">X</span>
+        <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
+        <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
+    </div>
 `;
 
 const quantityTemplate = () => html`
@@ -732,10 +802,6 @@ function onSelectAttrCategory(e) {
         document.querySelector('#sizes_groups [value="Възрастни (S,M,L,XL,...)"]').selected = true;
         document.querySelector('#sizeType [value="simpleSizesContainer"]').selected = true;
     }
-    else if (category === 'Детски') {
-        document.querySelectorAll('#sex option').forEach(opt => opt.selected = true);
-        document.querySelector('#sizeType [value="suffixSizesContainer"]').selected = true;
-    }
     showSizeContainer();
 }
 
@@ -848,7 +914,9 @@ export async function createEditProductPage(ctx, next) {
 
                 ${attributesTemplate(product)}
 
-                ${sizesSelectionTemplate()}
+                <div class="row mb-3" id="sizesSelection">
+                    ${sizesSelectionTemplate()}
+                </div>
 
                 ${quantityTemplate()}
 
