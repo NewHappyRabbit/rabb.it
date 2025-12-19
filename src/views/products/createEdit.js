@@ -173,11 +173,12 @@ function clearSizesInputs(el) {
 function updateSizeQty() {
     const sumOfCalculator = parseInt(document.getElementById('calc_sum').value) || 0;
 
-    if (!product && sumOfCalculator > 0) // If editing product, create new size with 0 qty. If creating product, use sum from calcualtor
-        selectedSizes.map(s => s.quantity = parseInt(sumOfCalculator / selectedSizes.length));
+    // if (!product && sumOfCalculator > 0) // If editing product, create new size with 0 qty. If creating product, use sum from calcualtor
+    selectedSizes.map(s => s.quantity = parseInt(sumOfCalculator / selectedSizes.length));
 
     const addedSizes = document.getElementById('addedSizes');
     render(sizesTemplate(selectedSizes), addedSizes);
+    updateWholeQuantity();
 }
 
 function addSize(e, type) {
@@ -249,6 +250,7 @@ function showSizeContainer() {
 
     const list = ['simpleSizesContainer', 'rangeSizesContainer', 'babysSizesContainer', 'kidsSizesContainer', 'youthsSizesContainer', 'adultsSizesContainer'];
 
+    // Reset all selects in fromToTemplates
     const selectsToReset = document.querySelectorAll('.fromToTemplate select');
 
     selectsToReset.forEach(select => {
@@ -267,6 +269,26 @@ function showSizeContainer() {
         container.classList.add('d-none');
         if (el === selected) container.classList.remove('d-none');
     });
+
+    // Auto select attribute Size value
+    const attributeSize = document.getElementById('sizes_groups');
+    switch (selected) {
+        case 'babysSizesContainer':
+            attributeSize.value = 'Бебешки (0-24 м.)';
+            break;
+        case 'kidsSizesContainer':
+            attributeSize.value = 'Детски (2-10 г.)';
+            break;
+        case 'youthsSizesContainer':
+            attributeSize.value = 'Юношески (10-18 г.)';
+            break;
+        case 'adultsSizesContainer':
+            attributeSize.value = 'Възрастни (S,M,L,XL,...)';
+            break;
+        default:
+            attributeSize.value = '';
+            break;
+    }
 }
 
 function showSaleContainer() {
@@ -301,6 +323,8 @@ function applySizes() {
     selectedSizes = sizesToApply.map(size => ({ size, quantity: 0 }));
     const addedSizes = document.getElementById('addedSizes');
     render(sizesTemplate(selectedSizes), addedSizes);
+    document.getElementById('deliveryPricePerUnit').disabled = false;
+    document.getElementById('multiplier').disabled = false;
 }
 
 function selectSizeFunction(e, from = true, fromId, toId, sizeApplyButtonId, sizesArray) {
@@ -405,6 +429,17 @@ const sizesSelectionTemplate = () => html`
         <span class="input-group-text">X</span>
         <input @keyup=${calculator} @change=${calculator} class="form-control" type="number" inputmode="numeric" autocomplete="off" id="calc_num2">
         <input class="form-control" type="number" inputmode="numeric" autocomplete="off" disabled id="calc_sum">
+    </div>
+
+    <div class="col">
+        <label for="sizes_groups">Размери:</label>
+        <select id="sizes_groups" name="sizes_groups" class="form-control" multiple>
+            <option ?selected=${!product} value="">Избери</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Бебешки (0-24 м.)'))} value='Бебешки (0-24 м.)'>Бебешки (0-24 м.)</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Детски (2-10 г.)'))} value='Детски (2-10 г.)'>Детски (2-10 г.)</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Юношески (10-18 г.)'))} value='Юношески (10-18 г.)'>Юношески (10-18 г.)</option>
+            <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Възрастни (S,M,L,XL,...)'))} value='Възрастни (S,M,L,XL,...)'>Възрастни (S,M,L,XL,...)</option>
+        </select>
     </div>
 `;
 
@@ -824,17 +859,6 @@ const attributesTemplate = (product) => html`
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Детски'))} value='Детски'>Детски</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Мъжки'))} value='Мъжки'>Мъжки</option>
                 <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'in_category' && a.value.includes('Дамски'))} value='Дамски'>Дамски</option>
-            </select>
-        </div>
-
-        <div class="col">
-            <label for="sizes_groups">Размери:</label>
-            <select id="sizes_groups" name="sizes_groups" class="form-control" multiple>
-                <option ?selected=${!product} value="">Избери</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Бебешки (0-24 м.)'))} value='Бебешки (0-24 м.)'>Бебешки (0-24 м.)</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Детски (2-10 г.)'))} value='Детски (2-10 г.)'>Детски (2-10 г.)</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Юношески (10-18 г.)'))} value='Юношески (10-18 г.)'>Юношески (10-18 г.)</option>
-                <option ?selected=${product?.attributes?.find(a => a.attribute.slug === 'sizes_groups' && a.value.includes('Възрастни (S,M,L,XL,...)'))} value='Възрастни (S,M,L,XL,...)'>Възрастни (S,M,L,XL,...)</option>
             </select>
         </div>
 
