@@ -120,11 +120,11 @@ export function productsRoutes() {
         }
     });
 
-    productsRouter.get('/products/woourls', permit('manager', 'admin'), async (req, res) => {
+    productsRouter.post('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            const woo = req.query.woo === 'true' ? true : false;
-            const hidden = req.query.hidden === 'true' ? true : false;
-            const ids = JSON.parse(req.query.ids || '[]');
+            const woo = req.body.woo === 'true' ? true : false;
+            const hidden = req.body.hidden === 'true' ? true : false;
+            const ids = req.body.ids || [];
 
             const filters = { outOfStock: { $ne: true }, deleted: false, hidden };
             const select = woo ? 'woocommerce.permalink -_id' : 'image.url description -_id';

@@ -15,7 +15,12 @@ async function downloadProductsURLS({ e, hidden = false, woo = false }) {
 
     const selectedProductsNodes = document.querySelectorAll('.selectedProductCheckbox:checked');
     const selectedProducts = Array.from(selectedProductsNodes).map(node => node.closest('tr').getAttribute('id'));
-    const response = await axios.get(`/products/woourls?woo=${woo}&hidden=${hidden}&ids=${JSON.stringify(selectedProducts)}`);
+    const data = {
+        woo,
+        hidden,
+        ids: selectedProducts
+    }
+    const response = await axios.post('/products/woourls', data);
 
     if (response.status === 200) {
         // download file
