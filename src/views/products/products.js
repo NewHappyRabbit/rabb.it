@@ -213,7 +213,7 @@ const table = ({ count, products, pageCount }) => html`
                     ${products.map(product => html`
                         <tr id="${product._id}">
                             <td><input class="selectedProductCheckbox form-check-input" type="checkbox" value=""></td>
-                            <td>${product?.image?.url ? html`<img class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
+                            <td>${product?.image?.url ? html`<img loading="lazy" class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
                             <td>${product.category.path ? `${uslugifyPath(product.category.path)} > ${product.category.name}` : product.category.name}</td>
                             <td>${product.code}</td>
                             <td>${product.hidden ? html`<i class="bi bi-eye-slash"></i>` : ''}${product.name}</td>

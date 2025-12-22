@@ -64,7 +64,7 @@ const table = ({ products }) => html`
                     ${products.map(product => html`
                         <tr>
                             <td>${product.code}</td>
-                            <td>${product?.image?.url ? html`<img class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
+                            <td>${product?.image?.url ? html`<img loading="lazy" class="img-thumbnail" src=${product.image.url}/>` : ''}</td>
                             <td class="text-nowrap">
                                 ${attributesTemplate(product)}
                             </td>
