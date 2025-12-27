@@ -122,8 +122,8 @@ export function productsRoutes() {
 
     productsRouter.post('/products/woourls', permit('manager', 'admin'), async (req, res) => {
         try {
-            const woo = req.body.woo === 'true' ? true : false;
-            const hidden = req.body.hidden === 'true' ? true : false;
+            const woo = req.body.woo;
+            const hidden = req.body.hidden;
             const ids = req.body.ids || [];
 
             const filters = { outOfStock: { $ne: true }, deleted: false, hidden };
