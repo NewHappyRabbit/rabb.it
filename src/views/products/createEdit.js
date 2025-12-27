@@ -338,12 +338,14 @@ function selectSizeFunction(e, from = true, fromId, toId, sizeApplyButtonId, siz
 
     if (selected === '') return;
 
+
     const index = sizesArray.indexOf(selected);
-    const optionsToDisable = from ? sizesArray.slice(0, index + 1) : sizesArray.slice(index, sizesArray.length);
-    const optionsToApply = from ? sizesArray.slice(index, sizesArray.length) : sizesArray.slice(0, index + 1);
+    const optionsToDisable = from ? sizesArray.slice(0, index + 1) : sizesArray.slice(index);
 
     if (selectedFrom && selectedTo) {
-        sizesToApply = optionsToApply;
+        const fromIndex = sizesArray.indexOf(selectedFrom);
+        const toIndex = sizesArray.indexOf(selectedTo);
+        sizesToApply = sizesArray.slice(fromIndex, toIndex + 1);
         sizeApplyButton.removeAttribute('disabled');
     } else {
         sizeApplyButton.setAttribute('disabled', true)
