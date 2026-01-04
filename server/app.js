@@ -6,6 +6,7 @@ import { loadRoutes } from './routes/routes.js';
 import http from 'http';
 import { Server } from "socket.io";
 import { productSockets } from './routes/products.js';
+import { convertBGNtoEUR } from './functions/dev.js';
 
 // Check if all required environment variables are defined
 let missingVariables = [];

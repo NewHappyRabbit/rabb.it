@@ -149,7 +149,7 @@ const saleModal = () => html`
                             <div class="col">
                                 <select name="saleType" id="saleType" class="form-select">
                                     <option value="percent">Намали с процент (%)</option>
-                                    <option value="sum">Намали със сума (лв.)</option>
+                                    <option value="sum">Намали със сума (€.)</option>
                                     <option value="deliveryPrice">Намали на доставна цена</option>
                                 </select>
                             </div>

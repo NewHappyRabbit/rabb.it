@@ -40,7 +40,6 @@ export function initSocket() {
     printerSockets();
 }
 
-const defaultCurrency = "лв.";
 export const euroSign = '€';
 export const asterisk = html`<i class="bi bi-asterisk text-danger asterisk"></i>`;
 
@@ -93,14 +92,14 @@ export function markInvalid(elName) {
     return true;
 }
 
-export function formatPrice(price, euro = false) {
-    // Convert to xx xxx.xx лв.
+export function formatPrice(price, bgn = false) {
+    // Convert to EUR xx xxx.xx or BGN xx xxx.xx лв.
 
     price = price.toFixed(2);
     price = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-    if (euro === true) price = `${euroSign}${price}`;
-    else price += ` ${defaultCurrency}`;
+    if (bgn === false) price = `${euroSign}${price}`;
+    else price += ` лв.`;
 
     return price;
 }
@@ -242,12 +241,14 @@ export function numberToBGText(number) {
         return; // Too big number
 
     let text = convert(lv);
-    text += lv === 1 ? " лев" : " лева";
+    // text += lv === 1 ? " лев" : " лева";
+    text += " евро";
 
     if (st && st !== 0) {
         let sttext = convert(st, true);
         text += " и " + sttext;
-        text += st === 1 ? " стотинка" : " стотинки";
+        // text += st === 1 ? " стотинка" : " стотинки";
+        text += st === 1 ? " цент" : " цента";
     }
 
     return text;

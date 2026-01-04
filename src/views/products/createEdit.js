@@ -508,7 +508,7 @@ const pricesTemplate = () => html`
             </div>
 
             <div class="col">
-                <label for="upsaleAmount" class="form-label">Добавена стойност към всеки брой <span class="text-primary">(лв.)</span></label>
+                <label for="upsaleAmount" class="form-label">Добавена стойност към всеки брой <span class="text-primary">(€.)</span></label>
                 <input @keyup=${() => calculateProductPrices()} class="form-control border-primary" type="text" name="upsaleAmount" id="upsaleAmount" inputmode="decimal" .value=${lastUpsaleAmount} autocomplete="off">
             </div>
         </div>
@@ -536,7 +536,7 @@ const saleWholesalePriceTemplate = () => html`
             <select @change=${showSaleContainer} name="saleType" id="saleType" class="form-select" ?disabled=${loggedInUser.role !== 'admin'}>
                 <option selected value="">Без намаление</option>
                 <option value="percent">Намали с процент (%)</option>
-                <option value="sum">Намали със сума (лв.)</option>
+                <option value="sum">Намали със сума (€.)</option>
             </select>
         </div>
         <div id="saleContainer" class="row ${product?.saleWholesalePrice ? '' : 'd-none'}">

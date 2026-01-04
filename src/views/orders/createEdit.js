@@ -1,7 +1,7 @@
 import '@/css/orders.css';
 import { container } from "@/app.js";
 import { html, render } from 'lit/html.js';
-import { formatDate, formatPrice, formatPriceNoCurrency, deductVat, markValid, markInvalid, markInvalidEl, markValidEl, successScan, BGNtoEuro } from '@/api.js';
+import { formatDate, formatPrice, formatPriceNoCurrency, deductVat, markValid, markInvalid, markInvalidEl, markValidEl, successScan, EuroToBGN } from '@/api.js';
 import { nav } from "@/views/nav";
 import axios from "axios";
 import { submitBtn, toggleSubmitBtn } from "@/views/components";
@@ -539,7 +539,7 @@ const wholesaleProductsTable = (products) => html`
                 <th class="text-primary">Количество</th>
                 <th class="text-primary">Цена</th>
                 <th>Отстъпка %</th>
-                <th>Отстъпка лв.</th>
+                <th>Отстъпка €.</th>
                 <th>ДДС %</th>
                 <th>Сума</th>
                 <th>Действия</th>
@@ -1324,16 +1324,16 @@ const printContainer = ({ totals, data, param, flags }) => html`
 
         <div class="d-flex flex-column text-end">
             ${param?.stokova || data.type === 'stokova' ? '' : flags.noVat ? html`
-                <div>Данъчна основа: ${formatPrice(totals[0])} / ${formatPrice(BGNtoEuro(totals[0]), true)}</div>
-                <div>ДДС: ${formatPrice(0)} / ${formatPrice(BGNtoEuro(0), true)}</div>
+                <div>Данъчна основа: ${formatPrice(totals[0])} / ${formatPrice(EuroToBGN(totals[0]), true)}</div>
+                <div>ДДС: ${formatPrice(0)} / ${formatPrice(EuroToBGN(0), true)}</div>
             ` : Object.keys(totals).map(key => html`
-                <div>Данъчна основа ${key}%: ${formatPrice(deductVat(totals[key], Number(key)))} / ${formatPrice(BGNtoEuro(deductVat(totals[key], Number(key))), true)}</div>
-                <div>ДДС ${key}%: ${formatPrice(totals[key] - deductVat(totals[key], Number(key)))} / ${formatPrice(BGNtoEuro(totals[key] - deductVat(totals[key], Number(key))), true)}</div>
+                <div>Данъчна основа ${key}%: ${formatPrice(deductVat(totals[key], Number(key)))} / ${formatPrice(EuroToBGN(deductVat(totals[key], Number(key))), true)}</div>
+                <div>ДДС ${key}%: ${formatPrice(totals[key] - deductVat(totals[key], Number(key)))} / ${formatPrice(EuroToBGN(totals[key] - deductVat(totals[key], Number(key))), true)}</div>
             `)}
 
-            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Сума преди остъпка: ${formatPrice(data.total + flags.discountTotal)} / ${formatPrice(BGNtoEuro(data.total + flags.discountTotal), true)}</div>` : ''}
-            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Отстъпка: ${formatPrice(flags.discountTotal)} / ${formatPrice(BGNtoEuro(flags.discountTotal), true)}</div>` : ''}
-            <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)} / ${formatPrice(BGNtoEuro(data.total), true)}</div>
+            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Сума преди остъпка: ${formatPrice(data.total + flags.discountTotal)} / ${formatPrice(EuroToBGN(data.total + flags.discountTotal), true)}</div>` : ''}
+            ${(param?.stokova || data.type === 'stokova') && flags.tableShowDiscounts ? html`<div style="font-size: 0.8rem">Отстъпка: ${formatPrice(flags.discountTotal)} / ${formatPrice(EuroToBGN(flags.discountTotal), true)}</div>` : ''}
+            <div class="fw-bold">Сума за плащане: ${formatPrice(data.total)} / ${formatPrice(EuroToBGN(data.total), true)}</div>
         </div>
 
         <div class="mt-3">

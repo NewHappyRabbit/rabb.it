@@ -104,7 +104,7 @@ const orderSchema = new Schema({
             price: { // price without discount
                 type: Number,
                 required: true,
-                min: 0.1
+                min: 0.01
             },
             vat: {
                 type: Number,
