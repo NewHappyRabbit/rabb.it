@@ -48,7 +48,7 @@ export const ReferencesController = {
 
         return { orders, count, pageCount };
     },
-    getAccounting: async ({ from, to, company }) => {
+    getAccounting: async ({ from, to, company, detailed }) => {
         const query = { type: { $in: ['credit', 'invoice'] }, deleted: { $ne: true } };
 
         if (from || to) {
@@ -61,7 +61,12 @@ export const ReferencesController = {
         if (company)
             query.company = company;
 
-        const orders = await Order.find(query).select('type number customer company total date paymentType products').sort({ _id: -1 }).populate('customer company');
+        let orders;
+
+        if (detailed)
+            orders = await Order.find(query).sort({ _id: -1 }).populate('products.product customer company');
+        else orders = await Order.find(query).select('type number customer company total date paymentType products').sort({ _id: -1 }).populate('customer company');
+
         return { orders };
     },
     getStocks: async ({ pageSize, pageNumber, print }) => {

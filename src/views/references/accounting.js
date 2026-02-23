@@ -7,6 +7,7 @@ import { until } from "lit/directives/until.js";
 import { spinner } from "@/views/components";
 import page from 'page';
 import { loggedInUser } from "@/views/login";
+import { printContainer } from "@/views/orders/createEdit";
 
 let params, selectedFilters = {}, path, companies, total;
 
@@ -104,8 +105,12 @@ async function loadReferences() {
 }
 
 function print() {
-    const el = document.querySelector('table');
-    el.classList.add('printTable');
+    const table = document.querySelector('table');
+    table.classList.remove('d-print-none');
+    table.classList.add('printTable');
+
+    const detailedPrintContainer = document.getElementById('printContainer');
+    detailedPrintContainer.classList.add('d-print-none');
     try {
         if (!document.execCommand('print', false, null)) {
             window.print();
@@ -113,7 +118,43 @@ function print() {
     } catch {
         window.print();
     }
-    el.classList.remove('printTable');
+    table.classList.remove('printTable');
+}
+
+async function printDetailed() {
+    const table = document.querySelector('table');
+    table.classList.add('d-print-none');
+    const detailedPrintContainer = document.getElementById('printContainer');
+    detailedPrintContainer.classList.remove('d-print-none');
+
+    //TODO: Render all invoices
+    const documents = [];
+    const orders = await axios.get(path, { params: { detailed: true } }).then(res => res.data.orders);
+
+    for (let order of orders) {
+        const company = companies.find(c => c._id === order.company._id);
+        const noVat = company.tax === 0;
+
+        if (noVat) {
+            order.products.forEach(product => {
+                product.vat = 0;
+            })
+        }
+
+        const totals = calculateTotalVats(order.products);
+
+        documents.push(printContainer({ params, totals, data: order, flags: { noVat } }));
+    }
+
+    render(html`${documents}`, detailedPrintContainer);
+
+    try {
+        if (!document.execCommand('print', false, null)) {
+            window.print();
+        }
+    } catch {
+        window.print();
+    }
 }
 
 async function applyFilters() {
@@ -173,10 +214,12 @@ export async function accountingReferencesPage(ctx, next) {
         </div>
         <div class="container-fluid">
             <button @click=${print} class="btn btn-primary d-print-none">Принтирай</button>
+            <button @click=${printDetailed} class="btn btn-primary d-print-none">Принтирай подробно</button>
             <div class="table-responsive">
                 ${until(loadReferences(), spinner)}
             </div>
         </div>
+        <div id="printContainer" class="d-print-block d-none"></div>
     `;
 
     render(template(), container);

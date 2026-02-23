@@ -36,8 +36,8 @@ export function referencesSalesRoutes() {
 
     referencesRouter.get('/references/accounting', permit('manager', 'admin'), async (req, res) => {
         try {
-            const { from, to, company } = req.query;
-            const { orders } = await ReferencesController.getAccounting({ from, to, company });
+            const { from, to, company, detailed = false } = req.query;
+            const { orders } = await ReferencesController.getAccounting({ from, to, company, detailed });
             res.json({ orders });
         } catch (error) {
             console.error(error);
