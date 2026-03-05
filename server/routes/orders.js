@@ -6,7 +6,7 @@ import { OrderController } from "../controllers/orders.js";
 import { WooCancelOrder, WooRestoreOrder, WooUpdateOrder } from "../woocommerce/orders.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 
-export async function getNextDocumentNumber(type, company) {
+export async function getNextDocumentNumber({ type, company }) {
     function pad(toPad, padChar, length) {
         return (String(toPad).length < length)
             ? new Array(length - String(toPad).length + 1).join(padChar) + String(toPad)
@@ -79,7 +79,7 @@ export async function ordersRoutes() {
 
             const { type, company } = req.body;
 
-            const { saveSequence, nextNumber } = await getNextDocumentNumber(type, company);
+            const { saveSequence, nextNumber } = await getNextDocumentNumber({ type, company });
 
             req.body.number = nextNumber;
 

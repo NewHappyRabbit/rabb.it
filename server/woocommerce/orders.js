@@ -25,9 +25,10 @@ export async function WooHookCreateOrder({ shop, data }) {
     if (!defaultCompany)
         return { status: 400, message: 'Не е намерена компания по подразбиране' };
 
-    const user = await User.findOne({ username: "woocommerce" });
 
-    const { saveSequence, nextNumber } = await getNextDocumentNumber({ type: defaultDocumentType, company: defaultCompany._id });
+    const { saveSequence, nextNumber } = await getNextDocumentNumber({ type: defaultDocumentType, company: defaultCompany._id.toString() });
+
+    const user = await User.findOne({ username: "woocommerce" });
 
     const wooData = {
         number: nextNumber,
