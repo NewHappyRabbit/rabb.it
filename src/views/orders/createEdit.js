@@ -27,7 +27,6 @@ function changeOrderType(e) {
 
 async function selectDocumentType(e) {
     documentType = e.target.value;
-    await getDocumentTypeNumber();
     rerenderTable();
 }
 
@@ -64,7 +63,6 @@ async function selectCompany(e) {
     const company = e.target.value;
     selectedCompany = companies.find(c => c._id === company);
     render(senderTemplate(selectedCompany.senders), document.getElementById('senderDiv'));
-    await getDocumentTypeNumber();
 
     for (let product of addedProducts) {
         if (selectedCompany.tax === 0)
@@ -117,7 +115,7 @@ const topRow = (params, customers) => html`
         </div>
         <div class="col-6 col-sm">
             <label for="number" class="form-label">Документ номер:</label>
-            <input type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? pad(order.number, 0, 10) : pad(documentNumber, 0, 10)}>
+            <input disabled type="text" name="number" id="number" inputmode="numeric" class="form-control" autocomplete="off" ?readonly=${loggedInUser?.role !== 'admin'} value=${order ? pad(order.number, 0, 10) : ''}>
         </div>
         <div class="col-6 col-sm">
             <label for="orderType" class="form-label">Тип на продажба:</label>
@@ -167,7 +165,7 @@ const bottomRow = (params, companies) => html`
 <div class="row g-3 align-items-end">
     <div class="col-6 col-sm">
         <label for="company" class="form-label">Обект:</label>
-        <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${order && !['manager', 'admin'].includes(loggedInUser.role)} required>
+        <select @change=${selectCompany} name="company" id="company" class="form-control" ?disabled=${order} required>
             ${companies && companies.map(company => html`<option ?selected=${order && company._id == order.company._id || selectedCompany?._id == company._id} value=${company._id}>${company.name}</option>`)}
         </select>
     </div>
@@ -1502,12 +1500,7 @@ const template = () => html`
     <div id="printContainer" class="d-none d-print-block"></div>
     <img id="rate-us-qr" class="d-none" style="width: 30%; margin: auto; margin-top: 5rem" src="images/rate-us-qr.jpg"/>`;
 
-async function getDocumentTypeNumber() {
-    const getNewDocumentNumber = await axios.get('/orders/number', { params: { documentType, company: selectedCompany._id } });
-    documentNumber = getNewDocumentNumber.data;
-    const numberEl = document.getElementById('number');
-    if (numberEl) numberEl.value = pad(documentNumber, 0, 10);
-}
+
 export async function createEditOrderPage(ctx, next) {
     try {
         //TODO When all routes are converted to controllers, create single routes for this kind of requests. Instead of using 4 seperate requests to get companies, products, etc. do one single request to for example "/ordersInfo" and use the controllers to get all the info.
@@ -1580,7 +1573,6 @@ export async function createEditOrderPage(ctx, next) {
             const customerEl = document.getElementById('customer')
             if (customerEl) customerEl.value = '';
             addedProducts = [];
-            await getDocumentTypeNumber();
         }
 
         // reset form
