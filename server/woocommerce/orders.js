@@ -8,31 +8,44 @@ import { Company } from "../models/company.js";
 import { CustomerController } from "../controllers/customers.js";
 import { Order, woocommerce } from "../models/order.js";
 import { WooUpdateQuantityProducts } from "./products.js";
+import { getNextDocumentNumber } from "../routes/orders.js";
 
 export async function WooHookCreateOrder({ shop, data }) {
     console.log('Starting woo hook order...')
     if (WooCommerce_Shops.length === 0 || !shop || !data) return;
     // This functions creates a new order in the app from a WooCommerce order. It's activated by a hook in Woocommerce
 
-    // Get default data
     const defaultData = await SettingsController.get({
         keys: ['wooDocumentType'],
     });
 
+    const defaultDocumentType = defaultData.find(setting => setting.key === 'wooDocumentType').value;
+    const defaultCompany = await Company.findOne({ default: true });
+
+    if (!defaultCompany)
+        return { status: 400, message: 'Не е намерена компания по подразбиране' };
+
+    const user = await User.findOne({ username: "woocommerce" });
+
+    const { saveSequence, nextNumber } = await getNextDocumentNumber({ type: defaultDocumentType, company: defaultCompany._id });
+
     const wooData = {
+        number: nextNumber,
         date: data.date_created,
         orderType: shop.custom.type,
-        type: defaultData.find(setting => setting.key === 'wooDocumentType').value,
+        type: defaultDocumentType,
         woocommerce: {
             woo_url: shop.url,
             id: data.id,
-            //FIXME Svilen wants the order to be completed on saving. It doesnt matter what status is sent by woocommerce, we set here as 'completed'. So once the order is saved for the first time in our app, this status will be sent back to woocommerce and mark it as completed. (Because he is too lazy to select the "Completed" status from a dropdown...)
+            // Svilen wants the order to be completed on saving. It doesnt matter what status is sent by woocommerce, we set here as 'completed'. So once the order is saved for the first time in our app, this status will be sent back to woocommerce and mark it as completed. (Because he is too lazy to select the "Completed" status from a dropdown...)
             // status: data.status,
             status: 'completed',
             total: Number(data.total),
             payment_method: data.payment_method || 'cod',
             payment_method_title: data.payment_method_title || 'Наложен платеж',
         },
+        company: defaultCompany._id,
+        sender: defaultCompany.senders.pop(),
         customer: {
             name: shop.custom.type === 'wholesale' ? "ПРОМЕНИ ИМЕТО НА КЛИЕНТА" : `${data.billing.first_name} ${data.billing.last_name}`,
             email: data.billing.email,
@@ -129,10 +142,6 @@ export async function WooHookCreateOrder({ shop, data }) {
     // Check if customer already in db
     var customer;
 
-    // TODO: Find out why some users ID's are coming as 0. Fixing that would allow us to always find by woo customer ID first.
-    // Try to find by woo customer ID
-    // customer = await Customer.findOne({ "woocommerce.id": data.customer_id, "woocommerce.woo_url": shop.url });
-
     // Try to find by email
     if (!customer && wooData.customer?.email)
         customer = await Customer.findOne({ email: wooData.customer.email });
@@ -213,20 +222,11 @@ export async function WooHookCreateOrder({ shop, data }) {
     wooData.customer = customer._id;
     wooData.receiver = customer.receivers.pop();
 
-    // Get default company
-    const defaultCompany = await Company.findOne({ default: true });
-
-    if (!defaultCompany)
-        return { status: 400, message: 'Не е намерена компания по подразбиране' };
-
-    wooData.company = defaultCompany._id;
-    wooData.sender = defaultCompany.senders.pop();
-
     wooData.paymentType = woocommerce.payment_method[wooData.woocommerce.payment_method] || 'cash';
 
-    const user = await User.findOne({ username: "woocommerce" });
-
     const { status, message, order, updatedProducts } = await OrderController.post({ data: wooData, userId: user._id });
+
+    await saveSequence();
 
     await WooUpdateQuantityProducts(updatedProducts);
 

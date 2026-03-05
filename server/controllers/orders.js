@@ -77,12 +77,6 @@ async function validateOrder(data) {
     }
 }
 
-function pad(toPad, padChar, length) {
-    return (String(toPad).length < length)
-        ? new Array(length - String(toPad).length + 1).join(padChar) + String(toPad)
-        : toPad;
-}
-
 async function removeProductsQuantities({ data, returnedProducts }) {
     var total = 0;
     var updatedProducts = returnedProducts || []; // If PUT, get returnedProducts quantities and save them here at the end if all is good
@@ -358,32 +352,9 @@ export const OrderController = {
 
         data.paidHistory = [{ date: new Date(), amount: data.paidAmount || 0 }];
 
-        if (!data.number) { // If no number assigned, grab latest from sequence
-            let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
-            if (seq)
-                data.number = pad(Number(seq.seq) + 1, 0, 10);
-            else if (!seq) {
-                await AutoIncrement.create({ name: data.type, company: company, seq: 1 });
-                data.number = pad(1, 0, 10);
-            }
-        }
-
         // Check if document number already exists
         const numberExists = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, number: data.number, deleted: false });
-        if (numberExists && !data.woocommerce) return { status: 409, message: 'Документ с такъв номер вече съществува' }; // if creating order normally
-        else if (numberExists && data.woocommerce) {
-            // if creating order from woocommerce hook, Find latest document number and increment by 1
-            const latestOrderNumber = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, deleted: false }).sort({ number: -1 });
-            data.number = pad(Number(latestOrderNumber.number) + 1, 0, 10);
-        }
-
-        let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
-        if (seq) {
-            await AutoIncrement.findOneAndUpdate({ name: data.type === 'credit' ? 'invoice' : data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
-        } else if (!seq) {
-            seq = await AutoIncrement.create({ name: data.type === 'credit' ? 'invoice' : data.type, company, seq: Number(data.number) || 1 });
-            data.number = pad(seq.seq, 0, 10);
-        }
+        if (numberExists) return { status: 409, message: 'Документ с такъв номер вече съществува' }; // if creating order normally
 
         const order = await new Order(data).save();
 
@@ -442,27 +413,6 @@ export const OrderController = {
 
             data.paidHistory = order.paidHistory;
             data.paidHistory.push({ date: new Date(), amount: data.paidAmount });
-        }
-
-        // New logic for editing document number
-        // Check if document number already exists
-        if (data.number) {
-            const order = await Order.findOne({ company: company._id, type: ['credit', 'invoice'].includes(data.type) ? { $in: ['invoice', 'credit'] } : data.type, number: data.number, deleted: false });
-
-            if (order && order._id.toString() !== id) return { status: 409, message: 'Документ с такъв номер вече съществува' };
-        }
-
-        // Only if number changed
-        if (data.number !== order.number) {
-            // Update sequence number if document number > current sequence number
-            // Else, probably customer skipped a document number before and now fills the empty numbers
-            let seq = await AutoIncrement.findOne({ name: data.type === 'credit' ? 'invoice' : data.type, company: company._id });
-            if (seq) {
-                await AutoIncrement.findOneAndUpdate({ name: data.type === 'credit' ? 'invoice' : data.type, company }, { seq: Number(data.number) }, { new: true }).select('seq');
-            } else if (!seq) {
-                seq = await AutoIncrement.create({ name: data.type === 'credit' ? 'invoice' : data.type, company, seq: Number(data.number) || 1 });
-                data.number = pad(seq.seq, 0, 10);
-            }
         }
 
         if (order.woocommerce && data.woocommerce) {

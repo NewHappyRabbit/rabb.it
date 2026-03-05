@@ -6,22 +6,32 @@ import { OrderController } from "../controllers/orders.js";
 import { WooCancelOrder, WooRestoreOrder, WooUpdateOrder } from "../woocommerce/orders.js";
 import { AutoIncrement } from "../models/autoincrement.js";
 
+export async function getNextDocumentNumber(type, company) {
+    function pad(toPad, padChar, length) {
+        return (String(toPad).length < length)
+            ? new Array(length - String(toPad).length + 1).join(padChar) + String(toPad)
+            : toPad;
+    }
+
+    const seqFilter = { name: type === 'credit' ? 'invoice' : type, company };
+    let sequence = await AutoIncrement.findOne(seqFilter);
+    console.log({ type, company, seqFilter })
+
+    if (!sequence) {
+        await AutoIncrement.create({ name: type === 'credit' ? 'invoice' : type, company, seq: 0 });
+        sequence = await AutoIncrement.findOne(seqFilter);
+    }
+
+    async function saveSequence() {
+        sequence.seq += 1;
+        await sequence.save();
+    }
+
+    return { saveSequence, nextNumber: pad(sequence.seq + 1, 0, 10) };
+}
+
 export async function ordersRoutes() {
     const ordersRouter = express.Router();
-
-    ordersRouter.get('/orders/number', permit('user', 'manager', 'admin'), async (req, res) => {
-        try {
-            const { documentType, company } = req.query;
-            let newDocumentNumber = await AutoIncrement.findOne({ name: documentType === 'credit' ? 'invoice' : documentType, company });
-
-            newDocumentNumber = newDocumentNumber?.seq + 1 || 1;
-            res.json(newDocumentNumber);
-        } catch (error) {
-            console.error(error);
-            req.log.debug({ body: req.body }) // Log the body of the request
-            res.status(500).send(error);
-        }
-    });
 
     ordersRouter.get('/orders/params', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
@@ -66,9 +76,18 @@ export async function ordersRoutes() {
     ordersRouter.post('/orders', permit('user', 'manager', 'admin'), async (req, res) => {
         try {
             const userId = JSON.parse(req.cookies.user).id;
+
+            const { type, company } = req.body;
+
+            const { saveSequence, nextNumber } = await getNextDocumentNumber(type, company);
+
+            req.body.number = nextNumber;
+
             const { status, message, order, updatedProducts } = await OrderController.post({ data: { ...req.body }, userId });
 
             if (status !== 201) return res.status(status).send(message);
+
+            saveSequence();
 
             WooUpdateQuantityProducts(updatedProducts);
 
